@@ -39,8 +39,18 @@ jobs:
             echo "Missing secret DEBUG_KEYSTORE_B64"
             exit 1
           fi
+          CLEAN=$(printf '%s' "$KEYSTORE_B64" | tr -d '[:space:]')
+          echo "Secret length: ${#CLEAN} (expected 3556)"
           mkdir -p ~/.android
-          echo "$KEYSTORE_B64" | base64 -d > ~/.android/debug.keystore
+          if ! printf '%s' "$CLEAN" | base64 -d > ~/.android/debug.keystore 2>/dev/null; then
+            echo "ERROR: the secret is not valid base64. Re-copy the WHOLE text of new_signing_key_secret.txt."
+            exit 1
+          fi
+          if ! keytool -list -keystore ~/.android/debug.keystore -storetype PKCS12 -storepass android -alias androiddebugkey >/dev/null 2>&1; then
+            echo "ERROR: the keystore is damaged or incomplete. Re-copy the WHOLE text."
+            exit 1
+          fi
+          echo "Keystore OK"
 
       - run: flutter pub get
 

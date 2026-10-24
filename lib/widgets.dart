@@ -182,9 +182,18 @@ void _soon(BuildContext c, String what) => _toast(c, '$what — قريباً');
 // ---------- بيانات المحادثة ----------
 
 class ChatInfo {
-  const ChatInfo(this.id, this.partner);
+  const ChatInfo(
+    this.id,
+    this.partner, {
+    this.me = '',
+    this.partnerName,
+    this.partnerAvatar,
+  });
   final String id;
-  final String partner;
+  final String partner; // اسم المستخدم للطرف الثاني
+  final String me; // اسم المستخدم حقي
+  final String? partnerName; // الاسم الظاهر للطرف الثاني
+  final String? partnerAvatar; // مسار صورته
 }
 
 /// يرجع محادثة المستخدم الحالي (إذا مربوط) أو null.
@@ -196,8 +205,19 @@ Future<ChatInfo?> _loadChat() async {
   final other = r['user_a'] == uid ? r['user_b'] : r['user_a'];
   final p = await _db
       .from('profiles')
-      .select('username')
+      .select('username,display_name,avatar_path')
       .eq('id', other)
       .maybeSingle();
-  return ChatInfo(r['id'] as String, (p?['username'] as String?) ?? '?');
+  final m = await _db
+      .from('profiles')
+      .select('username')
+      .eq('id', uid)
+      .maybeSingle();
+  return ChatInfo(
+    r['id'] as String,
+    (p?['username'] as String?) ?? '?',
+    me: (m?['username'] as String?) ?? '',
+    partnerName: p?['display_name'] as String?,
+    partnerAvatar: p?['avatar_path'] as String?,
+  );
 }

@@ -26,10 +26,50 @@ class _ChatState extends State<ChatScreen> {
       .order('id', ascending: false)
       .limit(200);
 
+  late final CallHub _hub;
+
+  @override
+  void initState() {
+    super.initState();
+    _hub = CallHub(widget.chat.id, _uid, onIncoming: _incoming)..start();
+  }
+
   @override
   void dispose() {
+    unawaited(_hub.dispose());
     _c.dispose();
     super.dispose();
+  }
+
+  void _incoming(CallSession s) {
+    if (!mounted) {
+      unawaited(s.end('مكالمة فائتة.', send: 'decline'));
+      return;
+    }
+    Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) =>
+            IncomingCallScreen(session: s, partner: widget.chat.partner)));
+  }
+
+  Future<void> _call(bool video) async {
+    if (_hub.current != null) return;
+    if (!_hub.ready) {
+      _toast(context, 'الاتصال بالسيرفر غير جاهز، جرّب بعد ثواني.');
+      return;
+    }
+    final s = CallSession.outgoing(_hub, video);
+    _hub.current = s;
+    try {
+      await s.startOutgoing();
+    } catch (_) {
+      await s.end(
+          'تعذر بدء المكالمة. اسمح للتطبيق بالمايك والكاميرا من إعدادات الجوال.');
+      if (mounted) _toast(context, s.endReason ?? 'تعذر بدء المكالمة.');
+      return;
+    }
+    if (!mounted) return;
+    Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) => CallScreen(session: s, partner: widget.chat.partner)));
   }
 
   Future<void> _send() async {
@@ -72,10 +112,10 @@ class _ChatState extends State<ChatScreen> {
                           style: const TextStyle(
                               fontSize: 17, fontWeight: FontWeight.w600))),
                   IconButton(
-                      onPressed: () => _soon(context, 'المكالمة الصوتية'),
+                      onPressed: () => _call(false),
                       icon: const Icon(Icons.call)),
                   IconButton(
-                      onPressed: () => _soon(context, 'مكالمة الفيديو'),
+                      onPressed: () => _call(true),
                       icon: const Icon(Icons.videocam)),
                 ]),
               ),

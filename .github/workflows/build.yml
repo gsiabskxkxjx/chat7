@@ -26,10 +26,34 @@ jobs:
       - name: Generate Android folder
         run: flutter create --platforms=android --project-name secure_chat .
 
-      - name: Allow internet access
+      - name: Android permissions and minSdk
         run: |
-          sed -i 's#<application#<uses-permission android:name="android.permission.INTERNET"/>\n    <application#' android/app/src/main/AndroidManifest.xml
-          grep -n "INTERNET" android/app/src/main/AndroidManifest.xml
+          python3 - <<'PY'
+          p = 'android/app/src/main/AndroidManifest.xml'
+          s = open(p, encoding='utf-8').read()
+          perms = '''    <uses-permission android:name="android.permission.INTERNET"/>
+              <uses-permission android:name="android.permission.CAMERA"/>
+              <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+              <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/>
+              <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+              <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE"/>
+              <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30"/>
+              <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30"/>
+              <uses-feature android:name="android.hardware.camera" android:required="false"/>
+              <uses-feature android:name="android.hardware.camera.autofocus" android:required="false"/>
+          '''
+          if '<application' not in s:
+              raise SystemExit('ERROR: no <application> tag in AndroidManifest.xml')
+          s = s.replace('<application', perms + '    <application', 1)
+          open(p, 'w', encoding='utf-8').write(s)
+          PY
+          if [ -f android/app/build.gradle.kts ]; then
+            sed -i 's/minSdk = flutter.minSdkVersion/minSdk = maxOf(flutter.minSdkVersion, 24)/' android/app/build.gradle.kts
+          elif [ -f android/app/build.gradle ]; then
+            sed -i 's/minSdkVersion flutter.minSdkVersion/minSdkVersion Math.max(flutter.minSdkVersion, 24)/' android/app/build.gradle
+          fi
+          grep -n "minSdk" android/app/build.gradle* || true
+          grep -c "uses-permission" android/app/src/main/AndroidManifest.xml
 
       - name: Use fixed signing key
         env:

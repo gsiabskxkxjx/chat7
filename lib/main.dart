@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'dart:io' show File;
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart' show ImagePicker, ImageSource;
 import 'package:flutter_webrtc/flutter_webrtc.dart'
     show
         Helper,
@@ -20,6 +22,7 @@ import 'package:flutter_webrtc/flutter_webrtc.dart'
 import 'package:supabase_flutter/supabase_flutter.dart'
     show
         AuthException,
+        FileOptions,
         PostgresChangeEvent,
         PostgresChangeFilter,
         PostgresChangeFilterType,
@@ -39,6 +42,9 @@ part 'chat_screen.dart';
 part 'call_hub.dart';
 part 'call_session.dart';
 part 'call_screens.dart';
+part 'media.dart';
+part 'chat_pulse.dart';
+part 'profile_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

@@ -1,7 +1,7 @@
 name: secure_chat
 description: Two-person end-to-end encrypted chat app
 publish_to: 'none'
-version: 0.1.0+1
+version: 0.3.0+3
 
 environment:
   sdk: ">=3.0.0 <4.0.0"
@@ -10,6 +10,7 @@ dependencies:
   flutter:
     sdk: flutter
   supabase_flutter: ^2.5.0
+  flutter_webrtc: ^1.2.0
 
 flutter:
   uses-material-design: true

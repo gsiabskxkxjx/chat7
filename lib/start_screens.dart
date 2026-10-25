@@ -30,12 +30,22 @@ class _BootState extends State<Boot> {
       final uid = _db.auth.currentUser!.id;
       final p = await _db
           .from('profiles')
-          .select('username')
+          .select('username,gender')
           .eq('id', uid)
           .maybeSingle();
       if (!mounted) return;
       if (p == null) {
-        _go(const UsernameScreen());
+        // مستخدم جديد: يختار جنسه أول شي، وبعدها اسم المستخدم
+        _go(GenderScreen(
+            onPicked: (g) async => UsernameScreen(gender: g)));
+        return;
+      }
+      if (p['gender'] == null) {
+        // مستخدم قديم ما حدد جنسه بعد
+        _go(GenderScreen(onPicked: (g) async {
+          await _db.from('profiles').update({'gender': g}).eq('id', uid);
+          return const Boot();
+        }));
         return;
       }
       final me = p['username'] as String;
@@ -45,9 +55,21 @@ class _BootState extends State<Boot> {
     } catch (e) {
       if (!mounted) return;
       String msg;
-      if (e is AuthException) {
-        msg = 'فشل تسجيل الدخول المجهول. فعّل Anonymous sign-ins من إعدادات '
-            'Supabase (Authentication ثم Sign In / Providers).\n(${e.message})';
+      final low = (e is AuthException
+              ? e.message
+              : e is PostgrestException
+                  ? e.message
+                  : '')
+          .toLowerCase();
+      if (low.contains('api key') || low.contains('apikey')) {
+        msg = 'مفتاح Supabase غير صحيح أو من مشروع ثاني.\n'
+            'افتح lib/config.dart وتأكد إن الرابط والمفتاح من نفس المشروع '
+            'ومنسوخين كاملين.\n($low)';
+      } else if (e is AuthException) {
+        msg = low.contains('anonymous')
+            ? 'فعّل Anonymous sign-ins من إعدادات Supabase '
+                '(Authentication ثم Sign In / Providers).'
+            : 'فشل تسجيل الدخول: ${e.message}';
       } else if (e is PostgrestException) {
         msg = 'خطأ من السيرفر: ${e.message}\nتأكد إنك شغّلت ملف SQL كامل.';
       } else {
@@ -64,7 +86,16 @@ class _BootState extends State<Boot> {
       body: Backdrop(
         child: Center(
           child: err == null
-              ? const CircularProgressIndicator()
+              ? const Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(appName,
+                        style: TextStyle(
+                            fontSize: 38, fontWeight: FontWeight.w800)),
+                    SizedBox(height: 24),
+                    CircularProgressIndicator(),
+                  ],
+                )
               : Padding(
                   padding: const EdgeInsets.all(24),
                   child: Glass(
@@ -98,7 +129,8 @@ class _BootState extends State<Boot> {
 // ---------- الشاشة 1: اسم المستخدم ----------
 
 class UsernameScreen extends StatefulWidget {
-  const UsernameScreen({super.key});
+  const UsernameScreen({super.key, required this.gender});
+  final String gender; // male | female
 
   @override
   State<UsernameScreen> createState() => _UsernameState();
@@ -131,7 +163,11 @@ class _UsernameState extends State<UsernameScreen> {
     try {
       await _db
           .from('profiles')
-          .insert({'id': _db.auth.currentUser!.id, 'username': n});
+          .insert({
+        'id': _db.auth.currentUser!.id,
+        'username': n,
+        'gender': widget.gender,
+      });
       if (!mounted) return;
       Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (_) => PairScreen(me: n)));
@@ -163,7 +199,12 @@ class _UsernameState extends State<UsernameScreen> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       const Center(child: _Rings()),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 16),
+                      const Text(appName,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                              fontSize: 30, fontWeight: FontWeight.w800)),
+                      const SizedBox(height: 16),
                       const Text('اختر اسم المستخدم',
                           textAlign: TextAlign.center,
                           style: TextStyle(

@@ -10,6 +10,7 @@ class Profile {
     this.avatarPath,
     this.showOnline = true,
     this.readReceipts = true,
+    this.gender,
   });
 
   final String id;
@@ -18,6 +19,7 @@ class Profile {
   final String? avatarPath;
   final bool showOnline;
   final bool readReceipts;
+  final String? gender; // male | female
 
   factory Profile.fromRow(Map<String, dynamic> r) => Profile(
         id: r['id'] as String,
@@ -26,6 +28,7 @@ class Profile {
         avatarPath: r['avatar_path'] as String?,
         showOnline: (r['show_online'] as bool?) ?? true,
         readReceipts: (r['read_receipts'] as bool?) ?? true,
+        gender: r['gender'] as String?,
       );
 
   Profile copyWith({
@@ -34,6 +37,7 @@ class Profile {
     bool clearAvatar = false,
     bool? showOnline,
     bool? readReceipts,
+    String? gender,
   }) =>
       Profile(
         id: id,
@@ -42,6 +46,7 @@ class Profile {
         avatarPath: clearAvatar ? null : (avatarPath ?? this.avatarPath),
         showOnline: showOnline ?? this.showOnline,
         readReceipts: readReceipts ?? this.readReceipts,
+        gender: gender ?? this.gender,
       );
 }
 
@@ -147,7 +152,8 @@ class _ProfileState extends State<ProfileScreen> {
                 username: p.username,
                 avatarPath: p.avatarPath,
                 showOnline: p.showOnline,
-                readReceipts: p.readReceipts)
+                readReceipts: p.readReceipts,
+                gender: p.gender)
             : p.copyWith(displayName: n));
         _toast(context, 'تم حفظ الاسم');
       }
@@ -169,6 +175,19 @@ class _ProfileState extends State<ProfileScreen> {
       if (!mounted) return;
       setState(() => _p = p);
       _toast(context, 'تعذر حفظ الإعداد.');
+    }
+  }
+
+  Future<void> _setGender(String g) async {
+    final p = _p;
+    if (p == null || p.gender == g) return;
+    setState(() => _p = p.copyWith(gender: g));
+    try {
+      await _db.from('profiles').update({'gender': g}).eq('id', _uid);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _p = p);
+      _toast(context, 'تعذر حفظ الجنس.');
     }
   }
 
@@ -252,7 +271,7 @@ class _ProfileState extends State<ProfileScreen> {
                             GestureDetector(
                               onTap: _changePhoto,
                               child: Stack(children: [
-                                _Avatar(path: p.avatarPath, radius: 56),
+                                _Avatar(path: p.avatarPath, radius: 56, gender: p.gender),
                                 PositionedDirectional(
                                   bottom: 0,
                                   end: 0,
@@ -301,6 +320,30 @@ class _ProfileState extends State<ProfileScreen> {
                                   label: 'حفظ الاسم',
                                   onTap: _saveName,
                                   busy: _busy),
+                            ),
+                          ]),
+                        ),
+                        const SizedBox(height: 16),
+                        Glass(
+                          radius: 28,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 14),
+                          child: Row(children: [
+                            const Icon(Icons.wc_outlined),
+                            const SizedBox(width: 12),
+                            const Text('الجنس',
+                                style: TextStyle(fontSize: 16)),
+                            const Spacer(),
+                            ChoiceChip(
+                              label: const Text('ذكر'),
+                              selected: p.gender == 'male',
+                              onSelected: (_) => _setGender('male'),
+                            ),
+                            const SizedBox(width: 8),
+                            ChoiceChip(
+                              label: const Text('أنثى'),
+                              selected: p.gender == 'female',
+                              onSelected: (_) => _setGender('female'),
                             ),
                           ]),
                         ),

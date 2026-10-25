@@ -2,36 +2,6 @@ part of 'main.dart';
 
 // ---------- الشاشة 3: المحادثة ----------
 
-class Msg {
-  const Msg({
-    required this.id,
-    required this.text,
-    required this.mine,
-    required this.kind,
-    required this.read,
-    this.mediaPath,
-    this.at,
-  });
-
-  final int id;
-  final String text;
-  final bool mine;
-  final String kind; // text | image | video | audio
-  final bool read;
-  final String? mediaPath;
-  final DateTime? at;
-
-  factory Msg.fromRow(Map<String, dynamic> r, String uid) => Msg(
-        id: (r['id'] as num).toInt(),
-        text: (r['body'] as String?) ?? '',
-        mine: r['sender_id'] == uid,
-        kind: (r['kind'] as String?) ?? 'text',
-        read: r['read_at'] != null,
-        mediaPath: r['media_path'] as String?,
-        at: DateTime.tryParse((r['created_at'] as String?) ?? '')?.toLocal(),
-      );
-}
-
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key, required this.chat});
   final ChatInfo chat;
@@ -62,12 +32,18 @@ class _ChatState extends State<ChatScreen> {
   bool _markBusy = false;
   int _markedUpTo = -1;
   final _hidden = <int>{};
+  String? _pGender;
+  final _rec = VoiceRecorder();
+  Timer? _recTimer;
+  bool _recording = false;
+  int _recSecs = 0;
 
   @override
   void initState() {
     super.initState();
     _pName = widget.chat.partnerName;
     _pAvatar = widget.chat.partnerAvatar;
+    _pGender = widget.chat.partnerGender;
     _hub = CallHub(widget.chat.id, _uid, onIncoming: _incoming)..start();
     _pulse = ChatPulse(
       widget.chat.id,
@@ -80,6 +56,8 @@ class _ChatState extends State<ChatScreen> {
   @override
   void dispose() {
     _pulse.stop();
+    _recTimer?.cancel();
+    unawaited(_rec.cancel().then((_) => _rec.dispose()));
     unawaited(_hub.dispose());
     _c.dispose();
     super.dispose();
@@ -87,13 +65,15 @@ class _ChatState extends State<ChatScreen> {
 
   // ---------- حالة الطرف الثاني ----------
 
-  void _onPartner(bool online, double? age, String? name, String? avatar) {
+  void _onPartner(
+      bool online, double? age, String? name, String? avatar, String? gender) {
     if (!mounted) return;
     setState(() {
       _online = online && (age ?? 999) < 45;
       _age = age;
       _pName = name;
       _pAvatar = avatar;
+      _pGender = gender;
     });
   }
 
@@ -133,7 +113,7 @@ class _ChatState extends State<ChatScreen> {
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Column(mainAxisSize: MainAxisSize.min, children: [
-            _Avatar(path: _pAvatar, radius: 48),
+            _Avatar(path: _pAvatar, radius: 48, gender: _pGender),
             const SizedBox(height: 12),
             Text(_title(),
                 style:
@@ -235,32 +215,130 @@ class _ChatState extends State<ChatScreen> {
     }
   }
 
+  Future<String?> _attachSheet() => showModalBottomSheet<String>(
+        context: context,
+        builder: (ctx) => SafeArea(
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined),
+              title: const Text('صورة من المعرض'),
+              onTap: () => Navigator.pop(ctx, 'photo_gallery'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_camera_outlined),
+              title: const Text('تصوير صورة'),
+              onTap: () => Navigator.pop(ctx, 'photo_camera'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.video_library_outlined),
+              title: const Text('فيديو من المعرض'),
+              onTap: () => Navigator.pop(ctx, 'video_gallery'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.videocam_outlined),
+              title: const Text('تسجيل فيديو'),
+              onTap: () => Navigator.pop(ctx, 'video_camera'),
+            ),
+          ]),
+        ),
+      );
+
   Future<void> _attach() async {
-    final act = await _photoSheet(context);
+    final act = await _attachSheet();
     if (!mounted || act == null) return;
     setState(() => _uploading = true);
     try {
-      final x = await _picker.pickImage(
-        source: act == 'camera' ? ImageSource.camera : ImageSource.gallery,
-        maxWidth: 1600,
-        maxHeight: 1600,
-        imageQuality: 82,
-      );
-      if (x != null) {
-        final path =
-            '${widget.chat.id}/${DateTime.now().microsecondsSinceEpoch}.${_extFor(x.path)}';
-        await _db.storage.from('chat-media').upload(path, File(x.path),
-            fileOptions: FileOptions(contentType: _mimeFor(x.path)));
-        await _db.from('messages').insert({
-          'chat_id': widget.chat.id,
-          'kind': 'image',
-          'media_path': path,
-          'body': '',
-        });
+      final camera = act.endsWith('camera');
+      final src = camera ? ImageSource.camera : ImageSource.gallery;
+      if (act.startsWith('photo')) {
+        final x = await _picker.pickImage(
+            source: src, maxWidth: 1600, maxHeight: 1600, imageQuality: 82);
+        if (x != null) {
+          await _sendMedia(
+              chatId: widget.chat.id,
+              file: File(x.path),
+              kind: 'image',
+              ext: _extFor(x.path),
+              mime: _mimeFor(x.path));
+        }
+      } else {
+        final x = await _picker.pickVideo(
+            source: src, maxDuration: const Duration(minutes: 2));
+        if (x != null) {
+          final file = File(x.path);
+          if (await file.length() > 50 * 1024 * 1024) {
+            if (mounted) _toast(context, 'الفيديو كبير، الحد الأقصى 50 ميجا.');
+          } else {
+            await _sendMedia(
+                chatId: widget.chat.id,
+                file: file,
+                kind: 'video',
+                ext: _extOf(x.path),
+                mime: _mimeForVideo(x.path));
+          }
+        }
       }
     } catch (_) {
-      if (mounted) _toast(context, 'تعذر إرسال الصورة. جرّب مرة ثانية.');
+      if (mounted) _toast(context, 'تعذر الإرسال. جرّب مرة ثانية.');
     }
+    if (mounted) setState(() => _uploading = false);
+  }
+
+  // ---------- الرسائل الصوتية ----------
+
+  Future<void> _startRec() async {
+    if (_recording || _uploading) return;
+    try {
+      final ok = await _rec.start();
+      if (!ok) {
+        if (mounted) _toast(context, 'اسمح للتطبيق بالمايك من إعدادات الجوال.');
+        return;
+      }
+    } catch (_) {
+      if (mounted) _toast(context, 'تعذر بدء التسجيل.');
+      return;
+    }
+    if (!mounted) {
+      await _rec.cancel();
+      return;
+    }
+    _recSecs = 0;
+    _recTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      setState(() => _recSecs++);
+      if (_recSecs >= 300) unawaited(_finishRec(true));
+    });
+    setState(() => _recording = true);
+  }
+
+  Future<void> _finishRec(bool send) async {
+    if (!_recording) return;
+    _recTimer?.cancel();
+    if (mounted) setState(() => _recording = false);
+    if (!send) {
+      await _rec.cancel();
+      return;
+    }
+    final clip = await _rec.stop();
+    if (clip == null || clip.ms < 800) {
+      if (mounted) _toast(context, 'التسجيل قصير جداً.');
+      return;
+    }
+    if (mounted) setState(() => _uploading = true);
+    try {
+      await _sendMedia(
+          chatId: widget.chat.id,
+          file: clip.file,
+          kind: 'audio',
+          ext: 'm4a',
+          mime: 'audio/mp4',
+          durationMs: clip.ms);
+    } catch (_) {
+      if (mounted) _toast(context, 'تعذر إرسال الرسالة الصوتية.');
+    }
+    try {
+      await clip.file.delete();
+    } catch (_) {}
     if (mounted) setState(() => _uploading = false);
   }
 
@@ -326,7 +404,7 @@ class _ChatState extends State<ChatScreen> {
               child: InkWell(
                 onTap: _partnerInfo,
                 child: Row(children: [
-                  _Avatar(path: _pAvatar, radius: 20),
+                  _Avatar(path: _pAvatar, radius: 20, gender: _pGender),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
@@ -411,35 +489,54 @@ class _ChatState extends State<ChatScreen> {
         child: Glass(
           radius: 28,
           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-          child: Row(children: [
-            IconButton(
-              onPressed: _uploading ? null : _attach,
-              icon: _uploading
-                  ? const SizedBox(
-                      width: 22,
-                      height: 22,
-                      child: CircularProgressIndicator(strokeWidth: 2))
-                  : const Icon(Icons.add_circle_outline),
-            ),
-            Expanded(
-              child: TextField(
-                controller: _c,
-                onChanged: (_) => setState(() {}),
-                onSubmitted: (_) => _send(),
-                inputFormatters: [LengthLimitingTextInputFormatter(4000)],
-                decoration: const InputDecoration(
-                    hintText: 'اكتب رسالة', border: InputBorder.none),
-              ),
-            ),
-            IconButton(
-              onPressed:
-                  typing ? _send : () => _soon(context, 'الرسائل الصوتية'),
-              icon: Icon(typing ? Icons.arrow_upward_rounded : Icons.mic,
-                  color: typing ? _blue : null),
-            ),
-          ]),
+          child: _recording ? _recordingRow() : _typingRow(typing),
         ),
       );
+
+  Widget _recordingRow() => Row(children: [
+        IconButton(
+          onPressed: () => unawaited(_finishRec(false)),
+          icon: const Icon(Icons.delete_outline, color: Color(0xFFFF6B60)),
+        ),
+        const SizedBox(width: 4),
+        const Icon(Icons.fiber_manual_record, color: Color(0xFFFF3B30), size: 14),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text('جاري التسجيل... ${_mmss(_recSecs * 1000)}',
+              style: const TextStyle(fontSize: 15)),
+        ),
+        IconButton(
+          onPressed: () => unawaited(_finishRec(true)),
+          icon: const Icon(Icons.arrow_upward_rounded, color: _blue),
+        ),
+      ]);
+
+  Widget _typingRow(bool typing) => Row(children: [
+        IconButton(
+          onPressed: _uploading ? null : _attach,
+          icon: _uploading
+              ? const SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(strokeWidth: 2))
+              : const Icon(Icons.add_circle_outline),
+        ),
+        Expanded(
+          child: TextField(
+            controller: _c,
+            onChanged: (_) => setState(() {}),
+            onSubmitted: (_) => _send(),
+            inputFormatters: [LengthLimitingTextInputFormatter(4000)],
+            decoration: const InputDecoration(
+                hintText: 'اكتب رسالة', border: InputBorder.none),
+          ),
+        ),
+        IconButton(
+          onPressed: typing ? _send : _startRec,
+          icon: Icon(typing ? Icons.arrow_upward_rounded : Icons.mic,
+              color: typing ? _blue : null),
+        ),
+      ]);
 
   @override
   Widget build(BuildContext context) {
@@ -452,69 +549,6 @@ class _ChatState extends State<ChatScreen> {
             Expanded(child: _messages()),
             _inputBar(typing),
           ]),
-        ),
-      ),
-    );
-  }
-}
-
-class _Bubble extends StatelessWidget {
-  const _Bubble({super.key, required this.m, required this.onLongPress});
-  final Msg m;
-  final VoidCallback onLongPress;
-
-  @override
-  Widget build(BuildContext context) {
-    final isImage = m.kind == 'image' && m.mediaPath != null;
-    return Align(
-      alignment: m.mine
-          ? AlignmentDirectional.centerStart
-          : AlignmentDirectional.centerEnd,
-      child: GestureDetector(
-        onLongPress: onLongPress,
-        child: Container(
-          margin: const EdgeInsets.symmetric(vertical: 4),
-          constraints: BoxConstraints(
-              maxWidth: MediaQuery.of(context).size.width * 0.75),
-          padding: isImage
-              ? const EdgeInsets.all(4)
-              : const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-          decoration: BoxDecoration(
-              color: m.mine ? _blue : const Color(0x33FFFFFF),
-              borderRadius: BorderRadius.circular(20)),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              if (isImage)
-                GestureDetector(
-                  onTap: () => Navigator.of(context).push(MaterialPageRoute(
-                      builder: (_) => ImageViewerScreen(path: m.mediaPath!))),
-                  child: _NetImage(path: m.mediaPath!),
-                )
-              else
-                Text(m.text, style: const TextStyle(fontSize: 16)),
-              const SizedBox(height: 2),
-              Padding(
-                padding: isImage
-                    ? const EdgeInsets.symmetric(horizontal: 8, vertical: 2)
-                    : EdgeInsets.zero,
-                child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  Text(_hhmm(m.at),
-                      style: const TextStyle(
-                          fontSize: 11, color: Color(0xB3FFFFFF))),
-                  if (m.mine) ...[
-                    const SizedBox(width: 4),
-                    Icon(m.read ? Icons.done_all : Icons.done,
-                        size: 15,
-                        color: m.read
-                            ? const Color(0xFF7CFFB2)
-                            : const Color(0xB3FFFFFF)),
-                  ],
-                ]),
-              ),
-            ],
-          ),
         ),
       ),
     );

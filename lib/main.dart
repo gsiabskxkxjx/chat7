@@ -5,6 +5,11 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart' show ImagePicker, ImageSource;
+import 'package:path_provider/path_provider.dart' show getTemporaryDirectory;
+import 'package:record/record.dart'
+    show AudioEncoder, AudioRecorder, RecordConfig;
+import 'package:video_player/video_player.dart'
+    show VideoPlayer, VideoPlayerController, VideoProgressIndicator;
 import 'package:flutter_webrtc/flutter_webrtc.dart'
     show
         Helper,
@@ -45,6 +50,9 @@ part 'call_screens.dart';
 part 'media.dart';
 part 'chat_pulse.dart';
 part 'profile_screen.dart';
+part 'gender_screen.dart';
+part 'voice_video.dart';
+part 'bubbles.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -61,12 +69,15 @@ const _glass = Color(0x2EFFFFFF);
 const _edge = Color(0x59FFFFFF);
 const _blue = Color(0xFF0A84FF);
 
+/// اسم التطبيق (يظهر بالشاشات وعلى الجوال).
+const appName = 'بيناتنا';
+
 class App extends StatelessWidget {
   const App({super.key});
 
   @override
   Widget build(BuildContext context) => MaterialApp(
-        title: 'تواصل',
+        title: appName,
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
           useMaterial3: true,

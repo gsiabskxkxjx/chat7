@@ -188,12 +188,14 @@ class ChatInfo {
     this.me = '',
     this.partnerName,
     this.partnerAvatar,
+    this.partnerGender,
   });
   final String id;
   final String partner; // اسم المستخدم للطرف الثاني
   final String me; // اسم المستخدم حقي
   final String? partnerName; // الاسم الظاهر للطرف الثاني
   final String? partnerAvatar; // مسار صورته
+  final String? partnerGender; // male | female
 }
 
 /// يرجع محادثة المستخدم الحالي (إذا مربوط) أو null.
@@ -205,7 +207,7 @@ Future<ChatInfo?> _loadChat() async {
   final other = r['user_a'] == uid ? r['user_b'] : r['user_a'];
   final p = await _db
       .from('profiles')
-      .select('username,display_name,avatar_path')
+      .select('username,display_name,avatar_path,gender')
       .eq('id', other)
       .maybeSingle();
   final m = await _db
@@ -219,5 +221,6 @@ Future<ChatInfo?> _loadChat() async {
     me: (m?['username'] as String?) ?? '',
     partnerName: p?['display_name'] as String?,
     partnerAvatar: p?['avatar_path'] as String?,
+    partnerGender: p?['gender'] as String?,
   );
 }

@@ -32,6 +32,7 @@ class CallSession {
   RTCVideoRenderer? remote;
   RTCPeerConnection? _pc;
   MediaStream? _stream;
+  MediaStream? _remoteStream;
   final _pending = <RTCIceCandidate>[];
   final _gate = Completer<void>();
   Future<void> _outbox = Future.value();
@@ -78,8 +79,13 @@ class CallSession {
           }));
     };
     pc.onTrack = (e) {
-      if (_done || e.streams.isEmpty) return;
-      remote?.srcObject = e.streams.first;
+      if (_done) return;
+      if (e.streams.isNotEmpty) _remoteStream = e.streams.first;
+      // نربط الفيديو لما يوصل مسار الفيديو نفسه. لو ربطناه مع مسار الصوت
+      // (اللي ممكن يوصل قبل) ما يتعلق بالفيديو وتبقى شاشة الطرف الثاني فاضية.
+      if (e.track.kind == 'video' && _remoteStream != null) {
+        remote?.srcObject = _remoteStream;
+      }
     };
     pc.onConnectionState = _onConnState;
   }
@@ -101,6 +107,7 @@ class CallSession {
       case RTCPeerConnectionState.RTCPeerConnectionStateConnected:
         connectedAt ??= DateTime.now();
         phase.value = CallPhase.connected;
+        if (video && _remoteStream != null) remote?.srcObject = _remoteStream;
         unawaited(Helper.setSpeakerphoneOn(speaker.value));
         break;
       case RTCPeerConnectionState.RTCPeerConnectionStateFailed:

@@ -80,9 +80,10 @@ Future<String?> _photoSheet(BuildContext context, {bool canRemove = false}) =>
 // ---------- صورة شخصية ----------
 
 class _Avatar extends StatefulWidget {
-  const _Avatar({super.key, this.path, this.radius = 22});
+  const _Avatar({super.key, this.path, this.radius = 22, this.gender});
   final String? path;
   final double radius;
+  final String? gender; // male | female (يحدد لون الصورة الافتراضية)
 
   @override
   State<_Avatar> createState() => _AvatarState();
@@ -115,7 +116,7 @@ class _AvatarState extends State<_Avatar> {
           final url = s.data;
           return CircleAvatar(
             radius: widget.radius,
-            backgroundColor: _blue,
+            backgroundColor: _genderColor(widget.gender),
             backgroundImage: url != null ? NetworkImage(url) : null,
             child: url == null
                 ? Icon(Icons.person, color: Colors.white, size: widget.radius)

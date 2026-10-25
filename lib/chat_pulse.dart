@@ -13,7 +13,8 @@ class ChatPulse with WidgetsBindingObserver {
   final String chatId;
 
   /// يُستدعى كل 10 ثواني بحالة الطرف الثاني.
-  final void Function(bool online, double? age, String? name, String? avatar)
+  final void Function(
+      bool online, double? age, String? name, String? avatar, String? gender)
       onPartner;
 
   /// الارتباط انلغى من الطرف الثاني.
@@ -78,6 +79,7 @@ class ChatPulse with WidgetsBindingObserver {
         (m['age_seconds'] as num?)?.toDouble(),
         m['pname'] as String?,
         m['pavatar'] as String?,
+        m['pgender'] as String?,
       );
     } catch (_) {}
   }

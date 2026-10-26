@@ -10,6 +10,9 @@ import 'package:record/record.dart'
     show AudioEncoder, AudioRecorder, RecordConfig;
 import 'package:video_player/video_player.dart'
     show VideoPlayer, VideoPlayerController, VideoProgressIndicator;
+import 'package:firebase_core/firebase_core.dart' show Firebase;
+import 'package:firebase_messaging/firebase_messaging.dart'
+    show AuthorizationStatus, FirebaseMessaging;
 import 'package:flutter_webrtc/flutter_webrtc.dart'
     show
         Helper,
@@ -53,6 +56,7 @@ part 'profile_screen.dart';
 part 'gender_screen.dart';
 part 'voice_video.dart';
 part 'bubbles.dart';
+part 'push.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

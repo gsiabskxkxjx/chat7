@@ -33,6 +33,7 @@ jobs:
           s = open(p, encoding='utf-8').read()
           s = s.replace('android:label="secure_chat"', 'android:label="بيناتنا"')
           perms = '''    <uses-permission android:name="android.permission.INTERNET"/>
+              <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
               <uses-permission android:name="android.permission.CAMERA"/>
               <uses-permission android:name="android.permission.RECORD_AUDIO"/>
               <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/>
@@ -55,6 +56,21 @@ jobs:
           fi
           grep -n "minSdk" android/app/build.gradle* || true
           grep -c "uses-permission" android/app/src/main/AndroidManifest.xml
+
+      - name: Firebase config (Android)
+        run: |
+          mkdir -p android/app/src/main/res/values
+          cat > android/app/src/main/res/values/firebase_config.xml <<'XML'
+          <?xml version="1.0" encoding="utf-8"?>
+          <resources>
+              <string name="google_app_id" translatable="false">1:962048145242:android:c5b4f4b21234011b9d6563</string>
+              <string name="gcm_defaultSenderId" translatable="false">962048145242</string>
+              <string name="google_api_key" translatable="false">AIzaSyD5DhhnBllDG4hc9hyrbtrjGkZyeBokyCo</string>
+              <string name="google_crash_reporting_api_key" translatable="false">AIzaSyD5DhhnBllDG4hc9hyrbtrjGkZyeBokyCo</string>
+              <string name="project_id" translatable="false">benatna</string>
+          </resources>
+          XML
+          grep -c "google_app_id" android/app/src/main/res/values/firebase_config.xml
 
       - name: Use fixed signing key
         env:

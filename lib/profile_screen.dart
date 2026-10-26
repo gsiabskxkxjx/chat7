@@ -368,6 +368,21 @@ class _ProfileState extends State<ProfileScreen> {
                             ),
                           ]),
                         ),
+                        const SizedBox(height: 16),
+                        Glass(
+                          radius: 28,
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: ListTile(
+                            leading: const Icon(Icons.notifications_outlined),
+                            title: const Text('الإشعارات'),
+                            subtitle: Text(Push.status),
+                            trailing: const Icon(Icons.refresh),
+                            onTap: () async {
+                              await Push.start();
+                              if (mounted) setState(() {});
+                            },
+                          ),
+                        ),
                         if (widget.chat != null) ...[
                           const SizedBox(height: 16),
                           Glass(

@@ -41,6 +41,7 @@ class _ChatState extends State<ChatScreen> {
   @override
   void initState() {
     super.initState();
+    unawaited(Push.start());
     _pName = widget.chat.partnerName;
     _pAvatar = widget.chat.partnerAvatar;
     _pGender = widget.chat.partnerGender;

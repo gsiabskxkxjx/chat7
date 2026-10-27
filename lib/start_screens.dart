@@ -24,10 +24,13 @@ class _BootState extends State<Boot> {
   Future<void> _start() async {
     if (!_configured) return;
     try {
-      if (_db.auth.currentSession == null) {
-        await _db.auth.signInAnonymously();
+      final user = _db.auth.currentUser;
+      if (_db.auth.currentSession == null || user == null) {
+        _go(const WelcomeScreen());
+        return;
       }
-      final uid = _db.auth.currentUser!.id;
+      final uid = user.id;
+      final hasEmail = (user.email ?? '').isNotEmpty;
       final p = await _db
           .from('profiles')
           .select('username,gender')
@@ -35,20 +38,36 @@ class _BootState extends State<Boot> {
           .maybeSingle();
       if (!mounted) return;
       if (p == null) {
-        // مستخدم جديد: يختار جنسه أول شي، وبعدها اسم المستخدم
-        _go(GenderScreen(
-            onPicked: (g) async => UsernameScreen(gender: g)));
+        if (!hasEmail) {
+          // حساب مجهول قديم بلا بيانات: نبدأ من جديد
+          await _db.auth.signOut();
+          if (!mounted) return;
+          _go(const WelcomeScreen());
+          return;
+        }
+        // حساب بإيميل لكن الملف الشخصي ما انحفظ: نكمله
+        final name = user.email!.split('@').first;
+        _go(GenderScreen(onPicked: (g) async {
+          await _db
+              .from('profiles')
+              .insert({'id': uid, 'username': name, 'gender': g});
+          return const Boot();
+        }));
+        return;
+      }
+      final me = p['username'] as String;
+      if (!hasEmail) {
+        // حساب قديم بدون كلمة سر: نطلب كلمة سر مرة وحدة
+        _go(UpgradeScreen(username: me));
         return;
       }
       if (p['gender'] == null) {
-        // مستخدم قديم ما حدد جنسه بعد
         _go(GenderScreen(onPicked: (g) async {
           await _db.from('profiles').update({'gender': g}).eq('id', uid);
           return const Boot();
         }));
         return;
       }
-      final me = p['username'] as String;
       final chat = await _loadChat();
       if (!mounted) return;
       _go(chat == null ? PairScreen(me: me) : ChatScreen(chat: chat));
@@ -66,10 +85,7 @@ class _BootState extends State<Boot> {
             'افتح lib/config.dart وتأكد إن الرابط والمفتاح من نفس المشروع '
             'ومنسوخين كاملين.\n($low)';
       } else if (e is AuthException) {
-        msg = low.contains('anonymous')
-            ? 'فعّل Anonymous sign-ins من إعدادات Supabase '
-                '(Authentication ثم Sign In / Providers).'
-            : 'فشل تسجيل الدخول: ${e.message}';
+        msg = 'فشل تسجيل الدخول: ${e.message}';
       } else if (e is PostgrestException) {
         msg = 'خطأ من السيرفر: ${e.message}\nتأكد إنك شغّلت ملف SQL كامل.';
       } else {
@@ -124,112 +140,4 @@ class _BootState extends State<Boot> {
       ),
     );
   }
-}
-
-// ---------- الشاشة 1: اسم المستخدم ----------
-
-class UsernameScreen extends StatefulWidget {
-  const UsernameScreen({super.key, required this.gender});
-  final String gender; // male | female
-
-  @override
-  State<UsernameScreen> createState() => _UsernameState();
-}
-
-class _UsernameState extends State<UsernameScreen> {
-  final _c = TextEditingController();
-  String? _err;
-  bool _busy = false;
-  // من 1 إلى 20: أحرف إنجليزية صغيرة وأرقام و _ ، وبشرط حرف أو رقم واحد على الأقل
-  static final _ok = RegExp(r'^(?=.*[a-z0-9])[a-z0-9_]{1,20}$');
-
-  @override
-  void dispose() {
-    _c.dispose();
-    super.dispose();
-  }
-
-  Future<void> _go() async {
-    if (_busy) return;
-    final n = _c.text.trim().toLowerCase();
-    if (!_ok.hasMatch(n)) {
-      setState(() => _err = 'اكتب من 1 إلى 20 خانة: أحرف إنجليزية وأرقام و _ فقط.');
-      return;
-    }
-    setState(() {
-      _err = null;
-      _busy = true;
-    });
-    try {
-      await _db
-          .from('profiles')
-          .insert({
-        'id': _db.auth.currentUser!.id,
-        'username': n,
-        'gender': widget.gender,
-      });
-      if (!mounted) return;
-      Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => PairScreen(me: n)));
-    } on PostgrestException catch (e) {
-      if (!mounted) return;
-      final taken = e.code == '23505' && e.message.contains('username');
-      setState(() => _err = taken
-          ? 'اسم المستخدم محجوز، اختر اسماً ثانياً.'
-          : 'تعذر حفظ الاسم، حاول مرة ثانية.');
-    } catch (_) {
-      if (mounted) setState(() => _err = 'تعذر الاتصال بالسيرفر.');
-    } finally {
-      if (mounted) setState(() => _busy = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) => Scaffold(
-        body: Backdrop(
-          child: SafeArea(
-            child: Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
-                child: Glass(
-                  radius: 32,
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      const Center(child: _Rings()),
-                      const SizedBox(height: 16),
-                      const Text(appName,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                              fontSize: 30, fontWeight: FontWeight.w800)),
-                      const SizedBox(height: 16),
-                      const Text('اختر اسم المستخدم',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                              fontSize: 26, fontWeight: FontWeight.w700)),
-                      const SizedBox(height: 8),
-                      const Text(
-                          'هذا اسمك الوحيد في التطبيق، وستتحدث من خلاله مع شخص واحد فقط.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(color: Color(0xCCFFFFFF))),
-                      const SizedBox(height: 24),
-                      _Field(
-                        controller: _c,
-                        label: 'اسم المستخدم',
-                        icon: Icons.alternate_email,
-                        error: _err,
-                        onSubmit: _go,
-                      ),
-                      const SizedBox(height: 16),
-                      _Btn(label: 'متابعة', onTap: _go, busy: _busy),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
 }

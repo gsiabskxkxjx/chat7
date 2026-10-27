@@ -40,6 +40,18 @@ class Push {
     _busy = false;
   }
 
+  /// عند تسجيل الخروج: نشيل رمز هالجهاز حتى ما توصله إشعارات الحساب.
+  static Future<void> remove() async {
+    try {
+      final fm = FirebaseMessaging.instance;
+      final t = await fm.getToken();
+      if (t != null) await _db.rpc('remove_push_token', params: {'p_token': t});
+      await fm.deleteToken();
+    } catch (_) {}
+    _ready = false;
+    status = 'ما بدأت بعد';
+  }
+
   static Future<void> _save(String t) async {
     try {
       await _db.rpc('save_push_token', params: {'p_token': t});

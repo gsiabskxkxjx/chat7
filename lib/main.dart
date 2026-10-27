@@ -30,6 +30,7 @@ import 'package:flutter_webrtc/flutter_webrtc.dart'
 import 'package:supabase_flutter/supabase_flutter.dart'
     show
         AuthException,
+        AuthResponse,
         FileOptions,
         PostgresChangeEvent,
         PostgresChangeFilter,
@@ -38,7 +39,8 @@ import 'package:supabase_flutter/supabase_flutter.dart'
         RealtimeChannel,
         RealtimeSubscribeStatus,
         Supabase,
-        SupabaseClient;
+        SupabaseClient,
+        UserAttributes;
 
 import 'config.dart';
 import 'turn_config.dart';
@@ -57,6 +59,7 @@ part 'gender_screen.dart';
 part 'voice_video.dart';
 part 'bubbles.dart';
 part 'push.dart';
+part 'auth_screens.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

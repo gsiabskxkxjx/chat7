@@ -28,6 +28,15 @@ class CallSession {
   String? endReason;
   DateTime? connectedAt;
 
+  /// ملاحظة تظهر للمتصل (مثلاً: الطرف الثاني غير متصل).
+  String? hint;
+
+  /// وصل مسار فيديو من الطرف الثاني؟
+  bool gotRemoteVideo = false;
+
+  /// ظهرت فعلاً صورة الطرف الثاني؟
+  bool get remoteVideoReady => (remote?.videoWidth ?? 0) > 0;
+
   RTCVideoRenderer? local;
   RTCVideoRenderer? remote;
   RTCPeerConnection? _pc;
@@ -40,6 +49,8 @@ class CallSession {
   bool _accepted = false;
   bool _done = false;
   Timer? _timer;
+  Timer? _watch;
+  int _watchTries = 0;
 
   // ---------- تجهيز المايك والكاميرا والاتصال ----------
 
@@ -83,8 +94,10 @@ class CallSession {
       if (e.streams.isNotEmpty) _remoteStream = e.streams.first;
       // نربط الفيديو لما يوصل مسار الفيديو نفسه. لو ربطناه مع مسار الصوت
       // (اللي ممكن يوصل قبل) ما يتعلق بالفيديو وتبقى شاشة الطرف الثاني فاضية.
-      if (e.track.kind == 'video' && _remoteStream != null) {
-        remote?.srcObject = _remoteStream;
+      if (e.track.kind == 'video') {
+        gotRemoteVideo = true;
+        if (_remoteStream != null) remote?.srcObject = _remoteStream;
+        _watchRemote();
       }
     };
     pc.onConnectionState = _onConnState;
@@ -101,13 +114,35 @@ class CallSession {
     });
   }
 
+  /// يراقب أول 15 ثانية: إذا وصل مسار الفيديو بس الصورة ما ظهرت، يعيد الربط.
+  void _watchRemote() {
+    if (!video || _watch != null) return;
+    _watch = Timer.periodic(const Duration(seconds: 1), (t) {
+      _watchTries++;
+      if (_done || _watchTries > 15 || remoteVideoReady) {
+        t.cancel();
+        _watch = null;
+        return;
+      }
+      final rs = _remoteStream;
+      final r = remote;
+      if (rs != null && r != null && _watchTries % 2 == 0) {
+        r.srcObject = null;
+        r.srcObject = rs;
+      }
+    });
+  }
+
   void _onConnState(RTCPeerConnectionState s) {
     if (_done) return;
     switch (s) {
       case RTCPeerConnectionState.RTCPeerConnectionStateConnected:
         connectedAt ??= DateTime.now();
         phase.value = CallPhase.connected;
-        if (video && _remoteStream != null) remote?.srcObject = _remoteStream;
+        if (video && _remoteStream != null) {
+          remote?.srcObject = _remoteStream;
+          _watchRemote();
+        }
         unawaited(Helper.setSpeakerphoneOn(speaker.value));
         break;
       case RTCPeerConnectionState.RTCPeerConnectionStateFailed:
@@ -255,6 +290,7 @@ class CallSession {
     _done = true;
     endReason = reason;
     _timer?.cancel();
+    _watch?.cancel();
     if (!_gate.isCompleted) _gate.complete();
     if (send != null) {
       try {

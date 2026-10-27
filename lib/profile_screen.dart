@@ -178,6 +178,33 @@ class _ProfileState extends State<ProfileScreen> {
     }
   }
 
+  Future<void> _logout() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('تسجيل الخروج؟'),
+        content: const Text('تقدر ترجع تدخل بيوزرك وكلمة السر بأي وقت.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('تراجع')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('خروج')),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    setState(() => _busy = true);
+    await Push.remove();
+    try {
+      await _db.auth.signOut();
+    } catch (_) {}
+    if (!mounted) return;
+    Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const Boot()), (_) => false);
+  }
+
   Future<void> _setGender(String g) async {
     final p = _p;
     if (p == null || p.gender == g) return;
@@ -382,6 +409,26 @@ class _ProfileState extends State<ProfileScreen> {
                               if (mounted) setState(() {});
                             },
                           ),
+                        ),
+                        const SizedBox(height: 16),
+                        Glass(
+                          radius: 28,
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Column(children: [
+                            ListTile(
+                              leading: const Icon(Icons.key_outlined),
+                              title: const Text('تغيير كلمة السر'),
+                              onTap: () => Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                      builder: (_) =>
+                                          const ChangePasswordScreen())),
+                            ),
+                            ListTile(
+                              leading: const Icon(Icons.logout),
+                              title: const Text('تسجيل الخروج'),
+                              onTap: _busy ? null : _logout,
+                            ),
+                          ]),
                         ),
                         if (widget.chat != null) ...[
                           const SizedBox(height: 16),

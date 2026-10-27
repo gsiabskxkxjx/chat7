@@ -114,6 +114,56 @@ jobs:
           echo "MainActivity.kt updated:"
           head -3 "$F"
 
+      - name: App icon (Android)
+        run: |
+          if [ ! -f logo.png ]; then
+            echo "logo.png not found in repo root - keeping the default icon"
+            exit 0
+          fi
+          PYBIN=python3
+          if ! $PYBIN -c "import PIL" 2>/dev/null; then
+            pip install --quiet --break-system-packages pillow 2>/dev/null \
+              || pip3 install --quiet --break-system-packages pillow 2>/dev/null \
+              || { python3 -m venv /tmp/iconvenv && /tmp/iconvenv/bin/pip install --quiet pillow && PYBIN=/tmp/iconvenv/bin/python; } \
+              || true
+          fi
+          "$PYBIN" - <<'PYEOF' || echo "WARNING: icon generation failed - keeping the default icon"
+          import os
+          from PIL import Image, ImageDraw
+
+          im = Image.open('logo.png').convert('RGBA')
+          w, h = im.size
+          s = min(w, h)
+          left, top = (w - s) // 2, (h - s) // 2
+          im = im.crop((left, top, left + s, top + s))
+          res = 'android/app/src/main/res'
+
+          def put(img, path):
+              os.makedirs(os.path.dirname(path), exist_ok=True)
+              img.save(path)
+
+          legacy = {'mdpi': 48, 'hdpi': 72, 'xhdpi': 96, 'xxhdpi': 144, 'xxxhdpi': 192}
+          adaptive = {'mdpi': 108, 'hdpi': 162, 'xhdpi': 216, 'xxhdpi': 324, 'xxxhdpi': 432}
+          for d, n in legacy.items():
+              ic = im.resize((n, n), Image.LANCZOS)
+              mask = Image.new('L', (n, n), 0)
+              ImageDraw.Draw(mask).rounded_rectangle((0, 0, n - 1, n - 1), radius=int(n * 0.22), fill=255)
+              out = Image.new('RGBA', (n, n), (0, 0, 0, 0))
+              out.paste(ic, (0, 0), mask)
+              put(out, f'{res}/mipmap-{d}/ic_launcher.png')
+          for d, n in adaptive.items():
+              put(im.resize((n, n), Image.LANCZOS), f'{res}/mipmap-{d}/ic_launcher_foreground.png')
+
+          r, g, b = im.resize((8, 8), Image.LANCZOS).convert('RGB').getpixel((0, 0))
+          os.makedirs(f'{res}/values', exist_ok=True)
+          with open(f'{res}/values/ic_launcher_background.xml', 'w') as f:
+              f.write('<?xml version="1.0" encoding="utf-8"?>\n<resources>\n    <color name="ic_launcher_background">#%02X%02X%02X</color>\n</resources>\n' % (r, g, b))
+          os.makedirs(f'{res}/mipmap-anydpi-v26', exist_ok=True)
+          with open(f'{res}/mipmap-anydpi-v26/ic_launcher.xml', 'w') as f:
+              f.write('<?xml version="1.0" encoding="utf-8"?>\n<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">\n    <background android:drawable="@color/ic_launcher_background"/>\n    <foreground android:drawable="@mipmap/ic_launcher_foreground"/>\n</adaptive-icon>\n')
+          print('icon generated from logo.png')
+          PYEOF
+
       - name: Use fixed signing key
         env:
           KEYSTORE_PASSPHRASE: ${{ secrets.KEYSTORE_PASSPHRASE }}

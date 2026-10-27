@@ -103,7 +103,7 @@ jobs:
                       calls.vibrationPattern = longArrayOf(0, 700, 400, 700, 400, 700)
                       val attrs = AudioAttributes.Builder()
                           .setUsage(AudioAttributes.USAGE_NOTIFICATION_RINGTONE)
-                          .setContentType(AudioAttributes.CONTENT_TYPE_SONIC)
+                          .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
                           .build()
                       calls.setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE), attrs)
                       nm.createNotificationChannel(calls)

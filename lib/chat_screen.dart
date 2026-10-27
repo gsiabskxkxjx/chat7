@@ -46,11 +46,15 @@ class _ChatState extends State<ChatScreen> {
     _pAvatar = widget.chat.partnerAvatar;
     _pGender = widget.chat.partnerGender;
     _hub = CallHub(widget.chat.id, _uid, onIncoming: _incoming)..start();
+    unawaited(_hub.checkPending());
     _pulse = ChatPulse(
       widget.chat.id,
       onPartner: _onPartner,
       onGone: _onGone,
-      onResume: () => unawaited(_markRead()),
+      onResume: () {
+        unawaited(_markRead());
+        unawaited(_hub.checkPending());
+      },
     )..start();
   }
 
@@ -183,6 +187,8 @@ class _ChatState extends State<ChatScreen> {
       return;
     }
     final s = CallSession.outgoing(_hub, video);
+    s.hint =
+        _online ? null : 'الطرف الثاني غير متصل الآن، أرسلنا له إشعار مكالمة.';
     _hub.current = s;
     try {
       await s.startOutgoing();

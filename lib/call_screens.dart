@@ -1,331 +1,351 @@
 part of 'main.dart';
 
-// ---------- جلسة مكالمة واحدة (WebRTC) ----------
+// ---------- شاشات المكالمة ----------
 
-enum CallPhase { calling, ringing, connecting, connected, ended }
+String _two(int n) => n.toString().padLeft(2, '0');
 
-class CallSession {
-  CallSession._(this.hub, this.callId, this.video, this.outgoing, this._offer);
+class _CallBtn extends StatelessWidget {
+  const _CallBtn({
+    required this.icon,
+    required this.onTap,
+    this.bg = const Color(0x33FFFFFF),
+    this.fg = Colors.white,
+    this.label,
+  });
+  final IconData icon;
+  final VoidCallback? onTap;
+  final Color bg;
+  final Color fg;
+  final String? label;
 
-  factory CallSession.outgoing(CallHub hub, bool video) => CallSession._(
-      hub, '${DateTime.now().microsecondsSinceEpoch}', video, true, null);
-
-  factory CallSession.incoming(
-          CallHub hub, String id, Map<String, dynamic> offer) =>
-      CallSession._(hub, id, offer['video'] == true, false, offer);
-
-  final CallHub hub;
-  final String callId;
-  final bool video;
-  final bool outgoing;
-  final Map<String, dynamic>? _offer;
-
-  late final phase = ValueNotifier<CallPhase>(
-      outgoing ? CallPhase.calling : CallPhase.ringing);
-  final muted = ValueNotifier<bool>(false);
-  final camOff = ValueNotifier<bool>(false);
-  late final speaker = ValueNotifier<bool>(video);
-  String? endReason;
-  DateTime? connectedAt;
-
-  /// ملاحظة تظهر للمتصل (مثلاً: الطرف الثاني غير متصل).
-  String? hint;
-
-  /// وصل مسار فيديو من الطرف الثاني؟
-  bool gotRemoteVideo = false;
-
-  /// ظهرت فعلاً صورة الطرف الثاني؟
-  bool get remoteVideoReady => (remote?.videoWidth ?? 0) > 0;
-
-  RTCVideoRenderer? local;
-  RTCVideoRenderer? remote;
-  RTCPeerConnection? _pc;
-  MediaStream? _stream;
-  MediaStream? _remoteStream;
-  final _pending = <RTCIceCandidate>[];
-  final _gate = Completer<void>();
-  Future<void> _outbox = Future.value();
-  bool _remoteSet = false;
-  bool _accepted = false;
-  bool _done = false;
-  Timer? _timer;
-  Timer? _watch;
-  int _watchTries = 0;
-
-  // ---------- تجهيز المايك والكاميرا والاتصال ----------
-
-  Future<void> _prepare() async {
-    local = RTCVideoRenderer();
-    remote = RTCVideoRenderer();
-    await local!.initialize();
-    await remote!.initialize();
-
-    _stream = await navigator.mediaDevices.getUserMedia({
-      'audio': true,
-      'video': video
-          ? {
-              'mandatory': {
-                'minWidth': '640',
-                'minHeight': '480',
-                'minFrameRate': '24',
-              },
-              'facingMode': 'user',
-              'optional': [],
-            }
-          : false,
-    });
-    local!.srcObject = _stream;
-
-    final pc = await createPeerConnection(_rtcConfig());
-    _pc = pc;
-    for (final t in _stream!.getTracks()) {
-      await pc.addTrack(t, _stream!);
-    }
-    pc.onIceCandidate = (c) {
-      if (c.candidate == null) return;
-      _queue(() => hub.send('candidate', callId, {
-            'candidate': c.candidate,
-            'sdpMid': c.sdpMid,
-            'sdpMLineIndex': c.sdpMLineIndex,
-          }));
-    };
-    pc.onTrack = (e) {
-      if (_done) return;
-      if (e.streams.isNotEmpty) _remoteStream = e.streams.first;
-      // نربط الفيديو لما يوصل مسار الفيديو نفسه. لو ربطناه مع مسار الصوت
-      // (اللي ممكن يوصل قبل) ما يتعلق بالفيديو وتبقى شاشة الطرف الثاني فاضية.
-      if (e.track.kind == 'video') {
-        gotRemoteVideo = true;
-        if (_remoteStream != null) remote?.srcObject = _remoteStream;
-        _watchRemote();
-      }
-    };
-    pc.onConnectionState = _onConnState;
-  }
-
-  /// يرسل الإشارات بالترتيب، وبعد ما ينرسل العرض (offer) أو الجواب (answer).
-  void _queue(Future<void> Function() job) {
-    _outbox = _outbox.then((_) async {
-      await _gate.future;
-      if (_done) return;
-      try {
-        await job();
-      } catch (_) {}
-    });
-  }
-
-  /// يراقب أول 15 ثانية: إذا وصل مسار الفيديو بس الصورة ما ظهرت، يعيد الربط.
-  void _watchRemote() {
-    if (!video || _watch != null) return;
-    _watch = Timer.periodic(const Duration(seconds: 1), (t) {
-      _watchTries++;
-      if (_done || _watchTries > 15 || remoteVideoReady) {
-        t.cancel();
-        _watch = null;
-        return;
-      }
-      final rs = _remoteStream;
-      final r = remote;
-      if (rs != null && r != null && _watchTries % 2 == 0) {
-        r.srcObject = null;
-        r.srcObject = rs;
-      }
-    });
-  }
-
-  void _onConnState(RTCPeerConnectionState s) {
-    if (_done) return;
-    switch (s) {
-      case RTCPeerConnectionState.RTCPeerConnectionStateConnected:
-        connectedAt ??= DateTime.now();
-        phase.value = CallPhase.connected;
-        if (video && _remoteStream != null) {
-          remote?.srcObject = _remoteStream;
-          _watchRemote();
-        }
-        unawaited(Helper.setSpeakerphoneOn(speaker.value));
-        break;
-      case RTCPeerConnectionState.RTCPeerConnectionStateFailed:
-        unawaited(end('انقطع الاتصال.', send: 'hangup'));
-        break;
-      default:
-        break;
-    }
-  }
-
-  Future<void> _flush() async {
-    final pc = _pc;
-    if (pc == null) return;
-    final list = List<RTCIceCandidate>.of(_pending);
-    _pending.clear();
-    for (final c in list) {
-      try {
-        await pc.addCandidate(c);
-      } catch (_) {}
-    }
-  }
-
-  // ---------- المتصل ----------
-
-  Future<void> startOutgoing() async {
-    await _prepare();
-    final pc = _pc!;
-    final offer = await pc.createOffer();
-    await pc.setLocalDescription(offer);
-    await hub.send('offer', callId,
-        {'sdp': offer.sdp, 'type': offer.type, 'video': video});
-    _gate.complete();
-    _timer = Timer(
-      const Duration(seconds: 45),
-      () => unawaited(end('ما رد على المكالمة. تأكد إن التطبيق مفتوح عنده.',
-          send: 'hangup')),
-    );
-  }
-
-  // ---------- المستقبِل ----------
-
-  Future<void> accept() async {
-    if (_accepted || _done) return;
-    _accepted = true;
-    _timer?.cancel();
-    phase.value = CallPhase.connecting;
-    try {
-      await _prepare();
-      final pc = _pc!;
-      final offer = _offer!;
-      await pc.setRemoteDescription(RTCSessionDescription(
-          offer['sdp'] as String?, offer['type'] as String?));
-      _remoteSet = true;
-      await _flush();
-      final answer = await pc.createAnswer();
-      await pc.setLocalDescription(answer);
-      await hub.send(
-          'answer', callId, {'sdp': answer.sdp, 'type': answer.type});
-      _gate.complete();
-    } catch (_) {
-      await end('تعذر بدء المكالمة. اسمح للتطبيق بالمايك والكاميرا من إعدادات الجوال.',
-          send: 'hangup');
-    }
-  }
-
-  // ---------- إشارات واردة ----------
-
-  Future<void> onSignal(String kind, Map<String, dynamic> d) async {
-    if (_done) return;
-    try {
-      switch (kind) {
-        case 'answer':
-          final pc = _pc;
-          if (!outgoing || pc == null || _remoteSet) return;
-          _timer?.cancel();
-          phase.value = CallPhase.connecting;
-          await pc.setRemoteDescription(RTCSessionDescription(
-              d['sdp'] as String?, d['type'] as String?));
-          _remoteSet = true;
-          await _flush();
-          break;
-        case 'candidate':
-          final c = RTCIceCandidate(
-            d['candidate'] as String?,
-            d['sdpMid'] as String?,
-            (d['sdpMLineIndex'] as num?)?.toInt(),
-          );
-          if (_remoteSet && _pc != null) {
-            try {
-              await _pc!.addCandidate(c);
-            } catch (_) {}
-          } else {
-            _pending.add(c);
-          }
-          break;
-        case 'decline':
-          await end(d['reason'] == 'busy'
-              ? 'الطرف الثاني مشغول بمكالمة ثانية.'
-              : 'رفض المكالمة.');
-          break;
-        case 'hangup':
-          await end(
-              outgoing || _accepted ? 'انتهت المكالمة.' : 'مكالمة فائتة.');
-          break;
-      }
-    } catch (_) {}
-  }
-
-  // ---------- أزرار التحكم ----------
-
-  void toggleMute() {
-    muted.value = !muted.value;
-    for (final t in _stream?.getAudioTracks() ?? <MediaStreamTrack>[]) {
-      t.enabled = !muted.value;
-    }
-  }
-
-  void toggleCam() {
-    camOff.value = !camOff.value;
-    for (final t in _stream?.getVideoTracks() ?? <MediaStreamTrack>[]) {
-      t.enabled = !camOff.value;
-    }
-  }
-
-  Future<void> flipCamera() async {
-    final v = _stream?.getVideoTracks() ?? <MediaStreamTrack>[];
-    if (v.isNotEmpty) await Helper.switchCamera(v.first);
-  }
-
-  void toggleSpeaker() {
-    speaker.value = !speaker.value;
-    unawaited(Helper.setSpeakerphoneOn(speaker.value));
-  }
-
-  // ---------- الإنهاء ----------
-
-  /// زر الإنهاء أو الرفض.
-  Future<void> hangup() => end(
-        outgoing || _accepted ? 'انتهت المكالمة.' : 'رفضت المكالمة.',
-        send: !outgoing && !_accepted ? 'decline' : 'hangup',
+  @override
+  Widget build(BuildContext context) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Material(
+            color: bg,
+            shape: const CircleBorder(),
+            child: InkWell(
+              customBorder: const CircleBorder(),
+              onTap: onTap,
+              child: Padding(
+                padding: const EdgeInsets.all(18),
+                child: Icon(icon, color: fg, size: 28),
+              ),
+            ),
+          ),
+          if (label != null) ...[
+            const SizedBox(height: 6),
+            Text(label!,
+                style: const TextStyle(
+                    fontSize: 12, color: Color(0xCCFFFFFF))),
+          ],
+        ],
       );
+}
 
-  Future<void> end(String reason, {String? send}) async {
-    if (_done) return;
-    _done = true;
-    endReason = reason;
-    _timer?.cancel();
-    _watch?.cancel();
-    if (!_gate.isCompleted) _gate.complete();
-    if (send != null) {
-      try {
-        await hub.send(send, callId, const {});
-      } catch (_) {}
-    }
-    try {
-      for (final t in _stream?.getTracks() ?? <MediaStreamTrack>[]) {
-        await t.stop();
-      }
-      await _stream?.dispose();
-    } catch (_) {}
-    try {
-      await _pc?.close();
-    } catch (_) {}
-    _pc = null;
-    _stream = null;
-    if (identical(hub.current, this)) hub.current = null;
-    hub.clearSignals();
-    phase.value = CallPhase.ended;
-    // نحرر شاشات الفيديو بعد ما تنسكر شاشة المكالمة
-    Future.delayed(const Duration(seconds: 2), _release);
+class _Who extends StatelessWidget {
+  const _Who({required this.name, required this.status, this.big = true});
+  final String name;
+  final String status;
+  final bool big;
+
+  @override
+  Widget build(BuildContext context) => Column(children: [
+        CircleAvatar(
+          radius: big ? 56 : 26,
+          backgroundColor: _blue,
+          child: Icon(Icons.person, size: big ? 64 : 30, color: Colors.white),
+        ),
+        const SizedBox(height: 14),
+        Text('@$name',
+            textDirection: TextDirection.ltr,
+            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w700)),
+        const SizedBox(height: 6),
+        Text(status,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 16, color: Color(0xCCFFFFFF))),
+      ]);
+}
+
+// ---------- مكالمة واردة ----------
+
+class IncomingCallScreen extends StatefulWidget {
+  const IncomingCallScreen(
+      {super.key, required this.session, required this.partner});
+  final CallSession session;
+  final String partner;
+
+  @override
+  State<IncomingCallScreen> createState() => _IncomingState();
+}
+
+class _IncomingState extends State<IncomingCallScreen> {
+  Timer? _ring;
+  Timer? _timeout;
+  bool _busy = false;
+  bool _left = false;
+  CallSession get s => widget.session;
+
+  @override
+  void initState() {
+    super.initState();
+    s.phase.addListener(_onPhase);
+    _buzz();
+    _ring = Timer.periodic(const Duration(seconds: 2), (_) => _buzz());
+    _timeout = Timer(const Duration(seconds: 50),
+        () => unawaited(s.end('مكالمة فائتة.')));
+    WidgetsBinding.instance.addPostFrameCallback((_) => _onPhase());
   }
 
-  Future<void> _release() async {
-    final l = local, r = remote;
-    local = null;
-    remote = null;
-    try {
-      l?.srcObject = null;
-      await l?.dispose();
-    } catch (_) {}
-    try {
-      r?.srcObject = null;
-      await r?.dispose();
-    } catch (_) {}
+  @override
+  void dispose() {
+    _ring?.cancel();
+    _timeout?.cancel();
+    s.phase.removeListener(_onPhase);
+    super.dispose();
+  }
+
+  void _buzz() {
+    unawaited(SystemSound.play(SystemSoundType.alert));
+    unawaited(HapticFeedback.heavyImpact());
+  }
+
+  void _onPhase() {
+    if (_left || !mounted || s.phase.value != CallPhase.ended) return;
+    _left = true;
+    final msg = s.endReason;
+    final messenger = ScaffoldMessenger.of(context);
+    Navigator.of(context).pop();
+    if (msg != null) {
+      messenger.showSnackBar(
+          SnackBar(content: Text(msg), behavior: SnackBarBehavior.floating));
+    }
+  }
+
+  Future<void> _accept() async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    _ring?.cancel();
+    _timeout?.cancel();
+    await s.accept();
+    if (!mounted || s.phase.value == CallPhase.ended) return;
+    s.phase.removeListener(_onPhase);
+    Navigator.of(context).pushReplacement(MaterialPageRoute(
+        builder: (_) => CallScreen(session: s, partner: widget.partner)));
+  }
+
+  @override
+  Widget build(BuildContext context) => PopScope(
+        canPop: false,
+        child: Scaffold(
+          body: Backdrop(
+            child: SafeArea(
+              child: Column(children: [
+                const Spacer(flex: 2),
+                _Who(
+                  name: widget.partner,
+                  status: s.video ? 'مكالمة فيديو واردة' : 'مكالمة صوتية واردة',
+                ),
+                const Spacer(flex: 3),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 48),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _CallBtn(
+                        icon: Icons.call_end,
+                        bg: const Color(0xFFE5392E),
+                        label: 'رفض',
+                        onTap: _busy ? null : () => unawaited(s.hangup()),
+                      ),
+                      _CallBtn(
+                        icon: s.video ? Icons.videocam : Icons.call,
+                        bg: const Color(0xFF2FB344),
+                        label: _busy ? 'لحظة...' : 'رد',
+                        onTap: _busy ? null : _accept,
+                      ),
+                    ],
+                  ),
+                ),
+              ]),
+            ),
+          ),
+        ),
+      );
+}
+
+// ---------- أثناء المكالمة ----------
+
+class CallScreen extends StatefulWidget {
+  const CallScreen({super.key, required this.session, required this.partner});
+  final CallSession session;
+  final String partner;
+
+  @override
+  State<CallScreen> createState() => _CallState();
+}
+
+class _CallState extends State<CallScreen> {
+  Timer? _tick;
+  bool _closing = false;
+  CallSession get s => widget.session;
+
+  @override
+  void initState() {
+    super.initState();
+    s.phase.addListener(_onPhase);
+    _tick = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) setState(() {});
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _onPhase());
+  }
+
+  @override
+  void dispose() {
+    _tick?.cancel();
+    s.phase.removeListener(_onPhase);
+    super.dispose();
+  }
+
+  void _onPhase() {
+    if (!mounted) return;
+    setState(() {});
+    if (s.phase.value != CallPhase.ended || _closing) return;
+    _closing = true;
+    final msg = s.endReason;
+    final messenger = ScaffoldMessenger.of(context);
+    Future.delayed(const Duration(milliseconds: 900), () {
+      if (!mounted) return;
+      Navigator.of(context).pop();
+      if (msg != null) {
+        messenger.showSnackBar(
+            SnackBar(content: Text(msg), behavior: SnackBarBehavior.floating));
+      }
+    });
+  }
+
+  String _status() {
+    switch (s.phase.value) {
+      case CallPhase.calling:
+        final h = s.hint;
+        return h == null ? 'يرن...' : 'يرن...\n$h';
+      case CallPhase.ringing:
+        return '';
+      case CallPhase.connecting:
+        return 'جاري الاتصال...';
+      case CallPhase.connected:
+        final d = DateTime.now().difference(s.connectedAt ?? DateTime.now());
+        final t = '${_two(d.inMinutes)}:${_two(d.inSeconds % 60)}';
+        if (s.video && !s.remoteVideoReady) {
+          return d.inSeconds < 4
+              ? t
+              : (s.gotRemoteVideo
+                  ? '$t\nبانتظار ظهور صورة الطرف الثاني...'
+                  : '$t\nالطرف الثاني ما يرسل فيديو (تأكد من إذن الكاميرا عنده)');
+        }
+        return t;
+      case CallPhase.ended:
+        return s.endReason ?? 'انتهت المكالمة.';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ended = s.phase.value == CallPhase.ended;
+    final r = s.remote;
+    final l = s.local;
+    return PopScope(
+      canPop: false,
+      child: Scaffold(
+        body: Backdrop(
+          child: Stack(fit: StackFit.expand, children: [
+            if (s.video && r != null && !ended)
+              Positioned.fill(
+                child: RTCVideoView(r,
+                    objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover),
+              ),
+            SafeArea(
+              child: Column(children: [
+                const SizedBox(height: 32),
+                _Who(
+                  name: widget.partner,
+                  status: _status(),
+                  big: !(s.video && r != null && !ended),
+                ),
+                const Spacer(),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+                  child: Wrap(
+                    alignment: WrapAlignment.center,
+                    spacing: 20,
+                    runSpacing: 16,
+                    children: [
+                      ValueListenableBuilder<bool>(
+                        valueListenable: s.muted,
+                        builder: (_, m, __) => _CallBtn(
+                          icon: m ? Icons.mic_off : Icons.mic,
+                          label: 'كتم',
+                          bg: m ? Colors.white : const Color(0x33FFFFFF),
+                          fg: m ? Colors.black : Colors.white,
+                          onTap: s.toggleMute,
+                        ),
+                      ),
+                      ValueListenableBuilder<bool>(
+                        valueListenable: s.speaker,
+                        builder: (_, on, __) => _CallBtn(
+                          icon: on ? Icons.volume_up : Icons.volume_down,
+                          label: 'السماعة',
+                          bg: on ? Colors.white : const Color(0x33FFFFFF),
+                          fg: on ? Colors.black : Colors.white,
+                          onTap: s.toggleSpeaker,
+                        ),
+                      ),
+                      if (s.video)
+                        ValueListenableBuilder<bool>(
+                          valueListenable: s.camOff,
+                          builder: (_, off, __) => _CallBtn(
+                            icon: off ? Icons.videocam_off : Icons.videocam,
+                            label: 'الكاميرا',
+                            bg: off ? Colors.white : const Color(0x33FFFFFF),
+                            fg: off ? Colors.black : Colors.white,
+                            onTap: s.toggleCam,
+                          ),
+                        ),
+                      if (s.video)
+                        _CallBtn(
+                          icon: Icons.cameraswitch,
+                          label: 'قلب',
+                          onTap: () => unawaited(s.flipCamera()),
+                        ),
+                      _CallBtn(
+                        icon: Icons.call_end,
+                        bg: const Color(0xFFE5392E),
+                        label: 'إنهاء',
+                        onTap: () => unawaited(s.hangup()),
+                      ),
+                    ],
+                  ),
+                ),
+              ]),
+            ),
+            if (s.video && l != null && !ended)
+              Positioned(
+                top: 64,
+                left: 16,
+                width: 104,
+                height: 144,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: RTCVideoView(l,
+                      mirror: true,
+                      objectFit:
+                          RTCVideoViewObjectFit.RTCVideoViewObjectFitCover),
+                ),
+              ),
+          ]),
+        ),
+      ),
+    );
   }
 }

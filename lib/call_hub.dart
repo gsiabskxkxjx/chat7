@@ -35,6 +35,7 @@ class CallHub {
   RealtimeChannel? _ch;
   CallSession? current;
   bool ready = false;
+  String? _lastRestored;
 
   void start() {
     _ch = _db
@@ -62,11 +63,16 @@ class CallHub {
     final data = Map<String, dynamic>.from((r['data'] as Map?) ?? const {});
 
     if (kind == 'offer') {
-      if (current != null) {
-        // مشغول بمكالمة ثانية
-        unawaited(send('decline', id, {'reason': 'busy'}));
+      final busy = current;
+      if (busy != null) {
+        // نفس المكالمة وصلت مرتين (مثلاً من الإشعار): نتجاهلها.
+        // مكالمة ثانية وأنا مشغول: نرفضها.
+        if (busy.callId != id) {
+          unawaited(send('decline', id, {'reason': 'busy'}));
+        }
         return;
       }
+      _lastRestored = id;
       final s = CallSession.incoming(this, id, data);
       current = s;
       onIncoming(s);
@@ -76,6 +82,37 @@ class CallHub {
     if (cur != null && cur.callId == id) {
       unawaited(cur.onSignal(kind, data));
     }
+  }
+
+  /// مكالمة وصلت والتطبيق مسكّر (مثلاً من الإشعار): نجيبها من السيرفر.
+  /// السيرفر يرجع بس المكالمة اللي عمرها أقل من 40 ثانية وما انتهت.
+  Future<void> checkPending() async {
+    if (current != null) return;
+    try {
+      final r = await _db.rpc('pending_call', params: {'p_chat': chatId});
+      final rows = (r as List)
+          .map((e) => Map<String, dynamic>.from(e as Map))
+          .toList();
+      if (rows.isEmpty || current != null) return;
+      Map<String, dynamic>? offer;
+      for (final x in rows) {
+        if (x['kind'] == 'offer') offer = x;
+      }
+      if (offer == null) return;
+      final id = offer['call_id'] as String;
+      if (id == _lastRestored) return;
+      _lastRestored = id;
+      final s = CallSession.incoming(this, id,
+          Map<String, dynamic>.from((offer['data'] as Map?) ?? const {}));
+      current = s;
+      for (final x in rows) {
+        if (x['kind'] == 'candidate') {
+          unawaited(s.onSignal('candidate',
+              Map<String, dynamic>.from((x['data'] as Map?) ?? const {})));
+        }
+      }
+      onIncoming(s);
+    } catch (_) {}
   }
 
   Future<void> send(String kind, String callId, Map<String, dynamic> data) =>

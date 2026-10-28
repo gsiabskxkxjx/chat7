@@ -185,6 +185,7 @@ extension _ProfileActions on _ProfileState {
         }
       } catch (_) {}
       await Push.remove();
+      if (widget.chat != null) await _wipeChatBg(widget.chat!.id);
       await _db.rpc('delete_my_account');
       try {
         await _db.auth.signOut();
@@ -245,6 +246,7 @@ extension _ProfileActions on _ProfileState {
               .remove(files.map((f) => '${chat.id}/${f.name}').toList());
         }
       } catch (_) {}
+      await _wipeChatBg(widget.chat!.id);
       await _db.rpc('unlink_chat');
       if (!mounted) return;
       Navigator.of(context).pushAndRemoveUntil(
@@ -271,4 +273,16 @@ Profile _withToggle(Profile p, String column, bool v) {
     default:
       return p.copyWith(readReceipts: v);
   }
+}
+
+/// يحذف صور خلفية المحادثة من التخزين (إذا فشل ما يوقف الحذف)
+Future<void> _wipeChatBg(String chatId) async {
+  try {
+    final files = await _db.storage.from('chat-bg').list(path: chatId);
+    if (files.isNotEmpty) {
+      await _db.storage
+          .from('chat-bg')
+          .remove(files.map((f) => '$chatId/${f.name}').toList());
+    }
+  } catch (_) {}
 }

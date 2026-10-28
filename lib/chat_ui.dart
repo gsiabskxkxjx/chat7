@@ -84,17 +84,23 @@ extension _ChatUi on _ChatState {
               ),
             );
           }
+          final entries = _withDayHeaders(msgs);
           return ListView.builder(
             controller: _scroll,
             reverse: true,
             padding: const EdgeInsets.all(16),
-            itemCount: msgs.length,
-            itemBuilder: (_, i) => _Bubble(
-              key: ValueKey(msgs[i].id),
-              m: msgs[i],
-              onLongPress: () => _msgMenu(msgs[i]),
-              t: _t,
-            ),
+            itemCount: entries.length,
+            itemBuilder: (_, i) {
+              final e = entries[i];
+              if (e is DateTime) return _DayPill(day: e);
+              final m = e as Msg;
+              return _Bubble(
+                key: ValueKey(m.id),
+                m: m,
+                onLongPress: () => _msgMenu(m),
+                t: _t,
+              );
+            },
           );
         },
       );
@@ -224,4 +230,57 @@ extension _ChatLook on _ChatState {
       ColoredBox(color: t.top.withValues(alpha: 0.45)),
     ]);
   }
+}
+
+// ---------- فواصل الأيام بين الرسائل ----------
+
+const _months = [
+  'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
+  'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر',
+];
+
+bool _sameDay(DateTime a, DateTime b) =>
+    a.year == b.year && a.month == b.month && a.day == b.day;
+
+/// يضيف فاصل يوم فوق أول رسالة في كل يوم.
+/// القائمة معكوسة (الأحدث أول)، فالفاصل يتحط بعد الرسالة بالقائمة = فوقها بالشاشة.
+List<Object> _withDayHeaders(List<Msg> msgs) {
+  final out = <Object>[];
+  for (var i = 0; i < msgs.length; i++) {
+    out.add(msgs[i]);
+    final d = msgs[i].at;
+    if (d == null) continue;
+    final next = i + 1 < msgs.length ? msgs[i + 1].at : null;
+    if (next == null || !_sameDay(d, next)) out.add(d);
+  }
+  return out;
+}
+
+String _dayLabel(DateTime d) {
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
+  final day = DateTime(d.year, d.month, d.day);
+  final diff = today.difference(day).inDays;
+  if (diff == 0) return 'اليوم';
+  if (diff == 1) return 'أمس';
+  return '${d.day} ${_months[d.month - 1]} ${d.year}';
+}
+
+class _DayPill extends StatelessWidget {
+  const _DayPill({required this.day});
+  final DateTime day;
+
+  @override
+  Widget build(BuildContext context) => Center(
+        child: Container(
+          margin: const EdgeInsets.symmetric(vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          decoration: BoxDecoration(
+            color: const Color(0x66000000),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(_dayLabel(day),
+              style: const TextStyle(fontSize: 12, color: Colors.white)),
+        ),
+      );
 }

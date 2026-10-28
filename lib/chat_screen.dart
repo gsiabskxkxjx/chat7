@@ -72,6 +72,8 @@ class _ChatState extends State<ChatScreen> {
   Timer? _typingTimer;
   DateTime? _linkedAt; // تاريخ ارتباطكم (لعداد الأيام)
   Msg? _replyTo; // الرسالة اللي تبي ترد عليها
+  bool _offline = false; // ما نقدر نوصل للسيرفر (يظهر شريط)
+  String? _myGender; // جنسي (نقراه من السيرفر، عشان يتحدث إذا غيّرته)
   // التفاعلات: رقم الرسالة -> (رقم المستخدم -> الإيموجي)
   Map<int, Map<String, String>> _reactions = {};
   StreamSubscription<List<Map<String, dynamic>>>? _reactSub;
@@ -82,6 +84,8 @@ class _ChatState extends State<ChatScreen> {
     unawaited(Push.start());
     _scroll.addListener(_onScroll);
     _watchLook();
+    _myGender = widget.chat.myGender;
+    unawaited(_reloadMyGender());
     _reactSub = _db
         .from('reactions')
         .stream(primaryKey: ['message_id', 'user_id'])
@@ -105,7 +109,7 @@ class _ChatState extends State<ChatScreen> {
       final n = statusLines(
         online: _online,
         age: _age,
-        readerGender: widget.chat.myGender,
+        readerGender: _myGender,
         partnerGender: _pGender,
       ).length;
       if (n > 1) setState(() => _statusIdx++);
@@ -119,6 +123,7 @@ class _ChatState extends State<ChatScreen> {
       widget.chat.id,
       onPartner: _onPartner,
       onGone: _onGone,
+      onNet: _onNet,
       onResume: () {
         unawaited(_markRead());
         unawaited(_hub.checkPending());
@@ -201,6 +206,25 @@ class _ChatState extends State<ChatScreen> {
     } catch (_) {}
   }
 
+  /// يقرأ جنسي من السيرفر (يستدعى عند فتح المحادثة وعند الرجوع من الإعدادات)
+  Future<void> _reloadMyGender() async {
+    try {
+      final r = await _db
+          .from('profiles')
+          .select('gender')
+          .eq('id', _uid)
+          .maybeSingle();
+      if (mounted && r != null) {
+        setState(() => _myGender = r['gender'] as String?);
+      }
+    } catch (_) {}
+  }
+
+  void _onNet(bool ok) {
+    if (!mounted || _offline == !ok) return;
+    setState(() => _offline = !ok);
+  }
+
   String _status() {
     if (DateTime.now().difference(_typingSeen) < const Duration(seconds: 4)) {
       return 'يكتب الآن...';
@@ -208,7 +232,7 @@ class _ChatState extends State<ChatScreen> {
     final lines = statusLines(
       online: _online,
       age: _age,
-      readerGender: widget.chat.myGender,
+      readerGender: _myGender,
       partnerGender: _pGender,
     );
     return lines[_statusIdx % lines.length];
@@ -238,6 +262,7 @@ class _ChatState extends State<ChatScreen> {
             child: DefaultTextStyle.merge(
               style: TextStyle(color: _t.text),
               child: Column(children: [
+                if (_offline) _offlineBar(),
                 _header(),
                 Expanded(child: _messages()),
                 _inputBar(typing),

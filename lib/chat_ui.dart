@@ -29,7 +29,7 @@ extension _ChatUi on _ChatState {
                                   fontSize: 12,
                                   color: _online
                                       ? const Color(0xFF5BE584)
-                                      : const Color(0x99FFFFFF))),
+                                      : _t.text.withValues(alpha: 0.6))),
                       ],
                     ),
                   ),
@@ -93,6 +93,7 @@ extension _ChatUi on _ChatState {
               key: ValueKey(msgs[i].id),
               m: msgs[i],
               onLongPress: () => _msgMenu(msgs[i]),
+              t: _t,
             ),
           );
         },
@@ -138,6 +139,7 @@ extension _ChatUi on _ChatState {
         Expanded(
           child: TextField(
             controller: _c,
+            style: TextStyle(color: _t.text),
             onChanged: (_) => setState(() {}),
             onSubmitted: (_) => _send(),
             inputFormatters: [LengthLimitingTextInputFormatter(4000)],
@@ -148,7 +150,75 @@ extension _ChatUi on _ChatState {
         IconButton(
           onPressed: typing ? _send : _startRec,
           icon: Icon(typing ? Icons.arrow_upward_rounded : Icons.mic,
-              color: typing ? _blue : null),
+              color: typing ? _t.accent : null),
         ),
       ]);
+}
+
+// ---------- مظهر المحادثة: الثيم والخلفية ----------
+
+extension _ChatLook on _ChatState {
+  void _watchLook() {
+    _lookSub = _db
+        .from('chats')
+        .stream(primaryKey: ['id'])
+        .eq('id', widget.chat.id)
+        .listen((rows) {
+      if (rows.isNotEmpty) _applyLook(rows.first);
+    });
+  }
+
+  void _applyLook(Map<String, dynamic> r) {
+    if (!mounted) return;
+    final path = r['bg_path'] as String?;
+    final pathChanged = path != _bgPath;
+    setState(() {
+      _t = chatThemeById((r['theme_id'] as num?)?.toInt() ?? 1);
+      _bgKind = (r['bg_kind'] as String?) ?? 'gradient';
+      _bgStrength = (r['bg_strength'] as num?)?.toInt() ?? 10;
+      _bgPath = path;
+      if (pathChanged) _bgUrl = null;
+    });
+    if (pathChanged && path != null) unawaited(_loadBgUrl(path));
+  }
+
+  Future<void> _loadBgUrl(String path) async {
+    final url = await MediaUrls.get('chat-bg', path);
+    if (!mounted || _bgPath != path) return;
+    setState(() => _bgUrl = url);
+  }
+
+  Widget _chatBackground() {
+    final t = _t;
+    final gradient = DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [t.top, t.bottom],
+        ),
+      ),
+    );
+    final url = _bgUrl;
+    if (_bgKind == 'gradient' || url == null) return gradient;
+    final img = Image.network(
+      url,
+      fit: BoxFit.cover,
+      width: double.infinity,
+      height: double.infinity,
+      errorBuilder: (_, __, ___) => gradient,
+    );
+    if (_bgKind == 'plain') return img;
+    final s = _bgStrength.toDouble();
+    final blurred = ImageFiltered(
+      imageFilter: ImageFilter.blur(sigmaX: s, sigmaY: s),
+      child: img,
+    );
+    if (_bgKind == 'blur') return blurred;
+    // زجاجية: ضبابية + طبقة شفافة بلون الثيم
+    return Stack(fit: StackFit.expand, children: [
+      blurred,
+      ColoredBox(color: t.top.withValues(alpha: 0.45)),
+    ]);
+  }
 }

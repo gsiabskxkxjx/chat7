@@ -289,6 +289,7 @@ class CallSession {
     if (_done) return;
     _done = true;
     endReason = reason;
+    if (outgoing) unawaited(_logCall()); // المتصل يسجّل المكالمة بالمحادثة
     _timer?.cancel();
     _watch?.cancel();
     if (!_gate.isCompleted) _gate.complete();
@@ -313,6 +314,22 @@ class CallSession {
     phase.value = CallPhase.ended;
     // نحرر شاشات الفيديو بعد ما تنسكر شاشة المكالمة
     Future.delayed(const Duration(seconds: 2), _release);
+  }
+
+  /// يكتب سطر بالمحادثة: مكالمة صوتية/فيديو مع المدة، أو فائتة إذا ما انردت
+  Future<void> _logCall() async {
+    try {
+      final kind = video ? 'فيديو' : 'صوتية';
+      final c = connectedAt;
+      final text = c == null
+          ? 'مكالمة $kind فائتة'
+          : 'مكالمة $kind ${_two(DateTime.now().difference(c).inMinutes)}:${_two(DateTime.now().difference(c).inSeconds % 60)}';
+      await _db.from('messages').insert({
+        'chat_id': hub.chatId,
+        'kind': 'call',
+        'body': text,
+      });
+    } catch (_) {}
   }
 
   Future<void> _release() async {

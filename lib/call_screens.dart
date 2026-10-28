@@ -1,351 +1,637 @@
 part of 'main.dart';
 
-// ---------- شاشات المكالمة ----------
+// ---------- الشاشة 3: المحادثة ----------
 
-String _two(int n) => n.toString().padLeft(2, '0');
-
-class _CallBtn extends StatelessWidget {
-  const _CallBtn({
-    required this.icon,
-    required this.onTap,
-    this.bg = const Color(0x33FFFFFF),
-    this.fg = Colors.white,
-    this.label,
-  });
-  final IconData icon;
-  final VoidCallback? onTap;
-  final Color bg;
-  final Color fg;
-  final String? label;
+class ChatScreen extends StatefulWidget {
+  const ChatScreen({super.key, required this.chat});
+  final ChatInfo chat;
 
   @override
-  Widget build(BuildContext context) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Material(
-            color: bg,
-            shape: const CircleBorder(),
-            child: InkWell(
-              customBorder: const CircleBorder(),
-              onTap: onTap,
-              child: Padding(
-                padding: const EdgeInsets.all(18),
-                child: Icon(icon, color: fg, size: 28),
-              ),
-            ),
-          ),
-          if (label != null) ...[
-            const SizedBox(height: 6),
-            Text(label!,
-                style: const TextStyle(
-                    fontSize: 12, color: Color(0xCCFFFFFF))),
-          ],
-        ],
-      );
+  State<ChatScreen> createState() => _ChatState();
 }
 
-class _Who extends StatelessWidget {
-  const _Who({required this.name, required this.status, this.big = true});
-  final String name;
-  final String status;
-  final bool big;
+class _ChatState extends State<ChatScreen> {
+  final _c = TextEditingController();
+  final _picker = ImagePicker();
+  late final String _uid = _db.auth.currentUser!.id;
+  int _limit = 100;
+  bool _hasMore = false;
+  bool _loadingMore = false;
+  final _scroll = ScrollController();
+  late Stream<List<Map<String, dynamic>>> _stream = _makeStream();
 
-  @override
-  Widget build(BuildContext context) => Column(children: [
-        CircleAvatar(
-          radius: big ? 56 : 26,
-          backgroundColor: _blue,
-          child: Icon(Icons.person, size: big ? 64 : 30, color: Colors.white),
-        ),
-        const SizedBox(height: 14),
-        Text('@$name',
-            textDirection: TextDirection.ltr,
-            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w700)),
-        const SizedBox(height: 6),
-        Text(status,
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 16, color: Color(0xCCFFFFFF))),
-      ]);
-}
+  Stream<List<Map<String, dynamic>>> _makeStream() => _db
+      .from('messages')
+      .stream(primaryKey: ['id'])
+      .eq('chat_id', widget.chat.id)
+      .order('id', ascending: false)
+      .limit(_limit);
 
-// ---------- مكالمة واردة ----------
-
-class IncomingCallScreen extends StatefulWidget {
-  const IncomingCallScreen(
-      {super.key, required this.session, required this.partner});
-  final CallSession session;
-  final String partner;
-
-  @override
-  State<IncomingCallScreen> createState() => _IncomingState();
-}
-
-class _IncomingState extends State<IncomingCallScreen> {
-  Timer? _ring;
-  Timer? _timeout;
-  bool _busy = false;
-  bool _left = false;
-  CallSession get s => widget.session;
-
-  @override
-  void initState() {
-    super.initState();
-    s.phase.addListener(_onPhase);
-    _buzz();
-    _ring = Timer.periodic(const Duration(seconds: 2), (_) => _buzz());
-    _timeout = Timer(const Duration(seconds: 50),
-        () => unawaited(s.end('مكالمة فائتة.')));
-    WidgetsBinding.instance.addPostFrameCallback((_) => _onPhase());
-  }
-
-  @override
-  void dispose() {
-    _ring?.cancel();
-    _timeout?.cancel();
-    s.phase.removeListener(_onPhase);
-    super.dispose();
-  }
-
-  void _buzz() {
-    unawaited(SystemSound.play(SystemSoundType.alert));
-    unawaited(HapticFeedback.heavyImpact());
-  }
-
-  void _onPhase() {
-    if (_left || !mounted || s.phase.value != CallPhase.ended) return;
-    _left = true;
-    final msg = s.endReason;
-    final messenger = ScaffoldMessenger.of(context);
-    Navigator.of(context).pop();
-    if (msg != null) {
-      messenger.showSnackBar(
-          SnackBar(content: Text(msg), behavior: SnackBarBehavior.floating));
+  /// لما توصل لآخر الرسائل المعروضة، نحمّل 100 رسالة أقدم.
+  void _onScroll() {
+    if (!_scroll.hasClients || !_hasMore || _loadingMore) return;
+    if (_scroll.position.pixels >= _scroll.position.maxScrollExtent - 300) {
+      _loadingMore = true;
+      setState(() {
+        _limit += 100;
+        _stream = _makeStream();
+      });
+      Future.delayed(const Duration(seconds: 2), () => _loadingMore = false);
     }
   }
 
-  Future<void> _accept() async {
-    if (_busy) return;
-    setState(() => _busy = true);
-    _ring?.cancel();
-    _timeout?.cancel();
-    await s.accept();
-    if (!mounted || s.phase.value == CallPhase.ended) return;
-    s.phase.removeListener(_onPhase);
-    Navigator.of(context).pushReplacement(MaterialPageRoute(
-        builder: (_) => CallScreen(session: s, partner: widget.partner)));
-  }
+  late final CallHub _hub;
+  late final ChatPulse _pulse;
 
-  @override
-  Widget build(BuildContext context) => PopScope(
-        canPop: false,
-        child: Scaffold(
-          body: Backdrop(
-            child: SafeArea(
-              child: Column(children: [
-                const Spacer(flex: 2),
-                _Who(
-                  name: widget.partner,
-                  status: s.video ? 'مكالمة فيديو واردة' : 'مكالمة صوتية واردة',
-                ),
-                const Spacer(flex: 3),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 48),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      _CallBtn(
-                        icon: Icons.call_end,
-                        bg: const Color(0xFFE5392E),
-                        label: 'رفض',
-                        onTap: _busy ? null : () => unawaited(s.hangup()),
-                      ),
-                      _CallBtn(
-                        icon: s.video ? Icons.videocam : Icons.call,
-                        bg: const Color(0xFF2FB344),
-                        label: _busy ? 'لحظة...' : 'رد',
-                        onTap: _busy ? null : _accept,
-                      ),
-                    ],
-                  ),
-                ),
-              ]),
-            ),
-          ),
-        ),
-      );
-}
-
-// ---------- أثناء المكالمة ----------
-
-class CallScreen extends StatefulWidget {
-  const CallScreen({super.key, required this.session, required this.partner});
-  final CallSession session;
-  final String partner;
-
-  @override
-  State<CallScreen> createState() => _CallState();
-}
-
-class _CallState extends State<CallScreen> {
-  Timer? _tick;
-  bool _closing = false;
-  CallSession get s => widget.session;
+  bool _online = false;
+  double? _age;
+  String? _pName;
+  String? _pAvatar;
+  bool _uploading = false;
+  bool _markBusy = false;
+  int _markedUpTo = -1;
+  final _hidden = <int>{};
+  String? _pGender;
+  final _rec = VoiceRecorder();
+  Timer? _recTimer;
+  bool _recording = false;
+  int _recSecs = 0;
 
   @override
   void initState() {
     super.initState();
-    s.phase.addListener(_onPhase);
-    _tick = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (mounted) setState(() {});
-    });
-    WidgetsBinding.instance.addPostFrameCallback((_) => _onPhase());
+    unawaited(Push.start());
+    _scroll.addListener(_onScroll);
+    _pName = widget.chat.partnerName;
+    _pAvatar = widget.chat.partnerAvatar;
+    _pGender = widget.chat.partnerGender;
+    _hub = CallHub(widget.chat.id, _uid, onIncoming: _incoming)..start();
+    unawaited(_hub.checkPending());
+    _pulse = ChatPulse(
+      widget.chat.id,
+      onPartner: _onPartner,
+      onGone: _onGone,
+      onResume: () {
+        unawaited(_markRead());
+        unawaited(_hub.checkPending());
+      },
+    )..start();
   }
 
   @override
   void dispose() {
-    _tick?.cancel();
-    s.phase.removeListener(_onPhase);
+    _pulse.stop();
+    _recTimer?.cancel();
+    _scroll.dispose();
+    unawaited(_rec.cancel().then((_) => _rec.dispose()));
+    unawaited(_hub.dispose());
+    _c.dispose();
     super.dispose();
   }
 
-  void _onPhase() {
+  // ---------- حالة الطرف الثاني ----------
+
+  void _onPartner(
+      bool online, double? age, String? name, String? avatar, String? gender) {
     if (!mounted) return;
-    setState(() {});
-    if (s.phase.value != CallPhase.ended || _closing) return;
-    _closing = true;
-    final msg = s.endReason;
-    final messenger = ScaffoldMessenger.of(context);
-    Future.delayed(const Duration(milliseconds: 900), () {
-      if (!mounted) return;
-      Navigator.of(context).pop();
-      if (msg != null) {
-        messenger.showSnackBar(
-            SnackBar(content: Text(msg), behavior: SnackBarBehavior.floating));
-      }
+    setState(() {
+      _online = online && (age ?? 999) < 45;
+      _age = age;
+      _pName = name;
+      _pAvatar = avatar;
+      _pGender = gender;
     });
+  }
+
+  void _onGone() {
+    if (!mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => PairScreen(me: widget.chat.me)),
+      (_) => false,
+    );
+    messenger.showSnackBar(const SnackBar(
+        content: Text('الطرف الثاني ألغى الارتباط.'),
+        behavior: SnackBarBehavior.floating));
+  }
+
+  String _title() {
+    final n = _pName?.trim();
+    return (n != null && n.isNotEmpty) ? n : '@${widget.chat.partner}';
   }
 
   String _status() {
-    switch (s.phase.value) {
-      case CallPhase.calling:
-        final h = s.hint;
-        return h == null ? 'يرن...' : 'يرن...\n$h';
-      case CallPhase.ringing:
-        return '';
-      case CallPhase.connecting:
-        return 'جاري الاتصال...';
-      case CallPhase.connected:
-        final d = DateTime.now().difference(s.connectedAt ?? DateTime.now());
-        final t = '${_two(d.inMinutes)}:${_two(d.inSeconds % 60)}';
-        if (s.video && !s.remoteVideoReady) {
-          return d.inSeconds < 4
-              ? t
-              : (s.gotRemoteVideo
-                  ? '$t\nبانتظار ظهور صورة الطرف الثاني...'
-                  : '$t\nالطرف الثاني ما يرسل فيديو (تأكد من إذن الكاميرا عنده)');
-        }
-        return t;
-      case CallPhase.ended:
-        return s.endReason ?? 'انتهت المكالمة.';
-    }
+    if (_online) return 'متصل الآن';
+    final a = _age;
+    if (a == null) return '';
+    if (a < 90) return 'آخر ظهور قبل لحظات';
+    final m = (a / 60).floor();
+    if (m < 60) return 'آخر ظهور قبل $m د';
+    final h = (m / 60).floor();
+    if (h < 24) return 'آخر ظهور قبل $h س';
+    return 'آخر ظهور قبل ${(h / 24).floor()} يوم';
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final ended = s.phase.value == CallPhase.ended;
-    final r = s.remote;
-    final l = s.local;
-    return PopScope(
-      canPop: false,
-      child: Scaffold(
-        body: Backdrop(
-          child: Stack(fit: StackFit.expand, children: [
-            if (s.video && r != null && !ended)
-              Positioned.fill(
-                child: RTCVideoView(r,
-                    objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover),
+  void _partnerInfo() {
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            _Avatar(path: _pAvatar, radius: 48, gender: _pGender),
+            const SizedBox(height: 12),
+            Text(_title(),
+                style:
+                    const TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 4),
+            Text('@${widget.chat.partner}',
+                textDirection: TextDirection.ltr,
+                style: const TextStyle(color: Color(0xAAFFFFFF))),
+            const SizedBox(height: 8),
+            Text(_status(),
+                style: TextStyle(
+                    color: _online
+                        ? const Color(0xFF5BE584)
+                        : const Color(0xAAFFFFFF))),
+            const SizedBox(height: 12),
+            Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+              TextButton.icon(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  _reportPartner();
+                },
+                icon: const Icon(Icons.flag_outlined, size: 18),
+                label: const Text('إبلاغ'),
               ),
-            SafeArea(
-              child: Column(children: [
-                const SizedBox(height: 32),
-                _Who(
-                  name: widget.partner,
-                  status: _status(),
-                  big: !(s.video && r != null && !ended),
-                ),
-                const Spacer(),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
-                  child: Wrap(
-                    alignment: WrapAlignment.center,
-                    spacing: 20,
-                    runSpacing: 16,
-                    children: [
-                      ValueListenableBuilder<bool>(
-                        valueListenable: s.muted,
-                        builder: (_, m, __) => _CallBtn(
-                          icon: m ? Icons.mic_off : Icons.mic,
-                          label: 'كتم',
-                          bg: m ? Colors.white : const Color(0x33FFFFFF),
-                          fg: m ? Colors.black : Colors.white,
-                          onTap: s.toggleMute,
-                        ),
-                      ),
-                      ValueListenableBuilder<bool>(
-                        valueListenable: s.speaker,
-                        builder: (_, on, __) => _CallBtn(
-                          icon: on ? Icons.volume_up : Icons.volume_down,
-                          label: 'السماعة',
-                          bg: on ? Colors.white : const Color(0x33FFFFFF),
-                          fg: on ? Colors.black : Colors.white,
-                          onTap: s.toggleSpeaker,
-                        ),
-                      ),
-                      if (s.video)
-                        ValueListenableBuilder<bool>(
-                          valueListenable: s.camOff,
-                          builder: (_, off, __) => _CallBtn(
-                            icon: off ? Icons.videocam_off : Icons.videocam,
-                            label: 'الكاميرا',
-                            bg: off ? Colors.white : const Color(0x33FFFFFF),
-                            fg: off ? Colors.black : Colors.white,
-                            onTap: s.toggleCam,
-                          ),
-                        ),
-                      if (s.video)
-                        _CallBtn(
-                          icon: Icons.cameraswitch,
-                          label: 'قلب',
-                          onTap: () => unawaited(s.flipCamera()),
-                        ),
-                      _CallBtn(
-                        icon: Icons.call_end,
-                        bg: const Color(0xFFE5392E),
-                        label: 'إنهاء',
-                        onTap: () => unawaited(s.hangup()),
-                      ),
-                    ],
-                  ),
-                ),
-              ]),
-            ),
-            if (s.video && l != null && !ended)
-              Positioned(
-                top: 64,
-                left: 16,
-                width: 104,
-                height: 144,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: RTCVideoView(l,
-                      mirror: true,
-                      objectFit:
-                          RTCVideoViewObjectFit.RTCVideoViewObjectFitCover),
-                ),
+              TextButton.icon(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  _blockPartner();
+                },
+                icon: const Icon(Icons.block,
+                    size: 18, color: Color(0xFFFF6B60)),
+                label: const Text('حظر',
+                    style: TextStyle(color: Color(0xFFFF6B60))),
               ),
+            ]),
           ]),
         ),
       ),
     );
   }
-}
+
+  Future<void> _reportPartner() async {
+    const reasons = [
+      'محتوى مسيء',
+      'مضايقة أو تهديد',
+      'انتحال شخصية',
+      'احتيال أو إزعاج',
+      'سبب آخر',
+    ];
+    final r = await showDialog<String>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: const Text('سبب الإبلاغ'),
+        children: [
+          for (final x in reasons)
+            SimpleDialogOption(
+                onPressed: () => Navigator.pop(ctx, x), child: Text(x)),
+        ],
+      ),
+    );
+    if (r == null || !mounted) return;
+    try {
+      await _db.rpc('report_partner',
+          params: {'p_reason': r, 'p_details': null});
+      if (mounted) _toast(context, 'وصل بلاغك، شكراً.');
+    } catch (_) {
+      if (mounted) _toast(context, 'تعذر إرسال البلاغ.');
+    }
+  }
+
+  Future<void> _blockPartner() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('حظر @${widget.chat.partner}؟'),
+        content: const Text(
+            'راح تنحذف المحادثة عند الطرفين، وما يقدر يرتبط معك مرة ثانية.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('تراجع')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('حظر',
+                  style: TextStyle(color: Color(0xFFFF6B60)))),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    try {
+      try {
+        final files =
+            await _db.storage.from('chat-media').list(path: widget.chat.id);
+        if (files.isNotEmpty) {
+          await _db.storage.from('chat-media').remove(
+              files.map((f) => '${widget.chat.id}/${f.name}').toList());
+        }
+      } catch (_) {}
+      await _db.rpc('block_partner');
+      if (!mounted) return;
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => PairScreen(me: widget.chat.me)),
+        (_) => false,
+      );
+    } catch (_) {
+      if (mounted) _toast(context, 'تعذر الحظر، جرّب مرة ثانية.');
+    }
+  }
+
+  Future<void> _openProfile() => Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => ProfileScreen(chat: widget.chat)));
+
+  // ---------- علامات القراءة ----------
+
+  Future<void> _markRead() async {
+    if (_markBusy || !_pulse.foreground || !mounted) return;
+    _markBusy = true;
+    try {
+      await _db.rpc('mark_read', params: {'p_chat': widget.chat.id});
+    } catch (_) {}
+    _markBusy = false;
+  }
+
+  void _checkUnread(List<Map<String, dynamic>> rows) {
+    var newest = -1;
+    for (final r in rows) {
+      if (r['sender_id'] != _uid && r['read_at'] == null) {
+        final id = (r['id'] as num).toInt();
+        if (id > newest) newest = id;
+      }
+    }
+    if (newest > _markedUpTo) {
+      _markedUpTo = newest;
+      WidgetsBinding.instance
+          .addPostFrameCallback((_) => unawaited(_markRead()));
+    }
+  }
+
+  // ---------- المكالمات ----------
+
+  void _incoming(CallSession s) {
+    if (!mounted) {
+      unawaited(s.end('مكالمة فائتة.', send: 'decline'));
+      return;
+    }
+    Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) =>
+            IncomingCallScreen(session: s, partner: widget.chat.partner)));
+  }
+
+  Future<void> _call(bool video) async {
+    if (_hub.current != null) return;
+    if (!_hub.ready) {
+      _toast(context, 'الاتصال بالسيرفر غير جاهز، جرّب بعد ثواني.');
+      return;
+    }
+    final s = CallSession.outgoing(_hub, video);
+    s.hint =
+        _online ? null : 'الطرف الثاني غير متصل الآن، أرسلنا له إشعار مكالمة.';
+    _hub.current = s;
+    try {
+      await s.startOutgoing();
+    } catch (_) {
+      await s.end(
+          'تعذر بدء المكالمة. اسمح للتطبيق بالمايك والكاميرا من إعدادات الجوال.');
+      if (mounted) _toast(context, s.endReason ?? 'تعذر بدء المكالمة.');
+      return;
+    }
+    if (!mounted) return;
+    Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) => CallScreen(session: s, partner: widget.chat.partner)));
+  }
+
+  // ---------- الإرسال ----------
+
+  Future<void> _send() async {
+    final t = _c.text.trim();
+    if (t.isEmpty) return;
+    _c.clear();
+    setState(() {});
+    try {
+      await _db
+          .from('messages')
+          .insert({'chat_id': widget.chat.id, 'body': t});
+    } catch (_) {
+      if (!mounted) return;
+      _c.text = t;
+      setState(() {});
+      _toast(context, 'تعذر الإرسال، حاول مرة ثانية.');
+    }
+  }
+
+  Future<String?> _attachSheet() => showModalBottomSheet<String>(
+        context: context,
+        builder: (ctx) => SafeArea(
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined),
+              title: const Text('صورة من المعرض'),
+              onTap: () => Navigator.pop(ctx, 'photo_gallery'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_camera_outlined),
+              title: const Text('تصوير صورة'),
+              onTap: () => Navigator.pop(ctx, 'photo_camera'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.video_library_outlined),
+              title: const Text('فيديو من المعرض'),
+              onTap: () => Navigator.pop(ctx, 'video_gallery'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.videocam_outlined),
+              title: const Text('تسجيل فيديو'),
+              onTap: () => Navigator.pop(ctx, 'video_camera'),
+            ),
+          ]),
+        ),
+      );
+
+  Future<void> _attach() async {
+    final act = await _attachSheet();
+    if (!mounted || act == null) return;
+    setState(() => _uploading = true);
+    try {
+      final camera = act.endsWith('camera');
+      final src = camera ? ImageSource.camera : ImageSource.gallery;
+      if (act.startsWith('photo')) {
+        final x = await _picker.pickImage(
+            source: src, maxWidth: 1600, maxHeight: 1600, imageQuality: 82);
+        if (x != null) {
+          await _sendMedia(
+              chatId: widget.chat.id,
+              file: File(x.path),
+              kind: 'image',
+              ext: _extFor(x.path),
+              mime: _mimeFor(x.path));
+        }
+      } else {
+        final x = await _picker.pickVideo(
+            source: src, maxDuration: const Duration(minutes: 2));
+        if (x != null) {
+          final file = File(x.path);
+          if (await file.length() > 50 * 1024 * 1024) {
+            if (mounted) _toast(context, 'الفيديو كبير، الحد الأقصى 50 ميجا.');
+          } else {
+            await _sendMedia(
+                chatId: widget.chat.id,
+                file: file,
+                kind: 'video',
+                ext: _extOf(x.path),
+                mime: _mimeForVideo(x.path));
+          }
+        }
+      }
+    } catch (_) {
+      if (mounted) _toast(context, 'تعذر الإرسال. جرّب مرة ثانية.');
+    }
+    if (mounted) setState(() => _uploading = false);
+  }
+
+  // ---------- الرسائل الصوتية ----------
+
+  Future<void> _startRec() async {
+    if (_recording || _uploading) return;
+    try {
+      final ok = await _rec.start();
+      if (!ok) {
+        if (mounted) _toast(context, 'اسمح للتطبيق بالمايك من إعدادات الجوال.');
+        return;
+      }
+    } catch (_) {
+      if (mounted) _toast(context, 'تعذر بدء التسجيل.');
+      return;
+    }
+    if (!mounted) {
+      await _rec.cancel();
+      return;
+    }
+    _recSecs = 0;
+    _recTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      setState(() => _recSecs++);
+      if (_recSecs >= 300) unawaited(_finishRec(true));
+    });
+    setState(() => _recording = true);
+  }
+
+  Future<void> _finishRec(bool send) async {
+    if (!_recording) return;
+    _recTimer?.cancel();
+    if (mounted) setState(() => _recording = false);
+    if (!send) {
+      await _rec.cancel();
+      return;
+    }
+    final clip = await _rec.stop();
+    if (clip == null || clip.ms < 800) {
+      if (mounted) _toast(context, 'التسجيل قصير جداً.');
+      return;
+    }
+    if (mounted) setState(() => _uploading = true);
+    try {
+      await _sendMedia(
+          chatId: widget.chat.id,
+          file: clip.file,
+          kind: 'audio',
+          ext: 'm4a',
+          mime: 'audio/mp4',
+          durationMs: clip.ms);
+    } catch (_) {
+      if (mounted) _toast(context, 'تعذر إرسال الرسالة الصوتية.');
+    }
+    try {
+      await clip.file.delete();
+    } catch (_) {}
+    if (mounted) setState(() => _uploading = false);
+  }
+
+  // ---------- قائمة الرسالة (ضغطة مطولة) ----------
+
+  Future<void> _msgMenu(Msg m) async {
+    if (m.kind != 'text' && !m.mine) return;
+    final act = await showModalBottomSheet<String>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          if (m.kind == 'text')
+            ListTile(
+              leading: const Icon(Icons.copy),
+              title: const Text('نسخ'),
+              onTap: () => Navigator.pop(ctx, 'copy'),
+            ),
+          if (m.mine)
+            ListTile(
+              leading:
+                  const Icon(Icons.delete_outline, color: Color(0xFFFF6B60)),
+              title: const Text('حذف عند الطرفين'),
+              onTap: () => Navigator.pop(ctx, 'del'),
+            ),
+        ]),
+      ),
+    );
+    if (!mounted || act == null) return;
+    if (act == 'copy') {
+      await Clipboard.setData(ClipboardData(text: m.text));
+      if (mounted) _toast(context, 'تم النسخ');
+    } else if (act == 'del') {
+      await _delete(m);
+    }
+  }
+
+  Future<void> _delete(Msg m) async {
+    setState(() => _hidden.add(m.id));
+    try {
+      final path = m.mediaPath;
+      if (path != null) {
+        try {
+          await _db.storage.from('chat-media').remove([path]);
+        } catch (_) {}
+      }
+      await _db.from('messages').delete().eq('id', m.id);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _hidden.remove(m.id));
+      _toast(context, 'تعذر الحذف.');
+    }
+  }
+
+  // ---------- الواجهة ----------
+
+  Widget _header() => Padding(
+        padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+        child: Glass(
+          radius: 22,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: Row(children: [
+            Expanded(
+              child: InkWell(
+                onTap: _partnerInfo,
+                child: Row(children: [
+                  _Avatar(path: _pAvatar, radius: 20, gender: _pGender),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(_title(),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                                fontSize: 17, fontWeight: FontWeight.w600)),
+                        if (_status().isNotEmpty)
+                          Text(_status(),
+                              style: TextStyle(
+                                  fontSize: 12,
+                                  color: _online
+                                      ? const Color(0xFF5BE584)
+                                      : const Color(0x99FFFFFF))),
+                      ],
+                    ),
+                  ),
+                ]),
+              ),
+            ),
+            IconButton(
+                onPressed: () => _call(false), icon: const Icon(Icons.call)),
+            IconButton(
+                onPressed: () => _call(true), icon: const Icon(Icons.videocam)),
+            IconButton(
+                onPressed: _openProfile,
+                icon: const Icon(Icons.settings_outlined)),
+          ]),
+        ),
+      );
+
+  Widget _messages() => StreamBuilder<List<Map<String, dynamic>>>(
+        stream: _stream,
+        builder: (context, snap) {
+          if (snap.hasError) {
+            return const Center(
+              child: Padding(
+                padding: EdgeInsets.all(32),
+                child: Text('تعذر تحميل الرسائل. تأكد من الإنترنت.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Color(0xAAFFFFFF))),
+              ),
+            );
+          }
+          if (!snap.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          final rows = snap.data!;
+          _hasMore = rows.length >= _limit;
+          _checkUnread(rows);
+          final msgs = rows
+              .map((r) => Msg.fromRow(r, _uid))
+              .where((m) => !_hidden.contains(m.id))
+              .toList();
+          if (msgs.isEmpty) {
+            return const Center(
+              child: Padding(
+                padding: EdgeInsets.all(32),
+                child: Text('ما في رسائل بعد. ابدأ المحادثة!',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Color(0xAAFFFFFF))),
+              ),
+            );
+          }
+          return ListView.builder(
+            controller: _scroll,
+            reverse: true,
+            padding: const EdgeInsets.all(16),
+            itemCount: msgs.length,
+            itemBuilder: (_, i) => _Bubble(
+              key: ValueKey(msgs[i].id),
+              m: msgs[i],
+              onLongPress: () => _msgMenu(msgs[i]),
+            ),
+          );
+        },
+      );
+
+  Widget _inputBar(bool typing) => Padding(
+        padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+        child: Glass(
+          radius: 28,
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          child: _recording ? _recordingRow() : _typingRow(typing),
+        ),
+      );
+
+  Widget _recordingRow() => Row(children: [
+        IconButton(
+          onPressed: () => unawaited(_finishRec(false)),
+          icon: const Icon(Icons.delete_outline, color: Color(0xFFFF6B60)),
+        ),
+        const SizedBox(width: 4),
+        const Icon(Icons.fiber_manual_record, color: Color(0xFFFF3B30), size: 14),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text('جاري التسجيل... ${_mmss(_recSecs * 1000)}',
+              style: const TextStyle(fontSize: 15)),
+        ),
+        IconButton(
+          onPressed: () => unawaited(_finishRec(true)),
+          icon: const Icon(Icons.arrow_upward_rounded, color: _blue),
+        ),
+      ]);
+
+  Widget _typingRow(bool typing) => Row(children: [
+        IconButton(
+          onPressed: _uploading ? null : _attach,
+          icon: _uploading
+            

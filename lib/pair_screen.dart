@@ -95,7 +95,11 @@ class _PairState extends State<PairScreen> {
     }
     setState(() => _busy = true);
     try {
-      await _db.rpc('redeem_invite', params: {'p_code': code});
+      final r = await _db.rpc('redeem_invite', params: {'p_code': code});
+      if (r == null) {
+        if (mounted) _toast(context, 'الرمز غير صحيح أو منتهي.');
+        return;
+      }
       if (!await _open() && mounted) {
         _toast(context, 'تم الربط، افتح التطبيق من جديد إذا ما انفتحت المحادثة.');
       }
@@ -106,6 +110,8 @@ class _PairState extends State<PairScreen> {
         await _open();
       } else if (m.contains('own_code')) {
         _toast(context, 'هذا رمزك أنت. أعطه للشخص الثاني.');
+      } else if (m.contains('too_many_attempts')) {
+        _toast(context, 'محاولات كثيرة، انتظر 10 دقايق وجرّب مرة ثانية.');
       } else if (m.contains('invalid_code')) {
         _toast(context, 'الرمز غير صحيح أو منتهي.');
       } else {

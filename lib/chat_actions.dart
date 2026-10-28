@@ -45,6 +45,16 @@ extension _ChatActions on _ChatState {
                     style: TextStyle(color: Color(0xFFFF6B60))),
               ),
             ]),
+            const SizedBox(height: 12),
+            TextButton.icon(
+              onPressed: () {
+                Navigator.pop(ctx);
+                Navigator.of(context).push(MaterialPageRoute(
+                    builder: (_) => MemoriesScreen(chatId: widget.chat.id)));
+              },
+              icon: const Icon(Icons.photo_library_outlined),
+              label: const Text('معرض الذكريات'),
+            ),
           ]),
         ),
       ),
@@ -183,16 +193,19 @@ extension _ChatActions on _ChatState {
   Future<void> _send() async {
     final t = _c.text.trim();
     if (t.isEmpty) return;
+    final reply = _replyTo;
     _c.clear();
-    setState(() {});
+    setState(() => _replyTo = null);
     try {
-      await _db
-          .from('messages')
-          .insert({'chat_id': widget.chat.id, 'body': t});
+      await _db.from('messages').insert({
+        'chat_id': widget.chat.id,
+        'body': t,
+        if (reply != null) 'reply_to_id': reply.id,
+      });
     } catch (_) {
       if (!mounted) return;
       _c.text = t;
-      setState(() {});
+      setState(() => _replyTo = reply);
       _toast(context, 'تعذر الإرسال، حاول مرة ثانية.');
     }
   }
@@ -323,11 +336,16 @@ extension _ChatActions on _ChatState {
   }
 
   Future<void> _msgMenu(Msg m) async {
-    if (m.kind != 'text' && !m.mine) return;
+    if (m.kind == 'call') return;
     final act = await showModalBottomSheet<String>(
       context: context,
       builder: (ctx) => SafeArea(
         child: Column(mainAxisSize: MainAxisSize.min, children: [
+          ListTile(
+            leading: const Icon(Icons.reply),
+            title: const Text('رد'),
+            onTap: () => Navigator.pop(ctx, 'reply'),
+          ),
           if (m.kind == 'text')
             ListTile(
               leading: const Icon(Icons.copy),
@@ -345,7 +363,9 @@ extension _ChatActions on _ChatState {
       ),
     );
     if (!mounted || act == null) return;
-    if (act == 'copy') {
+    if (act == 'reply') {
+      setState(() => _replyTo = m);
+    } else if (act == 'copy') {
       await Clipboard.setData(ClipboardData(text: m.text));
       if (mounted) _toast(context, 'تم النسخ');
     } else if (act == 'del') {

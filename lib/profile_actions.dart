@@ -286,3 +286,67 @@ Future<void> _wipeChatBg(String chatId) async {
     }
   } catch (_) {}
 }
+
+extension _ProfileUsername on _ProfileState {
+  /// تغيير اسم المستخدم (مرة كل 30 يوم). الدالة بالسيرفر تغيّر الاسم والإيميل الداخلي مع بعض.
+  Future<void> _changeUsername() async {
+    final p = _p;
+    if (p == null || _busy) return;
+    final ctrl = TextEditingController(text: p.username);
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('تغيير اسم المستخدم'),
+        content: Column(mainAxisSize: MainAxisSize.min, children: [
+          const Text(
+              'تقدر تغيّره مرة كل 30 يوم. الاسم القديم يصير متاح لغيرك.'),
+          const SizedBox(height: 12),
+          TextField(
+            controller: ctrl,
+            textDirection: TextDirection.ltr,
+            autocorrect: false,
+            inputFormatters: [
+              FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9_]')),
+              LengthLimitingTextInputFormatter(20),
+            ],
+            decoration: const InputDecoration(hintText: 'username'),
+          ),
+        ]),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('تراجع')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('حفظ')),
+        ],
+      ),
+    );
+    final nu = ctrl.text.trim().toLowerCase();
+    ctrl.dispose();
+    if (ok != true || !mounted) return;
+    if (nu == p.username) return;
+    if (!_usernameRe.hasMatch(nu)) {
+      _toast(context, 'الاسم لازم من 1 إلى 20 خانة: أحرف إنجليزية وأرقام و _');
+      return;
+    }
+    setState(() => _busy = true);
+    try {
+      await _db.rpc('change_username', params: {'p_new': nu});
+      await _load();
+      if (mounted) _toast(context, 'تم تغيير اسم المستخدم');
+    } catch (e) {
+      final m = e.toString();
+      if (mounted) {
+        _toast(
+            context,
+            m.contains('too_soon')
+                ? 'تقدر تغيّره مرة كل 30 يوم.'
+                : m.contains('taken')
+                    ? 'الاسم مأخوذ، جرّب غيره.'
+                    : 'تعذر التغيير. جرّب مرة ثانية.');
+      }
+    }
+    if (mounted) setState(() => _busy = false);
+  }
+}

@@ -188,7 +188,17 @@ class ImageViewerScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Scaffold(
         backgroundColor: Colors.black,
-        appBar: AppBar(backgroundColor: Colors.black, elevation: 0),
+        appBar: AppBar(
+          backgroundColor: Colors.black,
+          elevation: 0,
+          actions: [
+            IconButton(
+              tooltip: 'حفظ في المعرض',
+              icon: const Icon(Icons.download_rounded),
+              onPressed: () => _saveImage(context, path),
+            ),
+          ],
+        ),
         body: Center(
           child: InteractiveViewer(
             maxScale: 5,
@@ -196,4 +206,33 @@ class ImageViewerScreen extends StatelessWidget {
           ),
         ),
       );
+}
+
+// ---------- حفظ الصورة في معرض الجوال ----------
+
+Future<void> _saveImage(BuildContext context, String path) async {
+  try {
+    final url = await MediaUrls.get('chat-media', path);
+    if (url == null) throw Exception('no url');
+    final client = HttpClient();
+    String? local;
+    try {
+      final req = await client.getUrl(Uri.parse(url));
+      final res = await req.close();
+      if (res.statusCode != 200) throw Exception('http ${res.statusCode}');
+      final dir = await getTemporaryDirectory();
+      final f = File(
+          '${dir.path}/save_${DateTime.now().millisecondsSinceEpoch}.${_extFor(path)}');
+      await res.pipe(f.openWrite());
+      local = f.path;
+    } finally {
+      client.close();
+    }
+    await Gal.putImage(local);
+    if (context.mounted) _toast(context, 'تم حفظ الصورة في المعرض');
+  } catch (_) {
+    if (context.mounted) {
+      _toast(context, 'تعذر حفظ الصورة. تأكد من إذن الصور بإعدادات الجوال.');
+    }
+  }
 }

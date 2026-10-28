@@ -140,7 +140,10 @@ extension _ChatUi on _ChatState {
           child: TextField(
             controller: _c,
             style: TextStyle(color: _t.text),
-            onChanged: (_) => setState(() {}),
+            onChanged: (_) {
+              setState(() {});
+              _notifyTyping();
+            },
             onSubmitted: (_) => _send(),
             inputFormatters: [LengthLimitingTextInputFormatter(4000)],
             decoration: const InputDecoration(

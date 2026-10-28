@@ -271,6 +271,14 @@ class _ProfileState extends State<ProfileScreen> {
                           padding: const EdgeInsets.symmetric(vertical: 4),
                           child: Column(children: [
                             ListTile(
+                              leading: const Icon(Icons.feedback_outlined),
+                              title: const Text('إرسال ملاحظة'),
+                              subtitle: const Text('مشكلة أو اقتراح يوصل للمطوّر'),
+                              onTap: () => Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                      builder: (_) => const FeedbackScreen())),
+                            ),
+                            ListTile(
                               leading: const Icon(Icons.key_outlined),
                               title: const Text('تغيير كلمة السر'),
                               onTap: () => Navigator.of(context).push(

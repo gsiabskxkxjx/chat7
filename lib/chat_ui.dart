@@ -85,6 +85,8 @@ extension _ChatUi on _ChatState {
             );
           }
           final entries = _withDayHeaders(msgs);
+          // أول شي بالمحادثة (أقدم شي): عداد الأيام، يظهر لما نكون وصلنا لأول الرسائل
+          if (!_hasMore && _linkedAt != null) entries.add(_SinceMarker(_linkedAt!));
           return ListView.builder(
             controller: _scroll,
             reverse: true,
@@ -93,6 +95,7 @@ extension _ChatUi on _ChatState {
             itemBuilder: (_, i) {
               final e = entries[i];
               if (e is DateTime) return _DayPill(day: e);
+              if (e is _SinceMarker) return _SincePill(since: e.at);
               final m = e as Msg;
               if (m.kind == 'call') return _CallPill(text: m.text);
               return _Bubble(
@@ -192,6 +195,7 @@ extension _ChatLook on _ChatState {
       _bgKind = (r['bg_kind'] as String?) ?? 'gradient';
       _bgStrength = (r['bg_strength'] as num?)?.toInt() ?? 10;
       _bgPath = path;
+      _linkedAt = DateTime.tryParse((r['created_at'] as String?) ?? '')?.toLocal();
       if (pathChanged) _bgUrl = null;
     });
     if (pathChanged && path != null) unawaited(_loadBgUrl(path));
@@ -339,5 +343,40 @@ extension _ChatThink on _ChatState {
     } catch (_) {
       if (mounted) _toast(context, 'تعذر الإرسال.');
     }
+  }
+}
+
+// ---------- عداد الأيام: أنتم مرتبطين من ... ----------
+
+class _SinceMarker {
+  const _SinceMarker(this.at);
+  final DateTime at;
+}
+
+class _SincePill extends StatelessWidget {
+  const _SincePill({required this.since});
+  final DateTime since;
+
+  @override
+  Widget build(BuildContext context) {
+    final days = DateTime.now().difference(since).inDays;
+    final text = days <= 0
+        ? 'بدأتوا اليوم'
+        : 'أنتم مرتبطين من ${_countAr(days, 'يوم', 'يومين', 'أيام', 'يوم')}';
+    return Center(
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        decoration: BoxDecoration(
+          color: const Color(0x66000000),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          const Icon(Icons.favorite, size: 14, color: Color(0xFFFF6B9D)),
+          const SizedBox(width: 6),
+          Text(text, style: const TextStyle(fontSize: 12, color: Colors.white)),
+        ]),
+      ),
+    );
   }
 }

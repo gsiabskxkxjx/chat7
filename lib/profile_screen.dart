@@ -205,6 +205,77 @@ class _ProfileState extends State<ProfileScreen> {
         MaterialPageRoute(builder: (_) => const Boot()), (_) => false);
   }
 
+  Future<void> _deleteAccount() async {
+    final p = _p;
+    if (p == null) return;
+    final ctrl = TextEditingController();
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('حذف الحساب نهائياً؟'),
+        content: Column(mainAxisSize: MainAxisSize.min, children: [
+          const Text(
+              'راح ينحذف حسابك وكل رسائلك وصورك ومحادثتك عند الطرفين، وما يمكن التراجع.'),
+          const SizedBox(height: 12),
+          TextField(
+            controller: ctrl,
+            textDirection: TextDirection.ltr,
+            decoration:
+                InputDecoration(hintText: 'اكتب للتأكيد: ${p.username}'),
+          ),
+        ]),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('تراجع')),
+          TextButton(
+              onPressed: () => Navigator.pop(
+                  ctx, ctrl.text.trim().toLowerCase() == p.username),
+              child: const Text('حذف نهائي',
+                  style: TextStyle(color: Color(0xFFFF6B60)))),
+        ],
+      ),
+    );
+    ctrl.dispose();
+    if (ok != true || !mounted) return;
+    setState(() => _busy = true);
+    try {
+      // نمسح الملفات من التخزين (ما يهم لو فشل)
+      final chat = widget.chat;
+      if (chat != null) {
+        try {
+          final files =
+              await _db.storage.from('chat-media').list(path: chat.id);
+          if (files.isNotEmpty) {
+            await _db.storage
+                .from('chat-media')
+                .remove(files.map((f) => '${chat.id}/${f.name}').toList());
+          }
+        } catch (_) {}
+      }
+      try {
+        final mine = await _db.storage.from('avatars').list(path: _uid);
+        if (mine.isNotEmpty) {
+          await _db.storage
+              .from('avatars')
+              .remove(mine.map((f) => '$_uid/${f.name}').toList());
+        }
+      } catch (_) {}
+      await Push.remove();
+      await _db.rpc('delete_my_account');
+      try {
+        await _db.auth.signOut();
+      } catch (_) {}
+      if (!mounted) return;
+      Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const Boot()), (_) => false);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _busy = false);
+      _toast(context, 'تعذر حذف الحساب. جرّب مرة ثانية.');
+    }
+  }
+
   Future<void> _setGender(String g) async {
     final p = _p;
     if (p == null || p.gender == g) return;
@@ -427,6 +498,13 @@ class _ProfileState extends State<ProfileScreen> {
                               leading: const Icon(Icons.logout),
                               title: const Text('تسجيل الخروج'),
                               onTap: _busy ? null : _logout,
+                            ),
+                            ListTile(
+                              leading: const Icon(Icons.delete_forever,
+                                  color: Color(0xFFFF6B60)),
+                              title: const Text('حذف الحساب',
+                                  style: TextStyle(color: Color(0xFFFF6B60))),
+                              onTap: _busy ? null : _deleteAccount,
                             ),
                           ]),
                         ),

@@ -57,13 +57,32 @@ jobs:
           grep -n "minSdk" android/app/build.gradle* || true
           grep -c "uses-permission" android/app/src/main/AndroidManifest.xml
 
+      - name: Package id and SDK levels (Android)
+        run: |
+          F=android/app/build.gradle.kts
+          if [ -f "$F" ]; then
+            sed -i -E 's/applicationId = "[^"]*"/applicationId = "com.bainatna.chat"/' "$F"
+            sed -i 's/targetSdk = flutter.targetSdkVersion/targetSdk = maxOf(flutter.targetSdkVersion, 36)/' "$F"
+            sed -i 's/compileSdk = flutter.compileSdkVersion/compileSdk = maxOf(flutter.compileSdkVersion, 36)/' "$F"
+          else
+            F=android/app/build.gradle
+            sed -i -E 's/applicationId[ =]+"[^"]*"/applicationId "com.bainatna.chat"/' "$F"
+            sed -i 's/targetSdkVersion flutter.targetSdkVersion/targetSdkVersion Math.max(flutter.targetSdkVersion, 36)/' "$F"
+            sed -i 's/compileSdkVersion flutter.compileSdkVersion/compileSdkVersion Math.max(flutter.compileSdkVersion, 36)/' "$F"
+          fi
+          grep -nE "applicationId|targetSdk|compileSdk|minSdk" "$F"
+          if ! grep -q 'com.bainatna.chat' "$F"; then
+            echo "ERROR: could not set applicationId to com.bainatna.chat in $F"
+            exit 1
+          fi
+
       - name: Firebase config (Android)
         run: |
           mkdir -p android/app/src/main/res/values
           cat > android/app/src/main/res/values/firebase_config.xml <<'XML'
           <?xml version="1.0" encoding="utf-8"?>
           <resources>
-              <string name="google_app_id" translatable="false">1:962048145242:android:c5b4f4b21234011b9d6563</string>
+              <string name="google_app_id" translatable="false">1:962048145242:android:064285c446fd1ce29d6563</string>
               <string name="gcm_defaultSenderId" translatable="false">962048145242</string>
               <string name="google_api_key" translatable="false">AIzaSyD5DhhnBllDG4hc9hyrbtrjGkZyeBokyCo</string>
               <string name="google_crash_reporting_api_key" translatable="false">AIzaSyD5DhhnBllDG4hc9hyrbtrjGkZyeBokyCo</string>
@@ -172,9 +191,12 @@ jobs:
             echo "ERROR: missing secret KEYSTORE_PASSPHRASE (Settings > Secrets and variables > Actions)"
             exit 1
           fi
-          FILE=$(find . -maxdepth 1 -type f -name 'keystore_encrypted*' | head -n 1)
+          FILE=$(find . -maxdepth 1 -type f -name 'upload_key_encrypted*' | head -n 1)
           if [ -z "$FILE" ]; then
-            echo "ERROR: keystore_encrypted.txt not found in the repo root. Upload it with Add file > Upload files."
+            FILE=$(find . -maxdepth 1 -type f -name 'keystore_encrypted*' | head -n 1)
+          fi
+          if [ -z "$FILE" ]; then
+            echo "ERROR: upload_key_encrypted.txt not found in the repo root. Upload it with Add file > Upload files."
             exit 1
           fi
           echo "Found: $FILE"
@@ -189,20 +211,34 @@ jobs:
             exit 1
           fi
           echo "Keystore OK"
+          OWNER=$(keytool -list -v -keystore ~/.android/debug.keystore -storetype PKCS12 -storepass android 2>/dev/null | grep -m1 "Owner:")
+          echo "$OWNER"
+          if echo "$OWNER" | grep -q "Android Debug"; then
+            echo "WARNING: this is still the old key named Android Debug - Google Play will reject it. Upload upload_key_encrypted.txt."
+          fi
 
       - run: flutter pub get
 
       - run: flutter build apk --release --build-number=${{ github.run_number }}
 
-      - name: Show package and target SDK (for Google Play)
+      - name: Build App Bundle (for Google Play)
+        continue-on-error: true
+        run: flutter build appbundle --release --build-number=${{ github.run_number }}
+
+      - name: Show package, target SDK and signing certificate
         continue-on-error: true
         run: |
           AAPT=$(ls "$ANDROID_HOME"/build-tools/*/aapt 2>/dev/null | sort -V | tail -n 1)
           "$AAPT" dump badging build/app/outputs/flutter-apk/app-release.apk | grep -E "^package:|^sdkVersion|^targetSdkVersion" || true
+          APKSIGNER=$(ls "$ANDROID_HOME"/build-tools/*/apksigner 2>/dev/null | sort -V | tail -n 1)
+          "$APKSIGNER" verify --print-certs build/app/outputs/flutter-apk/app-release.apk | head -n 3 || true
+          ls -la build/app/outputs/bundle/release/ 2>/dev/null || echo "no AAB produced"
 
       - name: Publish APK as a release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: build-${{ github.run_number }}
           name: Build ${{ github.run_number }}
-          files: build/app/outputs/flutter-apk/app-release.apk
+          files: |
+            build/app/outputs/flutter-apk/app-release.apk
+            build/app/outputs/bundle/release/app-release.aab

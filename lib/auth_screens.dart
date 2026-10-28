@@ -244,7 +244,7 @@ class _SignUpState extends State<SignUpScreen> {
             {'id': user.id, 'username': u, 'gender': widget.gender});
       }
       if (!mounted) return;
-      _toBoot(context);
+      await _recoveryThenBoot(context);
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -347,6 +347,13 @@ class _LoginState extends State<LoginScreen> {
               error: _err),
           const SizedBox(height: 18),
           _Btn(label: 'دخول', onTap: _submit, busy: _busy),
+          const SizedBox(height: 4),
+          TextButton(
+            onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+                builder: (_) =>
+                    ResetPasswordScreen(username: _u.text.trim()))),
+            child: const Text('نسيت كلمة السر؟'),
+          ),
         ],
       );
 }
@@ -398,7 +405,7 @@ class _UpgradeState extends State<UpgradeScreen> {
             'بإعدادات Supabase ثم جرّب.');
       }
       if (!mounted) return;
-      _toBoot(context);
+      await _recoveryThenBoot(context);
     } catch (e) {
       if (!mounted) return;
       setState(() {

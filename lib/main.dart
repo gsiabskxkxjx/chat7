@@ -5,7 +5,8 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:image_picker/image_picker.dart' show ImagePicker, ImageSource;
+import 'package:image_picker/image_picker.dart'
+    show ImagePicker, ImageSource, XFile;
 import 'package:path_provider/path_provider.dart' show getTemporaryDirectory;
 import 'package:record/record.dart'
     show AudioEncoder, AudioRecorder, RecordConfig;
@@ -65,6 +66,8 @@ part 'bubbles.dart';
 part 'push.dart';
 part 'auth_screens.dart';
 part 'recovery_screens.dart';
+part 'theme_palette.dart';
+part 'theme_settings.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

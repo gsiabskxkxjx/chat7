@@ -72,6 +72,9 @@ class _ChatState extends State<ChatScreen> {
   Timer? _typingTimer;
   DateTime? _linkedAt; // تاريخ ارتباطكم (لعداد الأيام)
   Msg? _replyTo; // الرسالة اللي تبي ترد عليها
+  // التفاعلات: رقم الرسالة -> (رقم المستخدم -> الإيموجي)
+  Map<int, Map<String, String>> _reactions = {};
+  StreamSubscription<List<Map<String, dynamic>>>? _reactSub;
 
   @override
   void initState() {
@@ -79,6 +82,18 @@ class _ChatState extends State<ChatScreen> {
     unawaited(Push.start());
     _scroll.addListener(_onScroll);
     _watchLook();
+    _reactSub = _db
+        .from('reactions')
+        .stream(primaryKey: ['message_id', 'user_id'])
+        .listen((rows) {
+      if (!mounted) return;
+      final next = <int, Map<String, String>>{};
+      for (final r in rows) {
+        final mid = (r['message_id'] as num).toInt();
+        (next[mid] ??= {})[r['user_id'] as String] = r['emoji'] as String;
+      }
+      setState(() => _reactions = next);
+    });
     _typeCh = _db.channel('typing-${widget.chat.id}')
       ..onBroadcast(event: 'typing', callback: _onTypingEvent)
       ..subscribe();
@@ -117,6 +132,7 @@ class _ChatState extends State<ChatScreen> {
     _recTimer?.cancel();
     _lookSub?.cancel();
     _statusTimer?.cancel();
+    _reactSub?.cancel();
     _typingTimer?.cancel();
     final tc = _typeCh;
     if (tc != null) unawaited(_db.removeChannel(tc).then((_) {}));

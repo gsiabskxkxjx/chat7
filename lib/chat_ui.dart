@@ -157,6 +157,11 @@ extension _ChatUi on _ChatState {
                 hintText: 'اكتب رسالة', border: InputBorder.none),
           ),
         ),
+        if (!typing)
+          IconButton(
+            onPressed: _thinkOfYou,
+            icon: Icon(Icons.favorite_border, color: _t.accent),
+          ),
         IconButton(
           onPressed: typing ? _send : _startRec,
           icon: Icon(typing ? Icons.arrow_upward_rounded : Icons.mic,
@@ -312,5 +317,27 @@ class _CallPill extends StatelessWidget {
         ]),
       ),
     );
+  }
+}
+
+// ---------- زر "أفكر فيك" ----------
+
+DateTime _lastThinkSent = DateTime.fromMillisecondsSinceEpoch(0);
+
+extension _ChatThink on _ChatState {
+  Future<void> _thinkOfYou() async {
+    final now = DateTime.now();
+    if (now.difference(_lastThinkSent) < const Duration(seconds: 3)) return;
+    _lastThinkSent = now;
+    unawaited(HapticFeedback.lightImpact());
+    try {
+      await _db.from('messages').insert({
+        'chat_id': widget.chat.id,
+        'kind': 'think',
+        'body': '❤️ أفكر فيك',
+      });
+    } catch (_) {
+      if (mounted) _toast(context, 'تعذر الإرسال.');
+    }
   }
 }

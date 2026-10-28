@@ -63,6 +63,8 @@ class _ChatState extends State<ChatScreen> {
   String? _bgUrl;
   int _bgStrength = 10;
   StreamSubscription<List<Map<String, dynamic>>>? _lookSub;
+  int _statusIdx = 0; // رقم الجملة الحالية (تتبدل كل 4 ثواني)
+  Timer? _statusTimer;
 
   @override
   void initState() {
@@ -70,6 +72,19 @@ class _ChatState extends State<ChatScreen> {
     unawaited(Push.start());
     _scroll.addListener(_onScroll);
     _watchLook();
+    _statusTimer = Timer.periodic(const Duration(seconds: 4), (_) {
+      if (!mounted) return;
+      // ما نبدل والتطبيق بالخلفية
+      final st = WidgetsBinding.instance.lifecycleState;
+      if (st != null && st != AppLifecycleState.resumed) return;
+      final n = statusLines(
+        online: _online,
+        age: _age,
+        readerGender: widget.chat.myGender,
+        partnerGender: _pGender,
+      ).length;
+      if (n > 1) setState(() => _statusIdx++);
+    });
     _pName = widget.chat.partnerName;
     _pAvatar = widget.chat.partnerAvatar;
     _pGender = widget.chat.partnerGender;
@@ -91,6 +106,7 @@ class _ChatState extends State<ChatScreen> {
     _pulse.stop();
     _recTimer?.cancel();
     _lookSub?.cancel();
+    _statusTimer?.cancel();
     _scroll.dispose();
     unawaited(_rec.cancel().then((_) => _rec.dispose()));
     unawaited(_hub.dispose());
@@ -130,15 +146,13 @@ class _ChatState extends State<ChatScreen> {
   }
 
   String _status() {
-    if (_online) return 'متصل الآن';
-    final a = _age;
-    if (a == null) return '';
-    if (a < 90) return 'آخر ظهور قبل لحظات';
-    final m = (a / 60).floor();
-    if (m < 60) return 'آخر ظهور قبل $m د';
-    final h = (m / 60).floor();
-    if (h < 24) return 'آخر ظهور قبل $h س';
-    return 'آخر ظهور قبل ${(h / 24).floor()} يوم';
+    final lines = statusLines(
+      online: _online,
+      age: _age,
+      readerGender: widget.chat.myGender,
+      partnerGender: _pGender,
+    );
+    return lines[_statusIdx % lines.length];
   }
 
   // ---------- علامات القراءة ----------

@@ -219,6 +219,21 @@ class _ProfileState extends State<ProfileScreen> {
                         Glass(
                           radius: 28,
                           padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: ValueListenableBuilder<bool>(
+                            valueListenable: _lockNotifier,
+                            builder: (_, on, __) => SwitchListTile(
+                              value: on,
+                              onChanged: (_) => _toggleLockAuth(context),
+                              title: const Text('قفل التطبيق بالبصمة أو الوجه'),
+                              subtitle: const Text(
+                                  'يتقفل إذا طلعت من التطبيق أكثر من 30 ثانية'),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Glass(
+                          radius: 28,
+                          padding: const EdgeInsets.symmetric(vertical: 4),
                           child: Column(children: [
                             SwitchListTile(
                               value: p.showOnline,

@@ -7,5 +7,5 @@ const turnUrls = <String>[
   // 'turn:...:443?transport=tcp',
   // 'turns:...:443?transport=tcp',
 ];
-const turnUsername = '';
-const turnCredential = '';
+const turnUsername = '92b7fc3a896973e8874be348';
+const turnCredential = 'v5e7RCx4T33yEoR8';

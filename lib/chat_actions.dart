@@ -130,8 +130,12 @@ extension _ChatActions on _ChatState {
     }
   }
 
-  Future<void> _openProfile() => Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => ProfileScreen(chat: widget.chat)));
+  Future<void> _openProfile() async {
+    await Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => ProfileScreen(chat: widget.chat)));
+    // رجعنا من الإعدادات: نحدّث جنسي إذا تغيّر
+    if (mounted) unawaited(_reloadMyGender());
+  }
 
   Future<void> _markRead() async {
     if (_markBusy || !_pulse.foreground || !mounted) return;

@@ -1,6 +1,6 @@
 // ثيمات المحادثة: 8 ثيمات (4 ليلية و4 نهارية).
-// هذا الملف ما ينستخدم لين الخطوة 4، فما يغيّر شي بالتطبيق الحالي.
-import 'package:flutter/material.dart';
+// يُستخدم بشاشة مظهر المحادثة (theme_settings.dart).
+part of 'main.dart';
 
 class ChatTheme {
   const ChatTheme({

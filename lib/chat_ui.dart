@@ -103,6 +103,7 @@ extension _ChatUi on _ChatState {
                 m: m,
                 onLongPress: () => _msgMenu(m),
                 t: _t,
+                quote: _quoteOf(msgs, m.replyToId),
               );
             },
           );
@@ -111,12 +112,39 @@ extension _ChatUi on _ChatState {
 
   Widget _inputBar(bool typing) => Padding(
         padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
-        child: Glass(
-          radius: 28,
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-          child: _recording ? _recordingRow() : _typingRow(typing),
-        ),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          if (_replyTo != null) _replyBar(),
+          Glass(
+            radius: 28,
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            child: _recording ? _recordingRow() : _typingRow(typing),
+          ),
+        ]),
       );
+
+  Widget _replyBar() {
+    final r = _replyTo!;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.fromLTRB(12, 4, 4, 4),
+      decoration: BoxDecoration(
+        color: const Color(0x66000000),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(children: [
+        Expanded(
+          child: Text('رد على: ${_quoteOf([r], r.id) ?? ''}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 13, color: Colors.white70)),
+        ),
+        IconButton(
+          onPressed: () => setState(() => _replyTo = null),
+          icon: const Icon(Icons.close, size: 18),
+        ),
+      ]),
+    );
+  }
 
   Widget _recordingRow() => Row(children: [
         IconButton(
@@ -378,5 +406,24 @@ class _SincePill extends StatelessWidget {
         ]),
       ),
     );
+  }
+}
+
+// ---------- الرد على رسالة: نص الأصلية للاقتباس ----------
+
+String? _quoteOf(List<Msg> msgs, int? id) {
+  if (id == null) return null;
+  final found = msgs.where((x) => x.id == id).toList();
+  if (found.isEmpty) return 'رسالة';
+  final x = found.first;
+  switch (x.kind) {
+    case 'image':
+      return '📷 صورة';
+    case 'video':
+      return '🎬 فيديو';
+    case 'audio':
+      return '🎤 رسالة صوتية';
+    default:
+      return x.text;
   }
 }

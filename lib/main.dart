@@ -7,7 +7,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart'
     show ImagePicker, ImageSource, XFile;
-import 'package:path_provider/path_provider.dart' show getTemporaryDirectory;
+import 'package:path_provider/path_provider.dart'
+    show getTemporaryDirectory, getApplicationSupportDirectory;
+import 'package:local_auth/local_auth.dart'
+    show LocalAuthentication, AuthenticationOptions;
 import 'package:gal/gal.dart' show Gal;
 import 'package:share_plus/share_plus.dart' show SharePlus, ShareParams;
 import 'package:record/record.dart'
@@ -73,6 +76,7 @@ part 'theme_settings.dart';
 part 'feedback_screen.dart';
 part 'status_lines.dart';
 part 'memories_screen.dart';
+part 'lock_screens.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -105,8 +109,8 @@ class App extends StatelessWidget {
           colorScheme: ColorScheme.fromSeed(
               seedColor: _blue, brightness: Brightness.dark),
         ),
-        builder: (c, child) =>
-            Directionality(textDirection: TextDirection.rtl, child: child!),
+        builder: (c, child) => Directionality(
+            textDirection: TextDirection.rtl, child: _LockGate(child: child!)),
         home: const Boot(),
       );
 }

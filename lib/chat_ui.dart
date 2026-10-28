@@ -469,3 +469,25 @@ extension _ChatReact on _ChatState {
     }
   }
 }
+
+// ---------- شريط انقطاع الإنترنت ----------
+
+extension _ChatOffline on _ChatState {
+  Widget _offlineBar() => Container(
+        width: double.infinity,
+        margin: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: const Color(0xCCB45309),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: const Row(mainAxisSize: MainAxisSize.min, children: [
+          Icon(Icons.wifi_off, size: 16, color: Colors.white),
+          SizedBox(width: 8),
+          Flexible(
+            child: Text('لا يوجد اتصال، ننتظر الشبكة...',
+                style: TextStyle(fontSize: 13, color: Colors.white)),
+          ),
+        ]),
+      );
+}

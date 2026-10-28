@@ -41,6 +41,10 @@ extension _ChatUi on _ChatState {
             IconButton(
                 onPressed: () => _call(true), icon: const Icon(Icons.videocam)),
             IconButton(
+                onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+                    builder: (_) => ThemeSettingsScreen(chatId: widget.chat.id))),
+                icon: const Icon(Icons.palette_outlined)),
+            IconButton(
                 onPressed: _openProfile,
                 icon: const Icon(Icons.settings_outlined)),
           ]),

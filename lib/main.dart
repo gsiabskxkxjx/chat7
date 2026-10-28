@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'dart:io' show File;
+import 'dart:io' show File, HttpClient;
 import 'dart:math' show Random;
 import 'dart:ui';
 
@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart'
     show ImagePicker, ImageSource, XFile;
 import 'package:path_provider/path_provider.dart' show getTemporaryDirectory;
+import 'package:gal/gal.dart' show Gal;
 import 'package:share_plus/share_plus.dart' show SharePlus, ShareParams;
 import 'package:record/record.dart'
     show AudioEncoder, AudioRecorder, RecordConfig;
@@ -71,6 +72,7 @@ part 'theme_palette.dart';
 part 'theme_settings.dart';
 part 'feedback_screen.dart';
 part 'status_lines.dart';
+part 'memories_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

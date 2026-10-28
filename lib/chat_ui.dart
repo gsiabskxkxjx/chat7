@@ -94,6 +94,7 @@ extension _ChatUi on _ChatState {
               final e = entries[i];
               if (e is DateTime) return _DayPill(day: e);
               final m = e as Msg;
+              if (m.kind == 'call') return _CallPill(text: m.text);
               return _Bubble(
                 key: ValueKey(m.id),
                 m: m,
@@ -283,4 +284,33 @@ class _DayPill extends StatelessWidget {
               style: const TextStyle(fontSize: 12, color: Colors.white)),
         ),
       );
+}
+
+// ---------- سطر المكالمة بالمحادثة ----------
+
+class _CallPill extends StatelessWidget {
+  const _CallPill({required this.text});
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final missed = text.contains('فائتة');
+    return Center(
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+        decoration: BoxDecoration(
+          color: const Color(0x66000000),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          Icon(missed ? Icons.call_missed : Icons.call,
+              size: 14,
+              color: missed ? const Color(0xFFFF6B60) : Colors.white),
+          const SizedBox(width: 6),
+          Text(text, style: const TextStyle(fontSize: 12, color: Colors.white)),
+        ]),
+      ),
+    );
+  }
 }

@@ -36,7 +36,8 @@ class Msg {
 }
 
 class _Bubble extends StatelessWidget {
-  const _Bubble({super.key, required this.m, required this.onLongPress});
+  const _Bubble({super.key, required this.m, required this.onLongPress, required this.t});
+  final ChatTheme t;
   final Msg m;
   final VoidCallback onLongPress;
 
@@ -62,7 +63,7 @@ class _Bubble extends StatelessWidget {
             key: ValueKey('voice-${m.id}'), path: path, ms: m.durationMs);
       }
     }
-    return Text(m.text, style: const TextStyle(fontSize: 16));
+    return Text(m.text, style: TextStyle(fontSize: 16, color: m.mine ? Colors.white : t.text));
   }
 
   @override
@@ -82,7 +83,7 @@ class _Bubble extends StatelessWidget {
               ? const EdgeInsets.all(4)
               : const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           decoration: BoxDecoration(
-              color: m.mine ? _blue : const Color(0x33FFFFFF),
+              color: m.mine ? t.mine : t.theirs,
               borderRadius: BorderRadius.circular(20)),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -96,8 +97,7 @@ class _Bubble extends StatelessWidget {
                     : EdgeInsets.zero,
                 child: Row(mainAxisSize: MainAxisSize.min, children: [
                   Text(_hhmm(m.at),
-                      style: const TextStyle(
-                          fontSize: 11, color: Color(0xB3FFFFFF))),
+                      style: TextStyle(fontSize: 11, color: m.mine ? const Color(0xB3FFFFFF) : t.text.withValues(alpha: 0.7))),
                   if (m.mine) ...[
                     const SizedBox(width: 4),
                     Icon(m.read ? Icons.done_all : Icons.done,

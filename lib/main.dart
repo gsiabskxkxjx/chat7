@@ -68,6 +68,7 @@ part 'auth_screens.dart';
 part 'recovery_screens.dart';
 part 'theme_palette.dart';
 part 'theme_settings.dart';
+part 'feedback_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

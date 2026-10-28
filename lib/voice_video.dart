@@ -113,6 +113,14 @@ class _VoiceState extends State<_VoiceBubble> {
   VideoPlayerController? _c;
   bool _loading = false;
   bool _failed = false;
+  double _speed = 1.0; // سرعة التشغيل: 1x أو 1.5x أو 2x
+
+  void _cycleSpeed() {
+    final next = _speed == 1.0 ? 1.5 : (_speed == 1.5 ? 2.0 : 1.0);
+    setState(() => _speed = next);
+    final c = _c;
+    if (c != null) unawaited(c.setPlaybackSpeed(next));
+  }
 
   @override
   void dispose() {
@@ -162,6 +170,7 @@ class _VoiceState extends State<_VoiceBubble> {
       nc.addListener(_tick);
       _c = nc;
       c = nc;
+      unawaited(nc.setPlaybackSpeed(_speed));
       setState(() => _loading = false);
     }
     if (c.value.isPlaying) {
@@ -230,6 +239,21 @@ class _VoiceState extends State<_VoiceBubble> {
                   style:
                       const TextStyle(fontSize: 11, color: Color(0xCCFFFFFF))),
             ],
+          ),
+        ),
+        const SizedBox(width: 6),
+        GestureDetector(
+          onTap: _cycleSpeed,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+            decoration: BoxDecoration(
+              color: const Color(0x33FFFFFF),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(
+              _speed == 1.0 ? '1x' : (_speed == 1.5 ? '1.5x' : '2x'),
+              style: const TextStyle(fontSize: 11, color: Colors.white),
+            ),
           ),
         ),
       ]),

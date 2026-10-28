@@ -108,6 +108,7 @@ extension _ChatActions on _ChatState {
               files.map((f) => '${widget.chat.id}/${f.name}').toList());
         }
       } catch (_) {}
+      await _wipeChatBg(widget.chat.id);
       await _db.rpc('block_partner');
       if (!mounted) return;
       Navigator.of(context).pushAndRemoveUntil(

@@ -104,6 +104,7 @@ extension _ChatUi on _ChatState {
                 onLongPress: () => _msgMenu(m),
                 t: _t,
                 quote: _quoteOf(msgs, m.replyToId),
+                reactions: _reactionChips(_reactions, m.id),
               );
             },
           );
@@ -425,5 +426,46 @@ String? _quoteOf(List<Msg> msgs, int? id) {
       return '🎤 رسالة صوتية';
     default:
       return x.text;
+  }
+}
+
+// ---------- تفاعلات الإيموجي ----------
+
+const _reactEmojis = ['👍', '😂', '😮', '😢', '🙏', '🔥'];
+
+/// يحوّل التفاعلات لقائمة عرض: إيموجي، ومعه العدد إذا أكثر من واحد
+List<String>? _reactionChips(Map<int, Map<String, String>> all, int id) {
+  final byUser = all[id];
+  if (byUser == null || byUser.isEmpty) return null;
+  final counts = <String, int>{};
+  for (final e in byUser.values) {
+    counts[e] = (counts[e] ?? 0) + 1;
+  }
+  return [
+    for (final e in counts.entries) e.value > 1 ? '${e.key} ${e.value}' : e.key
+  ];
+}
+
+extension _ChatReact on _ChatState {
+  /// نفس الإيموجي مرة ثانية = يلغي، وإيموجي ثاني = يغيّر
+  Future<void> _react(int msgId, String emoji) async {
+    final mine = _reactions[msgId]?[_uid];
+    try {
+      if (mine == emoji) {
+        await _db
+            .from('reactions')
+            .delete()
+            .eq('message_id', msgId)
+            .eq('user_id', _uid);
+      } else {
+        await _db.from('reactions').upsert({
+          'message_id': msgId,
+          'user_id': _uid,
+          'emoji': emoji,
+        });
+      }
+    } catch (_) {
+      if (mounted) _toast(context, 'تعذر حفظ التفاعل.');
+    }
   }
 }

@@ -341,6 +341,19 @@ extension _ChatActions on _ChatState {
       context: context,
       builder: (ctx) => SafeArea(
         child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+            child: Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [
+              for (final e in _reactEmojis)
+                InkWell(
+                  onTap: () => Navigator.pop(ctx, 'react:$e'),
+                  child: Padding(
+                    padding: const EdgeInsets.all(6),
+                    child: Text(e, style: const TextStyle(fontSize: 26)),
+                  ),
+                ),
+            ]),
+          ),
           ListTile(
             leading: const Icon(Icons.reply),
             title: const Text('رد'),
@@ -363,7 +376,9 @@ extension _ChatActions on _ChatState {
       ),
     );
     if (!mounted || act == null) return;
-    if (act == 'reply') {
+    if (act.startsWith('react:')) {
+      await _react(m.id, act.substring(6));
+    } else if (act == 'reply') {
       setState(() => _replyTo = m);
     } else if (act == 'copy') {
       await Clipboard.setData(ClipboardData(text: m.text));

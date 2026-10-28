@@ -12,6 +12,7 @@ class Msg {
     this.mediaPath,
     this.durationMs = 0,
     this.at,
+    this.replyToId,
   });
 
   final int id;
@@ -22,6 +23,7 @@ class Msg {
   final String? mediaPath;
   final int durationMs;
   final DateTime? at;
+  final int? replyToId; // رقم الرسالة اللي هذي رد عليها
 
   factory Msg.fromRow(Map<String, dynamic> r, String uid) => Msg(
         id: (r['id'] as num).toInt(),
@@ -32,12 +34,14 @@ class Msg {
         mediaPath: r['media_path'] as String?,
         durationMs: (r['duration_ms'] as num?)?.toInt() ?? 0,
         at: DateTime.tryParse((r['created_at'] as String?) ?? '')?.toLocal(),
+        replyToId: (r['reply_to_id'] as num?)?.toInt(),
       );
 }
 
 class _Bubble extends StatelessWidget {
-  const _Bubble({super.key, required this.m, required this.onLongPress, required this.t});
+  const _Bubble({super.key, required this.m, required this.onLongPress, required this.t, this.quote});
   final ChatTheme t;
+  final String? quote; // نص الرسالة الأصلية (إذا هذي رد)
   final Msg m;
   final VoidCallback onLongPress;
 
@@ -89,6 +93,23 @@ class _Bubble extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
+              if (m.replyToId != null)
+                Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.only(bottom: 6),
+                  padding: const EdgeInsets.fromLTRB(8, 4, 8, 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0x33000000),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border(
+                        right: BorderSide(
+                            color: m.mine ? Colors.white : t.accent, width: 3)),
+                  ),
+                  child: Text(quote ?? 'رسالة',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 12, color: Colors.white70)),
+                ),
               _content(context),
               const SizedBox(height: 2),
               Padding(

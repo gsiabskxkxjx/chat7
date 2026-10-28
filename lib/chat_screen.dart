@@ -70,6 +70,7 @@ class _ChatState extends State<ChatScreen> {
   DateTime _typingSeen = DateTime.fromMillisecondsSinceEpoch(0); // آخر مرة شفنا الطرف الثاني يكتب
   DateTime _typingSent = DateTime.fromMillisecondsSinceEpoch(0); // آخر مرة أرسلنا إشارة
   Timer? _typingTimer;
+  DateTime? _linkedAt; // تاريخ ارتباطكم (لعداد الأيام)
 
   @override
   void initState() {

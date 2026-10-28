@@ -11,6 +11,8 @@ class Profile {
     this.showOnline = true,
     this.readReceipts = true,
     this.gender,
+    this.muteMessages = false,
+    this.muteCalls = false,
   });
 
   final String id;
@@ -20,6 +22,8 @@ class Profile {
   final bool showOnline;
   final bool readReceipts;
   final String? gender; // male | female
+  final bool muteMessages; // كتم إشعارات الرسائل
+  final bool muteCalls; // كتم إشعارات المكالمات
 
   factory Profile.fromRow(Map<String, dynamic> r) => Profile(
         id: r['id'] as String,
@@ -29,6 +33,8 @@ class Profile {
         showOnline: (r['show_online'] as bool?) ?? true,
         readReceipts: (r['read_receipts'] as bool?) ?? true,
         gender: r['gender'] as String?,
+        muteMessages: (r['mute_messages'] as bool?) ?? false,
+        muteCalls: (r['mute_calls'] as bool?) ?? false,
       );
 
   Profile copyWith({
@@ -38,6 +44,8 @@ class Profile {
     bool? showOnline,
     bool? readReceipts,
     String? gender,
+    bool? muteMessages,
+    bool? muteCalls,
   }) =>
       Profile(
         id: id,
@@ -47,6 +55,8 @@ class Profile {
         showOnline: showOnline ?? this.showOnline,
         readReceipts: readReceipts ?? this.readReceipts,
         gender: gender ?? this.gender,
+        muteMessages: muteMessages ?? this.muteMessages,
+        muteCalls: muteCalls ?? this.muteCalls,
       );
 }
 
@@ -223,6 +233,20 @@ class _ProfileState extends State<ProfileScreen> {
                               title: const Text('علامات القراءة'),
                               subtitle: const Text(
                                   'يعرف الطرف الثاني إنك قرأت رسالته'),
+                            ),
+                            SwitchListTile(
+                              value: p.muteMessages,
+                              onChanged: (v) => _toggle('mute_messages', v),
+                              title: const Text('كتم إشعارات الرسائل'),
+                              subtitle: const Text(
+                                  'ما توصلك إشعارات الرسائل، والمحادثة تبقى شغالة عادي'),
+                            ),
+                            SwitchListTile(
+                              value: p.muteCalls,
+                              onChanged: (v) => _toggle('mute_calls', v),
+                              title: const Text('كتم إشعارات المكالمات'),
+                              subtitle: const Text(
+                                  'ما توصلك إشعارات المكالمات والتطبيق مسكّر (المكالمات داخل التطبيق ما تتأثر)'),
                             ),
                           ]),
                         ),

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io' show File;
+import 'dart:math' show Random;
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -60,6 +61,7 @@ part 'voice_video.dart';
 part 'bubbles.dart';
 part 'push.dart';
 part 'auth_screens.dart';
+part 'recovery_screens.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

@@ -71,6 +71,7 @@ class _ChatState extends State<ChatScreen> {
   DateTime _typingSent = DateTime.fromMillisecondsSinceEpoch(0); // آخر مرة أرسلنا إشارة
   Timer? _typingTimer;
   DateTime? _linkedAt; // تاريخ ارتباطكم (لعداد الأيام)
+  Msg? _replyTo; // الرسالة اللي تبي ترد عليها
 
   @override
   void initState() {

@@ -184,6 +184,15 @@ class _PairState extends State<PairScreen> {
                                     _toast(context, 'تم نسخ الرمز');
                                   },
                           ),
+                          IconButton(
+                            icon: const Icon(Icons.share_rounded),
+                            onPressed: _code == null
+                                ? null
+                                : () => SharePlus.instance.share(ShareParams(
+                                      text:
+                                          'انضم لي في بيناتنا! رمز الدعوة: ${_code!}\nالرمز صالح لمدة 15 دقيقة، وتدخله بخانة "رمز الشخص الآخر".',
+                                    )),
+                          ),
                         ]),
                       ),
                       const SizedBox(height: 16),

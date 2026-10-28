@@ -60,7 +60,9 @@ extension _ProfileActions on _ProfileState {
                 avatarPath: p.avatarPath,
                 showOnline: p.showOnline,
                 readReceipts: p.readReceipts,
-                gender: p.gender)
+                gender: p.gender,
+                muteMessages: p.muteMessages,
+                muteCalls: p.muteCalls)
             : p.copyWith(displayName: n));
         _toast(context, 'تم حفظ الاسم');
       }
@@ -73,9 +75,7 @@ extension _ProfileActions on _ProfileState {
   Future<void> _toggle(String column, bool v) async {
     final p = _p;
     if (p == null) return;
-    setState(() => _p = column == 'show_online'
-        ? p.copyWith(showOnline: v)
-        : p.copyWith(readReceipts: v));
+    setState(() => _p = _withToggle(p, column, v));
     try {
       await _db.from('profiles').update({column: v}).eq('id', _uid);
     } catch (_) {
@@ -256,5 +256,19 @@ extension _ProfileActions on _ProfileState {
       setState(() => _busy = false);
       _toast(context, 'تعذر إلغاء الارتباط. جرّب مرة ثانية.');
     }
+  }
+}
+
+/// يحدّث إعداد واحد محلياً بعد ما نحفظه بالسيرفر
+Profile _withToggle(Profile p, String column, bool v) {
+  switch (column) {
+    case 'show_online':
+      return p.copyWith(showOnline: v);
+    case 'mute_messages':
+      return p.copyWith(muteMessages: v);
+    case 'mute_calls':
+      return p.copyWith(muteCalls: v);
+    default:
+      return p.copyWith(readReceipts: v);
   }
 }

@@ -56,12 +56,20 @@ class _ChatState extends State<ChatScreen> {
   Timer? _recTimer;
   bool _recording = false;
   int _recSecs = 0;
+  // مظهر المحادثة (الثيم والخلفية) - يتحدث لحاله من قاعدة البيانات
+  ChatTheme _t = chatThemes.first;
+  String _bgKind = 'gradient';
+  String? _bgPath;
+  String? _bgUrl;
+  int _bgStrength = 10;
+  StreamSubscription<List<Map<String, dynamic>>>? _lookSub;
 
   @override
   void initState() {
     super.initState();
     unawaited(Push.start());
     _scroll.addListener(_onScroll);
+    _watchLook();
     _pName = widget.chat.partnerName;
     _pAvatar = widget.chat.partnerAvatar;
     _pGender = widget.chat.partnerGender;
@@ -82,6 +90,7 @@ class _ChatState extends State<ChatScreen> {
   void dispose() {
     _pulse.stop();
     _recTimer?.cancel();
+    _lookSub?.cancel();
     _scroll.dispose();
     unawaited(_rec.cancel().then((_) => _rec.dispose()));
     unawaited(_hub.dispose());
@@ -148,15 +157,22 @@ class _ChatState extends State<ChatScreen> {
   Widget build(BuildContext context) {
     final typing = _c.text.trim().isNotEmpty;
     return Scaffold(
-      body: Backdrop(
-        child: SafeArea(
-          child: Column(children: [
-            _header(),
-            Expanded(child: _messages()),
-            _inputBar(typing),
-          ]),
+      body: Stack(fit: StackFit.expand, children: [
+        _chatBackground(),
+        SafeArea(
+          child: IconTheme(
+            data: IconThemeData(color: _t.text),
+            child: DefaultTextStyle.merge(
+              style: TextStyle(color: _t.text),
+              child: Column(children: [
+                _header(),
+                Expanded(child: _messages()),
+                _inputBar(typing),
+              ]),
+            ),
+          ),
         ),
-      ),
+      ]),
     );
   }
 }

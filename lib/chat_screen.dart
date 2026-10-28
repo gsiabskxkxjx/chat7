@@ -65,6 +65,11 @@ class _ChatState extends State<ChatScreen> {
   StreamSubscription<List<Map<String, dynamic>>>? _lookSub;
   int _statusIdx = 0; // رقم الجملة الحالية (تتبدل كل 4 ثواني)
   Timer? _statusTimer;
+  // "يكتب الآن..." - قناة بث خفيفة بين الطرفين (ما تحفظ شي بقاعدة البيانات)
+  RealtimeChannel? _typeCh;
+  DateTime _typingSeen = DateTime.fromMillisecondsSinceEpoch(0); // آخر مرة شفنا الطرف الثاني يكتب
+  DateTime _typingSent = DateTime.fromMillisecondsSinceEpoch(0); // آخر مرة أرسلنا إشارة
+  Timer? _typingTimer;
 
   @override
   void initState() {
@@ -72,6 +77,9 @@ class _ChatState extends State<ChatScreen> {
     unawaited(Push.start());
     _scroll.addListener(_onScroll);
     _watchLook();
+    _typeCh = _db.channel('typing-${widget.chat.id}')
+      ..onBroadcast(event: 'typing', callback: _onTypingEvent)
+      ..subscribe();
     _statusTimer = Timer.periodic(const Duration(seconds: 4), (_) {
       if (!mounted) return;
       // ما نبدل والتطبيق بالخلفية
@@ -107,6 +115,9 @@ class _ChatState extends State<ChatScreen> {
     _recTimer?.cancel();
     _lookSub?.cancel();
     _statusTimer?.cancel();
+    _typingTimer?.cancel();
+    final tc = _typeCh;
+    if (tc != null) unawaited(_db.removeChannel(tc).then((_) {}));
     _scroll.dispose();
     unawaited(_rec.cancel().then((_) => _rec.dispose()));
     unawaited(_hub.dispose());
@@ -145,7 +156,37 @@ class _ChatState extends State<ChatScreen> {
     return (n != null && n.isNotEmpty) ? n : '@${widget.chat.partner}';
   }
 
+  void _onTypingEvent(Map<String, dynamic> payload) {
+    final inner = payload['payload'];
+    final uid = inner is Map ? inner['uid'] : payload['uid'];
+    if (uid == _uid || !mounted) return;
+    setState(() => _typingSeen = DateTime.now());
+    _typingTimer?.cancel();
+    _typingTimer = Timer(const Duration(seconds: 4), () {
+      if (mounted) setState(() {});
+    });
+  }
+
+  // نرسل إشارة "يكتب" كل ثانيتين تقريباً وأنت تكتب
+  void _notifyTyping() {
+    if (_c.text.trim().isEmpty) return;
+    final now = DateTime.now();
+    if (now.difference(_typingSent) < const Duration(seconds: 2)) return;
+    _typingSent = now;
+    final ch = _typeCh;
+    if (ch != null) unawaited(_sendTyping(ch));
+  }
+
+  Future<void> _sendTyping(RealtimeChannel ch) async {
+    try {
+      await ch.sendBroadcastMessage(event: 'typing', payload: {'uid': _uid});
+    } catch (_) {}
+  }
+
   String _status() {
+    if (DateTime.now().difference(_typingSeen) < const Duration(seconds: 4)) {
+      return 'يكتب الآن...';
+    }
     final lines = statusLines(
       online: _online,
       age: _age,

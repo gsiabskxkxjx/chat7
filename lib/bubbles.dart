@@ -39,9 +39,10 @@ class Msg {
 }
 
 class _Bubble extends StatelessWidget {
-  const _Bubble({super.key, required this.m, required this.onLongPress, required this.t, this.quote});
+  const _Bubble({super.key, required this.m, required this.onLongPress, required this.t, this.quote, this.reactions});
   final ChatTheme t;
   final String? quote; // نص الرسالة الأصلية (إذا هذي رد)
+  final List<String>? reactions; // التفاعلات مثل: 👍 2
   final Msg m;
   final VoidCallback onLongPress;
 
@@ -111,6 +112,22 @@ class _Bubble extends StatelessWidget {
                       style: const TextStyle(fontSize: 12, color: Colors.white70)),
                 ),
               _content(context),
+              if (reactions != null && reactions!.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Wrap(spacing: 4, runSpacing: 4, children: [
+                    for (final r in reactions!)
+                      Container(
+                        padding:
+                            const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: const Color(0x55000000),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(r, style: const TextStyle(fontSize: 13)),
+                      ),
+                  ]),
+                ),
               const SizedBox(height: 2),
               Padding(
                 padding: big

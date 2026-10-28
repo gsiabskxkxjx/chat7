@@ -194,6 +194,12 @@ jobs:
 
       - run: flutter build apk --release --build-number=${{ github.run_number }}
 
+      - name: Show package and target SDK (for Google Play)
+        continue-on-error: true
+        run: |
+          AAPT=$(ls "$ANDROID_HOME"/build-tools/*/aapt 2>/dev/null | sort -V | tail -n 1)
+          "$AAPT" dump badging build/app/outputs/flutter-apk/app-release.apk | grep -E "^package:|^sdkVersion|^targetSdkVersion" || true
+
       - name: Publish APK as a release
         uses: softprops/action-gh-release@v2
         with:

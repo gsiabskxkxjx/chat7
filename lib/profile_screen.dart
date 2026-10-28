@@ -279,6 +279,12 @@ class _ProfileState extends State<ProfileScreen> {
                                       builder: (_) => const FeedbackScreen())),
                             ),
                             ListTile(
+                              leading: const Icon(Icons.alternate_email),
+                              title: const Text('تغيير اسم المستخدم'),
+                              subtitle: Text('@${p.username} (مرة كل 30 يوم)'),
+                              onTap: _busy ? null : _changeUsername,
+                            ),
+                            ListTile(
                               leading: const Icon(Icons.key_outlined),
                               title: const Text('تغيير كلمة السر'),
                               onTap: () => Navigator.of(context).push(

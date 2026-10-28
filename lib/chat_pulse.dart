@@ -8,6 +8,7 @@ class ChatPulse with WidgetsBindingObserver {
     required this.onPartner,
     required this.onGone,
     required this.onResume,
+    required this.onNet,
   });
 
   final String chatId;
@@ -22,6 +23,9 @@ class ChatPulse with WidgetsBindingObserver {
 
   /// التطبيق رجع للواجهة.
   final VoidCallback onResume;
+
+  /// true = الاتصال شغال، false = ما قدر يوصل للسيرفر
+  final void Function(bool ok) onNet;
 
   Timer? _timer;
   bool foreground = true;
@@ -67,6 +71,7 @@ class ChatPulse with WidgetsBindingObserver {
     try {
       final r = await _db.rpc('partner_status', params: {'p_chat': chatId});
       if (_stopped) return;
+      onNet(true);
       final rows = r as List;
       if (rows.isEmpty) {
         stop();
@@ -81,6 +86,8 @@ class ChatPulse with WidgetsBindingObserver {
         m['pavatar'] as String?,
         m['pgender'] as String?,
       );
-    } catch (_) {}
+    } catch (_) {
+      if (!_stopped) onNet(false);
+    }
   }
 }

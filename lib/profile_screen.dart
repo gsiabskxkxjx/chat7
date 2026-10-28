@@ -178,6 +178,22 @@ class _ProfileState extends State<ProfileScreen> {
     }
   }
 
+  Future<void> _newRecovery() async {
+    setState(() => _busy = true);
+    try {
+      final code = await _issueRecoveryCode();
+      if (!mounted) return;
+      setState(() => _busy = false);
+      await Navigator.of(context).push(MaterialPageRoute(
+          builder: (_) => RecoveryCodeScreen(
+              code: code, onDone: (c) => Navigator.of(c).pop())));
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _busy = false);
+      _toast(context, 'تعذر إنشاء الرمز. جرّب مرة ثانية.');
+    }
+  }
+
   Future<void> _logout() async {
     final ok = await showDialog<bool>(
       context: context,
@@ -495,6 +511,13 @@ class _ProfileState extends State<ProfileScreen> {
                                           const ChangePasswordScreen())),
                             ),
                             ListTile(
+                              leading: const Icon(Icons.vpn_key_outlined),
+                              title: const Text('رمز استرجاع الحساب'),
+                              subtitle:
+                                  const Text('ينشئ رمز جديد ويلغي القديم'),
+                              onTap: _busy ? null : _newRecovery,
+                            ),
+                            ListTile(
                               leading: const Icon(Icons.logout),
                               title: const Text('تسجيل الخروج'),
                               onTap: _busy ? null : _logout,
@@ -512,24 +535,4 @@ class _ProfileState extends State<ProfileScreen> {
                           const SizedBox(height: 16),
                           Glass(
                             radius: 28,
-                            padding: const EdgeInsets.symmetric(vertical: 4),
-                            child: ListTile(
-                              leading: const Icon(Icons.link_off,
-                                  color: Color(0xFFFF6B60)),
-                              title: const Text('إلغاء الارتباط',
-                                  style: TextStyle(color: Color(0xFFFF6B60))),
-                              subtitle: Text(
-                                  'مع @${widget.chat!.partner} وحذف المحادثة'),
-                              onTap: _busy ? null : _unlink,
-                            ),
-                          ),
-                        ],
-                      ]),
-                    ),
-            ),
-          ]),
-        ),
-      ),
-    );
-  }
-}
+              

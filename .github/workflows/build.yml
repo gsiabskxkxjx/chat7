@@ -33,6 +33,7 @@ jobs:
           s = open(p, encoding='utf-8').read()
           s = s.replace('android:label="secure_chat"', 'android:label="بيناتنا"')
           perms = '''    <uses-permission android:name="android.permission.INTERNET"/>
+              <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="29"/>
               <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
               <uses-permission android:name="android.permission.CAMERA"/>
               <uses-permission android:name="android.permission.RECORD_AUDIO"/>
@@ -46,7 +47,7 @@ jobs:
           '''
           if '<application' not in s:
               raise SystemExit('ERROR: no <application> tag in AndroidManifest.xml')
-          s = s.replace('<application', perms + '    <application', 1)
+          s = s.replace('<application', perms + '    <application android:requestLegacyExternalStorage="true"', 1)
           open(p, 'w', encoding='utf-8').write(s)
           PY
           if [ -f android/app/build.gradle.kts ]; then
@@ -228,10 +229,17 @@ jobs:
       - name: Show package, target SDK and signing certificate
         continue-on-error: true
         run: |
-          AAPT=$(ls "$ANDROID_HOME"/build-tools/*/aapt 2>/dev/null | sort -V | tail -n 1)
-          "$AAPT" dump badging build/app/outputs/flutter-apk/app-release.apk | grep -E "^package:|^sdkVersion|^targetSdkVersion" || true
-          APKSIGNER=$(ls "$ANDROID_HOME"/build-tools/*/apksigner 2>/dev/null | sort -V | tail -n 1)
-          "$APKSIGNER" verify --print-certs build/app/outputs/flutter-apk/app-release.apk | head -n 3 || true
+          APK=build/app/outputs/flutter-apk/app-release.apk
+          BT=$(ls -d "$ANDROID_HOME"/build-tools/*/ 2>/dev/null | sort -V | tail -n 1)
+          echo "=== APK file ==="
+          ls -la "$APK"
+          echo "=== package / sdk levels / ABIs ==="
+          "${BT}aapt" dump badging "$APK" | grep -E "^package:|^sdkVersion|^targetSdkVersion|^native-code" || true
+          echo "=== signature (must say Verifies + v2 true) ==="
+          "${BT}apksigner" verify --verbose --print-certs "$APK" 2>&1 | head -n 14 || true
+          echo "=== zip alignment (must say Verification succesful) ==="
+          "${BT}zipalign" -c -v 4 "$APK" 2>&1 | tail -n 2 || true
+          echo "=== bundle ==="
           ls -la build/app/outputs/bundle/release/ 2>/dev/null || echo "no AAB produced"
 
       - name: Publish APK as a release

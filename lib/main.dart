@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart'
     show ImagePicker, ImageSource, XFile;
 import 'package:path_provider/path_provider.dart' show getTemporaryDirectory;
+import 'package:share_plus/share_plus.dart' show SharePlus, ShareParams;
 import 'package:record/record.dart'
     show AudioEncoder, AudioRecorder, RecordConfig;
 import 'package:video_player/video_player.dart'

@@ -191,8 +191,7 @@ extension _ChatUi on _ChatState {
         ),
         if (!typing)
           IconButton(
-            onPressed: () => Navigator.of(context).push(MaterialPageRoute(
-                builder: (_) => TicTacToeScreen(chatId: widget.chat.id))),
+            onPressed: () => showGamesMenu(context, widget.chat.id),
             icon: Icon(Icons.sports_esports_outlined, color: _t.accent),
           ),
         if (!typing)

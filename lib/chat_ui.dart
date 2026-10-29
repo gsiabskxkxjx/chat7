@@ -87,6 +87,15 @@ extension _ChatUi on _ChatState {
           final entries = _withDayHeaders(msgs);
           // أول شي بالمحادثة (أقدم شي): عداد الأيام، يظهر لما نكون وصلنا لأول الرسائل
           if (!_hasMore && _linkedAt != null) entries.add(_SinceMarker(_linkedAt!));
+          // تذكير: الرسالة الأخيرة من الطرف الثاني، وما رديت عليها من مدة
+          final newest = msgs.isEmpty ? null : msgs.first;
+          if (newest != null &&
+              !newest.mine &&
+              newest.at != null &&
+              newest.id != _dismissedRemindId &&
+              DateTime.now().difference(newest.at!) >= _remindAfter) {
+            entries.insert(0, _RemindMarker(newest.id, newest.at!));
+          }
           return ListView.builder(
             controller: _scroll,
             reverse: true,
@@ -96,6 +105,12 @@ extension _ChatUi on _ChatState {
               final e = entries[i];
               if (e is DateTime) return _DayPill(day: e);
               if (e is _SinceMarker) return _SincePill(since: e.at);
+              if (e is _RemindMarker) {
+                return _RemindBanner(
+                  since: e.since,
+                  onClose: () => setState(() => _dismissedRemindId = e.msgId),
+                );
+              }
               final m = e as Msg;
               if (m.kind == 'call') return _CallPill(text: m.text);
               return _Bubble(
@@ -495,4 +510,47 @@ extension _ChatOffline on _ChatState {
           ),
         ]),
       );
+}
+
+// ---------- تنبيه: ما رديت على الطرف الثاني ----------
+
+const _remindAfter = Duration(hours: 2);
+
+class _RemindMarker {
+  const _RemindMarker(this.msgId, this.since);
+  final int msgId;
+  final DateTime since;
+}
+
+class _RemindBanner extends StatelessWidget {
+  const _RemindBanner({required this.since, required this.onClose});
+  final DateTime since;
+  final VoidCallback onClose;
+
+  @override
+  Widget build(BuildContext context) {
+    final h = DateTime.now().difference(since).inHours;
+    final text =
+        'ما رديت على الطرف الثاني من ${_countAr(h, 'ساعة', 'ساعتين', 'ساعات', 'ساعة')}';
+    return Center(
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 8),
+        padding: const EdgeInsets.fromLTRB(12, 4, 4, 4),
+        decoration: BoxDecoration(
+          color: const Color(0x66B45309),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          const Icon(Icons.schedule, size: 14, color: Colors.white),
+          const SizedBox(width: 6),
+          Text(text, style: const TextStyle(fontSize: 12, color: Colors.white)),
+          IconButton(
+            visualDensity: VisualDensity.compact,
+            onPressed: onClose,
+            icon: const Icon(Icons.close, size: 16, color: Colors.white),
+          ),
+        ]),
+      ),
+    );
+  }
 }

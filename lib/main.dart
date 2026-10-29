@@ -88,6 +88,7 @@ Future<void> main() async {
   try {
     if (Firebase.apps.isEmpty) await Firebase.initializeApp();
     FirebaseMessaging.onBackgroundMessage(_bgCallMessage);
+    await _initCallNotifier();
   } catch (_) {}
   runApp(const App());
 }

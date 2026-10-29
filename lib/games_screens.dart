@@ -218,6 +218,15 @@ void showGamesMenu(BuildContext context, String chatId) {
                 .push(MaterialPageRoute(builder: (_) => RpsScreen(chatId: chatId)));
           },
         ),
+        ListTile(
+          leading: const Icon(Icons.quiz_outlined),
+          title: const Text('كم تعرفني؟'),
+          onTap: () {
+            Navigator.pop(ctx);
+            Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => QuizScreen(chatId: chatId)));
+          },
+        ),
       ]),
     ),
   );

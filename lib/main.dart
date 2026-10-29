@@ -83,6 +83,7 @@ part 'games_screens.dart';
 part 'quiz_screen.dart';
 part 'lists_screens.dart';
 part 'search_screens.dart';
+part 'quick_replies.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

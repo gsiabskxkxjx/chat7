@@ -236,6 +236,15 @@ void showGamesMenu(BuildContext context, String chatId) {
                 builder: (_) => SharedListsScreen(chatId: chatId)));
           },
         ),
+        ListTile(
+          leading: const Icon(Icons.search),
+          title: const Text('بحث في المحادثة'),
+          onTap: () {
+            Navigator.pop(ctx);
+            Navigator.of(context).push(MaterialPageRoute(
+                builder: (_) => SearchScreen(chatId: chatId)));
+          },
+        ),
       ]),
     ),
   );

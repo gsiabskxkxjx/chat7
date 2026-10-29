@@ -74,6 +74,7 @@ class _ChatState extends State<ChatScreen> {
   Msg? _replyTo; // الرسالة اللي تبي ترد عليها
   bool _offline = false; // ما نقدر نوصل للسيرفر (يظهر شريط)
   String? _myGender; // جنسي (نقراه من السيرفر، عشان يتحدث إذا غيّرته)
+  int? _dismissedRemindId; // آخر تذكير أغلقته (رقم آخر رسالة وقتها)
   // التفاعلات: رقم الرسالة -> (رقم المستخدم -> الإيموجي)
   Map<int, Map<String, String>> _reactions = {};
   StreamSubscription<List<Map<String, dynamic>>>? _reactSub;

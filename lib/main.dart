@@ -11,6 +11,7 @@ import 'package:path_provider/path_provider.dart'
     show getTemporaryDirectory, getApplicationSupportDirectory;
 import 'package:local_auth/local_auth.dart'
     show LocalAuthentication, AuthenticationOptions;
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:gal/gal.dart' show Gal;
 import 'package:share_plus/share_plus.dart' show SharePlus, ShareParams;
 import 'package:record/record.dart'
@@ -77,12 +78,17 @@ part 'feedback_screen.dart';
 part 'status_lines.dart';
 part 'memories_screen.dart';
 part 'lock_screens.dart';
+part 'call_notify.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   if (_configured) {
     await Supabase.initialize(url: supabaseUrl, anonKey: supabaseAnonKey);
   }
+  try {
+    if (Firebase.apps.isEmpty) await Firebase.initializeApp();
+    FirebaseMessaging.onBackgroundMessage(_bgCallMessage);
+  } catch (_) {}
   runApp(const App());
 }
 

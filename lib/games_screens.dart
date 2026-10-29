@@ -227,6 +227,15 @@ void showGamesMenu(BuildContext context, String chatId) {
                 MaterialPageRoute(builder: (_) => QuizScreen(chatId: chatId)));
           },
         ),
+        ListTile(
+          leading: const Icon(Icons.checklist_outlined),
+          title: const Text('قوايم مشتركة'),
+          onTap: () {
+            Navigator.pop(ctx);
+            Navigator.of(context).push(MaterialPageRoute(
+                builder: (_) => SharedListsScreen(chatId: chatId)));
+          },
+        ),
       ]),
     ),
   );

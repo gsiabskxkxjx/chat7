@@ -75,6 +75,7 @@ class CallHub {
       _lastRestored = id;
       final s = CallSession.incoming(this, id, data);
       current = s;
+      unawaited(_cancelCallNotif());
       onIncoming(s);
       return;
     }
@@ -105,6 +106,7 @@ class CallHub {
       final s = CallSession.incoming(this, id,
           Map<String, dynamic>.from((offer['data'] as Map?) ?? const {}));
       current = s;
+      unawaited(_cancelCallNotif());
       for (final x in rows) {
         if (x['kind'] == 'candidate') {
           unawaited(s.onSignal('candidate',

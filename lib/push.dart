@@ -15,7 +15,7 @@ class Push {
     if (_ready || _busy) return;
     _busy = true;
     try {
-      await Firebase.initializeApp();
+      if (Firebase.apps.isEmpty) await Firebase.initializeApp();
       final fm = FirebaseMessaging.instance;
       final perm = await fm.requestPermission();
       if (perm.authorizationStatus == AuthorizationStatus.denied) {

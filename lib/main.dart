@@ -20,7 +20,7 @@ import 'package:video_player/video_player.dart'
     show VideoPlayer, VideoPlayerController, VideoProgressIndicator;
 import 'package:firebase_core/firebase_core.dart' show Firebase;
 import 'package:firebase_messaging/firebase_messaging.dart'
-    show AuthorizationStatus, FirebaseMessaging;
+    show AuthorizationStatus, FirebaseMessaging, RemoteMessage;
 import 'package:flutter_webrtc/flutter_webrtc.dart'
     show
         Helper,

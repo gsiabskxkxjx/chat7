@@ -245,6 +245,14 @@ void showGamesMenu(BuildContext context, String chatId) {
                 builder: (_) => SearchScreen(chatId: chatId)));
           },
         ),
+        ListTile(
+          leading: const Icon(Icons.flash_on_outlined),
+          title: const Text('ردود سريعة'),
+          onTap: () {
+            Navigator.pop(ctx);
+            showQuickReplies(context, chatId);
+          },
+        ),
       ]),
     ),
   );

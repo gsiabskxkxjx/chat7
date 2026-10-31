@@ -333,6 +333,20 @@ class _ProfileState extends State<ProfileScreen> {
                             radius: 28,
                             padding: const EdgeInsets.symmetric(vertical: 4),
                             child: ListTile(
+                              leading: const Icon(Icons.delete_sweep_outlined,
+                                  color: Color(0xFFFF6B60)),
+                              title: const Text('مسح سجل المحادثة',
+                                  style: TextStyle(color: Color(0xFFFF6B60))),
+                              subtitle: const Text(
+                                  'يحذف الرسائل والوسائط عند الطرفين، والربط يبقى'),
+                              onTap: _busy ? null : _clearHistory,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Glass(
+                            radius: 28,
+                            padding: const EdgeInsets.symmetric(vertical: 4),
+                            child: ListTile(
                               leading: const Icon(Icons.palette_outlined),
                               title: const Text('مظهر التطبيق'),
                               subtitle: const Text(

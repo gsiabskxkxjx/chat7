@@ -2,30 +2,33 @@ part of 'main.dart';
 
 // ---------- المكالمات: الإشارات (signaling) عبر Supabase ----------
 
-/// إعدادات ICE: STUN مجاني من Google، و TURN اختياري من turn_config.dart
+/// إعدادات ICE: STUN مجاني من Google، و TURN من turn_config.dart
+/// عند الوضع الاحتياطي (relay): نستخدم TURN عبر TCP/TLS بس، لأن الـ VPN غالباً يمنع UDP
+const _forceRelay = true;
+
 Map<String, dynamic> _rtcConfig() {
-  final servers = <Map<String, dynamic>>[
-    {
+  final hasTurn = turnUrls.isNotEmpty && turnUsername.isNotEmpty && turnCredential.isNotEmpty;
+  final servers = <Map<String, dynamic>>[];
+  if (!(_forceRelay && hasTurn)) {
+    servers.add({
       'urls': [
         'stun:stun.l.google.com:19302',
         'stun:stun1.l.google.com:19302',
       ],
-    },
-  ];
-  if (turnUrls.isNotEmpty &&
-      turnUsername.isNotEmpty &&
-      turnCredential.isNotEmpty) {
+    });
+  }
+  if (hasTurn) {
+    final urls = _forceRelay
+        ? turnUrls.where((u) => u.startsWith('turns:') || u.contains('transport=tcp')).toList()
+        : turnUrls;
     servers.add({
-      'urls': turnUrls,
+      'urls': urls.isEmpty ? turnUrls : urls,
       'username': turnUsername,
       'credential': turnCredential,
     });
   }
-  // اختبار: إذا true، المكالمة تمر عبر خادم TURN بس (يحل مشاكل الشبكات المختلفة مثل بيانات الجوال مع واي فاي البيت)
-  const forceRelay = true;
   final cfg = <String, dynamic>{'iceServers': servers, 'sdpSemantics': 'unified-plan'};
-  final hasTurn = turnUrls.isNotEmpty && turnUsername.isNotEmpty && turnCredential.isNotEmpty;
-  if (forceRelay && hasTurn) cfg['iceTransportPolicy'] = 'relay';
+  if (_forceRelay && hasTurn) cfg['iceTransportPolicy'] = 'relay';
   return cfg;
 }
 

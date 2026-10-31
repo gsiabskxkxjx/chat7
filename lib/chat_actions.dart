@@ -133,8 +133,11 @@ extension _ChatActions on _ChatState {
   Future<void> _openProfile() async {
     await Navigator.of(context).push(
         MaterialPageRoute(builder: (_) => ProfileScreen(chat: widget.chat)));
-    // رجعنا من الإعدادات: نحدّث جنسي إذا تغيّر
-    if (mounted) unawaited(_reloadMyGender());
+    // رجعنا من الإعدادات: نحدّث جنسي إذا تغيّر، ونعيد تحميل الرسائل (إذا انمسح السجل)
+    if (mounted) {
+      setState(() => _stream = _makeStream());
+      unawaited(_reloadMyGender());
+    }
   }
 
   Future<void> _markRead() async {

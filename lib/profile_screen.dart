@@ -329,6 +329,21 @@ class _ProfileState extends State<ProfileScreen> {
                           ]),
                         ),
                         if (widget.chat != null) ...[
+                          Glass(
+                            radius: 28,
+                            padding: const EdgeInsets.symmetric(vertical: 4),
+                            child: ListTile(
+                              leading: const Icon(Icons.palette_outlined),
+                              title: const Text('مظهر التطبيق'),
+                              subtitle: const Text(
+                                  'الثيم والخلفية للتطبيق كله، يشوفها الطرفين'),
+                              onTap: () => Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                      builder: (_) => ThemeSettingsScreen(
+                                          chatId: widget.chat!.id))),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
                           const SizedBox(height: 16),
                           Glass(
                             radius: 28,

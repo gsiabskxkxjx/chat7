@@ -350,3 +350,46 @@ extension _ProfileUsername on _ProfileState {
     if (mounted) setState(() => _busy = false);
   }
 }
+
+extension _ProfileClear on _ProfileState {
+  /// يمسح كل الرسائل والوسائط والألعاب والقوايم عند الطرفين، والربط يبقى
+  Future<void> _clearHistory() async {
+    final chat = widget.chat;
+    if (chat == null || _busy) return;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('مسح سجل المحادثة؟'),
+        content: const Text(
+            'راح تنحذف كل الرسائل والصور والفيديو والألعاب والقوايم عند الطرفين. الربط يبقى، وما يرجع شي بعد المسح.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('تراجع')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('مسح',
+                  style: TextStyle(color: Color(0xFFFF6B60)))),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    setState(() => _busy = true);
+    try {
+      final res = await _db.rpc('clear_chat', params: {'p_chat': chat.id});
+      final paths =
+          (res as List?)?.map((e) => e.toString()).toList() ?? <String>[];
+      // نمسح ملفات الوسائط من التخزين، بدفعات
+      for (var i = 0; i < paths.length; i += 100) {
+        final end = (i + 100 > paths.length) ? paths.length : i + 100;
+        try {
+          await _db.storage.from('chat-media').remove(paths.sublist(i, end));
+        } catch (_) {}
+      }
+      if (mounted) _toast(context, 'تم مسح سجل المحادثة');
+    } catch (_) {
+      if (mounted) _toast(context, 'تعذر المسح، جرّب مرة ثانية.');
+    }
+    if (mounted) setState(() => _busy = false);
+  }
+}

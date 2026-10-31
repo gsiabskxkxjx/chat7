@@ -45,7 +45,64 @@ class Backdrop extends StatelessWidget {
       );
 
   @override
-  Widget build(BuildContext context) => Container(
+  Widget build(BuildContext context) => ValueListenableBuilder<AppLook?>(
+        valueListenable: _appLook,
+        builder: (_, look, __) =>
+            look == null ? _defaultBg(context) : _lookBg(look),
+      );
+
+  /// الخلفية المشتركة (ثيم الزوج وخلفيته)
+  Widget _lookBg(AppLook look) {
+    final t = look.theme;
+    final grad = DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [t.top, t.bottom],
+        ),
+      ),
+    );
+    Widget bg = grad;
+    final url = look.url;
+    if (look.kind != 'gradient' && url != null) {
+      final img = Image.network(
+        url,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+        errorBuilder: (_, __, ___) => grad,
+      );
+      if (look.kind == 'plain') {
+        bg = img;
+      } else {
+        final s = look.strength.toDouble();
+        final blurred = ImageFiltered(
+          imageFilter: ImageFilter.blur(sigmaX: s, sigmaY: s),
+          child: img,
+        );
+        bg = look.kind == 'blur'
+            ? blurred
+            : Stack(fit: StackFit.expand, children: [
+                blurred,
+                ColoredBox(color: t.top.withValues(alpha: 0.45)),
+              ]);
+      }
+    }
+    // الثيم النهاري: النص والأيقونات داكنة عشان تبان
+    return Stack(fit: StackFit.expand, children: [
+      bg,
+      DefaultTextStyle.merge(
+        style: TextStyle(color: t.text),
+        child: IconTheme(
+          data: IconThemeData(color: t.text),
+          child: child,
+        ),
+      ),
+    ]);
+  }
+
+  Widget _defaultBg(BuildContext context) => Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topRight,

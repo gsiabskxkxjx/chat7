@@ -84,11 +84,16 @@ part 'quiz_screen.dart';
 part 'lists_screens.dart';
 part 'search_screens.dart';
 part 'quick_replies.dart';
+part 'app_look.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   if (_configured) {
     await Supabase.initialize(url: supabaseUrl, anonKey: supabaseAnonKey);
+  }
+  if (_configured) {
+    _startAppLook();
+    _db.auth.onAuthStateChange.listen((_) => _startAppLook());
   }
   try {
     if (Firebase.apps.isEmpty) await Firebase.initializeApp();

@@ -21,7 +21,12 @@ Map<String, dynamic> _rtcConfig() {
       'credential': turnCredential,
     });
   }
-  return {'iceServers': servers, 'sdpSemantics': 'unified-plan'};
+  // اختبار: إذا true، المكالمة تمر عبر خادم TURN بس (يحل مشاكل الشبكات المختلفة مثل بيانات الجوال مع واي فاي البيت)
+  const forceRelay = true;
+  final cfg = <String, dynamic>{'iceServers': servers, 'sdpSemantics': 'unified-plan'};
+  final hasTurn = turnUrls.isNotEmpty && turnUsername.isNotEmpty && turnCredential.isNotEmpty;
+  if (forceRelay && hasTurn) cfg['iceTransportPolicy'] = 'relay';
+  return cfg;
 }
 
 /// يربط محادثة واحدة بجدول call_signals ويوزّع الإشارات على المكالمة الحالية.

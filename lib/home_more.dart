@@ -213,3 +213,61 @@ Future<void> _clearUnread(String chatId) async {
     if (chatId.length >= 7) await _callNotifier.cancel(_msgNotifId(chatId));
   } catch (_) {}
 }
+
+// ===== «صار متصل» =====
+
+/// نخبر الطرف الثاني إني فتحت التطبيق (السيرفر يقرر: لو هو مفعّلها، ومرة كل 3 ساعات)
+Future<void> _pingOnline() async {
+  try {
+    await _db.rpc('ping_online');
+  } catch (_) {}
+}
+
+class _OnlineAlertTile extends StatefulWidget {
+  const _OnlineAlertTile();
+
+  @override
+  State<_OnlineAlertTile> createState() => _OnlineAlertTileState();
+}
+
+class _OnlineAlertTileState extends State<_OnlineAlertTile> {
+  bool? _on; // null = السيرفر ما فيه الإعداد بعد
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_load());
+  }
+
+  Future<void> _load() async {
+    final uid = _db.auth.currentUser?.id;
+    if (uid == null) return;
+    try {
+      final r = await _db.from('profiles').select('notify_online').eq('id', uid).maybeSingle();
+      if (mounted) setState(() => _on = r?['notify_online'] == true);
+    } catch (_) {}
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final on = _on;
+    if (on == null) return const SizedBox.shrink();
+    return SwitchListTile(
+      value: on,
+      title: const Text('نبّهني لما يصير متصل'),
+      subtitle: const Text('إشعار لما يفتح التطبيق، مرة كل 3 ساعات بالكثير'),
+      onChanged: (v) async {
+        setState(() => _on = v);
+        try {
+          await _db
+              .from('profiles')
+              .update({'notify_online': v}).eq('id', _db.auth.currentUser!.id);
+        } catch (_) {
+          if (!mounted) return;
+          setState(() => _on = !v);
+          _toast(context, 'تعذر حفظ الإعداد.');
+        }
+      },
+    );
+  }
+}

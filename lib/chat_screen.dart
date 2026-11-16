@@ -145,6 +145,7 @@ class _ChatState extends State<ChatScreen> {
     unawaited(_loadMsgCache());
     unawaited(_loadToday());
     unawaited(_clearUnread(widget.chat.id));
+    unawaited(_pingOnline());
     unawaited(_loadAnniv());
     if (_outbox.isNotEmpty) unawaited(_flushOutbox());
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -200,6 +201,7 @@ class _ChatState extends State<ChatScreen> {
         // نعيد الاشتراك بالرسائل حتى ما يفوتنا شي وقت ما كان التطبيق بالخلفية
         if (mounted) setState(() => _stream = _makeStream());
         unawaited(_clearUnread(widget.chat.id));
+        unawaited(_pingOnline());
         unawaited(_markRead());
         unawaited(_hub.checkPending());
       },

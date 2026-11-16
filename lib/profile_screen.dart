@@ -265,6 +265,7 @@ class _ProfileState extends State<ProfileScreen> {
                               subtitle: const Text(
                                   'ما توصلك إشعارات المكالمات والتطبيق مسكّر (المكالمات داخل التطبيق ما تتأثر)'),
                             ),
+                            const _OnlineAlertTile(),
                           ]),
                         ),
                         const SizedBox(height: 16),

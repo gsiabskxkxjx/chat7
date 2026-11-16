@@ -26,12 +26,14 @@ int _msgNotifId(String chat) =>
 @pragma('vm:entry-point')
 Future<void> _bgCallMessage(RemoteMessage message) async {
   final type = message.data['type'];
-  if (type != 'call' && type != 'message') return;
+  if (type != 'call' && type != 'message' && type != 'online') return;
   try {
     if (Firebase.apps.isEmpty) await Firebase.initializeApp();
     await _initCallNotifier();
     if (type == 'call') {
       await _showCall(message.data);
+    } else if (type == 'online') {
+      await _showOnline(message.data);
     } else {
       await _showMessage(message.data);
     }
@@ -107,6 +109,28 @@ Future<void> _showMessage(Map<String, dynamic> data) async {
       ),
     ),
     payload: chat,
+  );
+}
+
+/// «صار متصل» (الطرف الثاني فتح التطبيق)
+Future<void> _showOnline(Map<String, dynamic> data) async {
+  await _Prefs.load();
+  if (_Prefs.inQuiet()) return;
+  await _callNotifier.show(
+    9003,
+    (data['title'] ?? 'بيناتنا').toString(),
+    (data['body'] ?? 'صار متصل الحين 🟢').toString(),
+    const NotificationDetails(
+      android: AndroidNotificationDetails(
+        'presence',
+        'صار متصل',
+        channelDescription: 'لما الطرف الثاني يفتح التطبيق',
+        importance: Importance.defaultImportance,
+        priority: Priority.defaultPriority,
+        timeoutAfter: 15 * 60 * 1000,
+      ),
+    ),
+    payload: (data['chat'] ?? '').toString(),
   );
 }
 

@@ -9,7 +9,7 @@ Future<File> _onboardFile() async {
 
 Future<bool> _onboardSeen() async {
   try {
-    return (await _onboardFile()).exists();
+    return await (await _onboardFile()).exists();
   } catch (_) {
     return true;
   }

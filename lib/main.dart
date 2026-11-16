@@ -6,6 +6,7 @@ import 'dart:math' as math;
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show RenderRepaintBoundary;
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart' show GoogleFonts;
 import 'package:image_picker/image_picker.dart'
@@ -117,7 +118,6 @@ Future<void> main() async {
 final bool _configured = !supabaseUrl.startsWith('PASTE');
 SupabaseClient get _db => Supabase.instance.client;
 
-const _glass = Color(0x2EFFFFFF);
 const _edge = Color(0x59FFFFFF);
 const _blue = Color(0xFF0A84FF);
 

@@ -1014,6 +1014,7 @@ const _gameNames = {
   'guess20': '20 سؤال',
   'emoji': 'خمّن من الإيموجي',
   'checkers': 'داما',
+  'chess': 'شطرنج',
 };
 
 class ScoresScreen extends StatelessWidget {

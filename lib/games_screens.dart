@@ -317,6 +317,10 @@ void showGamesMenu(BuildContext context, String chatId) {
               () => TwentyQScreen(chatId: chatId)),
           (Icons.emoji_emotions_rounded, 'خمّن من الإيموجي', 'أفلام وأماكن وأمثال',
               () => EmojiGuessScreen(chatId: chatId)),
+          (Icons.blur_circular_rounded, 'داما', 'الأكل إجباري، والملك يمشي بكل الاتجاهات',
+              () => CheckersScreen(chatId: chatId)),
+          (Icons.castle_rounded, 'شطرنج', 'شطرنج كامل بالدور',
+              () => ChessScreen(chatId: chatId)),
           (Icons.leaderboard_rounded, 'نتائجنا وشاراتنا', 'النقاط والإنجازات',
               () => ScoresScreen(chatId: chatId)),
         ])

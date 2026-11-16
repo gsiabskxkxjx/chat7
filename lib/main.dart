@@ -107,6 +107,7 @@ part 'together.dart';
 part 'games2.dart';
 part 'media_more.dart';
 part 'extras2.dart';
+part 'games3.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

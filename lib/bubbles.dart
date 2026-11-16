@@ -79,7 +79,7 @@ class _Bubble extends StatelessWidget {
         return GestureDetector(
           onTap: () => Navigator.of(context).push(MaterialPageRoute(
               builder: (_) => ImageViewerScreen(path: path))),
-          child: _NetImage(path: path),
+          child: Hero(tag: 'img-$path', child: _NetImage(path: path)),
         );
       }
       if (m.kind == 'video') {

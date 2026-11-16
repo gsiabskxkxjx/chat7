@@ -202,7 +202,8 @@ class ImageViewerScreen extends StatelessWidget {
         body: Center(
           child: InteractiveViewer(
             maxScale: 5,
-            child: _NetImage(path: path, full: true),
+            child: Hero(
+                tag: 'img-$path', child: _NetImage(path: path, full: true)),
           ),
         ),
       );

@@ -91,6 +91,7 @@ part 'match_bubble.dart';
 part 'effects.dart';
 part 'onboarding.dart';
 part 'extras.dart';
+part 'fun.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

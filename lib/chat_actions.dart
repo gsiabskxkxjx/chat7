@@ -251,6 +251,11 @@ extension _ChatActions on _ChatState {
               title: const Text('تسجيل فيديو'),
               onTap: () => Navigator.pop(ctx, 'video_camera'),
             ),
+            ListTile(
+              leading: const Icon(Icons.brush_rounded),
+              title: const Text('ارسم وأرسل'),
+              onTap: () => Navigator.pop(ctx, 'draw'),
+            ),
           ]),
         ),
       );
@@ -259,6 +264,11 @@ extension _ChatActions on _ChatState {
     if (_blockedByTrust()) return;
     final act = await _attachSheet();
     if (!mounted || act == null) return;
+    if (act == 'draw') {
+      await Navigator.of(context).push(MaterialPageRoute(
+          builder: (_) => DrawScreen(chatId: widget.chat.id)));
+      return;
+    }
     setState(() => _uploading = true);
     try {
       final camera = act.endsWith('camera');

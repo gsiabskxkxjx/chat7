@@ -203,6 +203,39 @@ void showGamesMenu(BuildContext context, String chatId) {
       child: SingleChildScrollView(
       child: Column(mainAxisSize: MainAxisSize.min, children: [
         ListTile(
+          leading: const Icon(Icons.mail_rounded),
+          title: const Text('بطاقات جاهزة'),
+          subtitle: const Text('صباح الخير، تصبح على خير، تهاني'),
+          onTap: () {
+            Navigator.pop(ctx);
+            unawaited(showCardsSheet(context, chatId));
+          },
+        ),
+        ListTile(
+          leading: const Icon(Icons.psychology_alt_rounded),
+          title: const Text('لو خيّروك'),
+          onTap: () {
+            Navigator.pop(ctx);
+            unawaited(showTalkCards(context, chatId, 'wyr'));
+          },
+        ),
+        ListTile(
+          leading: const Icon(Icons.forum_rounded),
+          title: const Text('سؤال تعارف'),
+          onTap: () {
+            Navigator.pop(ctx);
+            unawaited(showTalkCards(context, chatId, 'deep'));
+          },
+        ),
+        ListTile(
+          leading: const Icon(Icons.lightbulb_rounded),
+          title: const Text('أفكار للطلعات'),
+          onTap: () {
+            Navigator.pop(ctx);
+            unawaited(showTalkCards(context, chatId, 'date'));
+          },
+        ),
+        ListTile(
           leading: const Icon(Icons.casino_rounded),
           title: const Text('عجلة القرار'),
           onTap: () {

@@ -17,6 +17,8 @@ import 'package:file_selector/file_selector.dart' show openFile;
 import 'package:qr_flutter/qr_flutter.dart' show QrImageView;
 import 'package:app_links/app_links.dart' show AppLinks;
 import 'package:quick_actions/quick_actions.dart' show QuickActions, ShortcutItem;
+import 'package:timezone/timezone.dart' as tz;
+import 'package:timezone/data/latest_10y.dart' as tz_data;
 import 'package:path_provider/path_provider.dart'
     show getTemporaryDirectory, getApplicationSupportDirectory;
 import 'package:local_auth/local_auth.dart'
@@ -135,6 +137,7 @@ Future<void> main() async {
       if (Firebase.apps.isEmpty) await Firebase.initializeApp();
       FirebaseMessaging.onBackgroundMessage(_bgCallMessage);
       await _initCallNotifier();
+      if (_Prefs.dailyReminder.value >= 0) await _scheduleDailyReminder();
     } catch (_) {}
   }());
   if (_configured) unawaited(Future.delayed(const Duration(seconds: 12), _Crash.sendPending));

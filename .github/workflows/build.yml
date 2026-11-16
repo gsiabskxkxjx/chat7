@@ -38,6 +38,7 @@ jobs:
               <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
               <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT"/>
               <uses-permission android:name="android.permission.WAKE_LOCK"/>
+              <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
               <uses-permission android:name="android.permission.CAMERA"/>
               <uses-permission android:name="android.permission.RECORD_AUDIO"/>
               <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/>
@@ -383,6 +384,14 @@ jobs:
           p = 'android/app/src/main/AndroidManifest.xml'
           s = open(p, encoding='utf-8').read()
           rec = '''
+                  <receiver android:exported="false" android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver" />
+                  <receiver android:exported="false" android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver">
+                      <intent-filter>
+                          <action android:name="android.intent.action.BOOT_COMPLETED"/>
+                          <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>
+                          <action android:name="android.intent.action.QUICKBOOT_POWERON"/>
+                      </intent-filter>
+                  </receiver>
                   <receiver android:name="com.bainatna.chat.DaysWidget" android:exported="true" android:label="عدّاد أيامنا">
                       <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE"/></intent-filter>
                       <meta-data android:name="android.appwidget.provider" android:resource="@xml/bainatna_days_info"/>

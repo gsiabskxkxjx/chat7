@@ -45,3 +45,15 @@ const chatThemes = <ChatTheme>[
 /// يرجّع الثيم حسب رقمه. إذا الرقم غلط يرجّع الافتراضي (ليلي هادئ).
 ChatTheme chatThemeById(int id) =>
     chatThemes.firstWhere((t) => t.id == id, orElse: () => chatThemes.first);
+
+/// نهار/ليل تلقائي (إعداد محلي): كل ثيم ليلي له نظير نهاري من نفس اللون
+const _dayNightPair = {1: 6, 2: 5, 3: 8, 4: 7, 6: 1, 5: 2, 8: 3, 7: 4};
+
+ChatTheme _shownTheme(int id) {
+  if (!_Prefs.autoDayNight.value) return chatThemeById(id);
+  final h = DateTime.now().hour;
+  final day = h >= 7 && h < 18;
+  final t = chatThemeById(id);
+  if (t.dark == !day) return t;
+  return chatThemeById(_dayNightPair[t.id] ?? t.id);
+}

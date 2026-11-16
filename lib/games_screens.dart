@@ -196,277 +196,92 @@ class _TicState extends State<TicTacToeScreen> {
 
 // ---------- قائمة الألعاب ----------
 
+/// عنصر بقائمة "المزيد"
+typedef _MenuItem = (IconData icon, String title, String sub, void Function() run);
+
 void showGamesMenu(BuildContext context, String chatId) {
+  void push(Widget Function() page) =>
+      Navigator.of(context).push(MaterialPageRoute(builder: (_) => page()));
+
+  final tabs = <(String, List<_MenuItem>)>[
+    ('🎮 العبوا', [
+      (Icons.people_alt_rounded, 'مين فينا؟', 'أنا ولا هو؟ وشوفوا كم اتفقتوا', () => push(() => WhoOfUsScreen(chatId: chatId))),
+      (Icons.quiz_rounded, 'كم تعرفني؟', 'أسئلة جديدة كل أسبوع', () => push(() => QuizScreen(chatId: chatId))),
+      (Icons.fact_check_rounded, 'صح أو غلط عني', '3 جمل عنك، وهو يخمّن', () => push(() => TrueFalseScreen(chatId: chatId))),
+      (Icons.emoji_emotions_rounded, 'خمّن من الإيموجي', 'أفلام وأماكن وأمثال', () => push(() => EmojiGuessScreen(chatId: chatId))),
+      (Icons.psychology_alt_rounded, '20 سؤال', 'فكّر بشي وهو يخمّن', () => push(() => TwentyQScreen(chatId: chatId))),
+      (Icons.draw_rounded, 'ارسم وخمّن', 'ترسم كلمة سرية وهو يخمّن بالمحادثة', () => unawaited(_drawAndGuess(context, chatId))),
+      (Icons.grid_view_rounded, 'لعبة الذاكرة', 'اقلبوا البطاقات بالدور', () => push(() => MemoryGameScreen(chatId: chatId))),
+      (Icons.tag_rounded, 'إكس أو', 'كلاسيكية سريعة', () => push(() => TicTacToeScreen(chatId: chatId))),
+      (Icons.pan_tool_rounded, 'حجر ورقة مقص', 'كل واحد يختار سراً', () => push(() => RpsScreen(chatId: chatId))),
+      (Icons.blur_circular_rounded, 'داما', 'الأكل إجباري، والملك يمشي بكل الاتجاهات', () => push(() => CheckersScreen(chatId: chatId))),
+      (Icons.castle_rounded, 'شطرنج', 'شطرنج كامل بالدور', () => push(() => ChessScreen(chatId: chatId))),
+      (Icons.leaderboard_rounded, 'نتائجنا وشاراتنا', 'النقاط والإنجازات', () => push(() => ScoresScreen(chatId: chatId))),
+    ]),
+    ('💞 سوا', [
+      (Icons.push_pin_rounded, 'جدار الحب', 'ملاحظات قصيرة تبقى لبعض', () => push(() => LoveNotesScreen(chatId: chatId))),
+      (Icons.photo_camera_front_rounded, 'تحدي الصورة اليومي', 'الصورتين تنكشف لما الاثنين يصوّرون', () => push(() => PhotoChallengeScreen(chatId: chatId))),
+      (Icons.flag_rounded, 'تحدي 30 يوم', 'مهمة صغيرة كل يوم لكم الاثنين', () => unawaited(_start30Day(context, chatId))),
+      (Icons.spa_rounded, 'تذكير لطيف', 'اشرب ماي، نام بدري، لا تنسى تاكل...', () => unawaited(_sendGentle(context, chatId))),
+      (Icons.calendar_month_rounded, 'تقويمنا', 'المواعيد المهمة لكم الاثنين', () => push(() => CalendarScreen(chatId: chatId))),
+      (Icons.hourglass_top_rounded, 'عدّ تنازلي لموعد', 'يظهر بأعلى المحادثة', () => unawaited(_setCountdown(context, chatId))),
+      (Icons.checklist_rounded, 'قوايم مشتركة', 'أمنيات، أماكن، أفلام، أهداف', () => push(() => SharedListsScreen(chatId: chatId))),
+      (Icons.menu_book_rounded, 'يومياتنا', 'كل واحد يكتب يومه والثاني يقراه', () => push(() => DiaryScreen(chatId: chatId))),
+      (Icons.account_balance_wallet_rounded, 'ميزانيتنا', 'مصاريف مشتركة ومين دفع', () => push(() => BudgetScreen(chatId: chatId))),
+      (Icons.casino_rounded, 'عجلة القرار', 'وين نطلع؟ شنو ناكل؟', () => push(() => DecisionWheelScreen(chatId: chatId))),
+    ]),
+    ('📸 ذكرياتنا', [
+      (Icons.timeline_rounded, 'قصتنا', 'أول رسالة، أول صورة، أول مكالمة...', () => push(() => StoryScreen(chatId: chatId))),
+      (Icons.photo_library_rounded, 'معرض الذكريات والألبومات', 'كل صوركم وفيديوهاتكم', () => push(() => MemoriesScreen(chatId: chatId))),
+      (Icons.auto_graph_rounded, 'ملخصنا', 'بطاقة الشهر أو السنة، تنحفظ كصورة', () => push(() => SummaryScreen(chatId: chatId))),
+      (Icons.star_rounded, 'الرسائل المفضلة', 'نصوص وصور وصوتيات', () => push(() => StarredScreen(chatId: chatId))),
+      (Icons.insights_rounded, 'إحصائياتنا', 'كم رسالة وصورة ومكالمة', () => push(() => StatsScreen(chatId: chatId))),
+      (Icons.favorite_rounded, 'تاريخ بدايتنا', 'لعدّاد الأيام والاحتفالات', () => unawaited(_setStartDate(context, chatId))),
+    ]),
+    ('💬 سوالف', [
+      (Icons.mail_rounded, 'بطاقات جاهزة', 'صباح الخير، تصبح على خير، تهاني', () => unawaited(showCardsSheet(context, chatId))),
+      (Icons.forum_rounded, 'سؤال تعارف', 'أسئلة عميقة على مراحل', () => unawaited(showTalkCards(context, chatId, 'deep'))),
+      (Icons.alt_route_rounded, 'لو خيّروك', 'أسئلة جاهزة', () => unawaited(showTalkCards(context, chatId, 'wyr'))),
+      (Icons.lightbulb_rounded, 'أفكار للطلعات', 'شي جديد تسوونه سوا', () => unawaited(showTalkCards(context, chatId, 'date'))),
+      (Icons.flash_on_rounded, 'ردود سريعة', 'جملك المحفوظة', () => showQuickReplies(context, chatId)),
+      (Icons.search_rounded, 'بحث في المحادثة', 'لاقي أي رسالة', () => push(() => SearchScreen(chatId: chatId))),
+    ]),
+  ];
+
   showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
     builder: (ctx) => SafeArea(
-      child: SingleChildScrollView(
-      child: Column(mainAxisSize: MainAxisSize.min, children: [
-        ListTile(
-          leading: const Icon(Icons.mail_rounded),
-          title: const Text('بطاقات جاهزة'),
-          subtitle: const Text('صباح الخير، تصبح على خير، تهاني'),
-          onTap: () {
-            Navigator.pop(ctx);
-            unawaited(showCardsSheet(context, chatId));
-          },
+      child: SizedBox(
+        height: MediaQuery.sizeOf(ctx).height * 0.72,
+        child: DefaultTabController(
+          length: tabs.length,
+          child: Column(children: [
+            TabBar(
+              isScrollable: true,
+              tabAlignment: TabAlignment.center,
+              dividerColor: Colors.transparent,
+              tabs: [for (final t in tabs) Tab(text: t.$1)],
+            ),
+            Expanded(
+              child: TabBarView(children: [
+                for (final t in tabs)
+                  ListView(padding: const EdgeInsets.symmetric(vertical: 6), children: [
+                    for (final it in t.$2)
+                      ListTile(
+                        leading: Icon(it.$1),
+                        title: Text(it.$2),
+                        subtitle: Text(it.$3, maxLines: 1, overflow: TextOverflow.ellipsis),
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          it.$4();
+                        },
+                      ),
+                  ]),
+              ]),
+            ),
+          ]),
         ),
-        ListTile(
-          leading: const Icon(Icons.psychology_alt_rounded),
-          title: const Text('لو خيّروك'),
-          onTap: () {
-            Navigator.pop(ctx);
-            unawaited(showTalkCards(context, chatId, 'wyr'));
-          },
-        ),
-        ListTile(
-          leading: const Icon(Icons.forum_rounded),
-          title: const Text('سؤال تعارف'),
-          onTap: () {
-            Navigator.pop(ctx);
-            unawaited(showTalkCards(context, chatId, 'deep'));
-          },
-        ),
-        ListTile(
-          leading: const Icon(Icons.lightbulb_rounded),
-          title: const Text('أفكار للطلعات'),
-          onTap: () {
-            Navigator.pop(ctx);
-            unawaited(showTalkCards(context, chatId, 'date'));
-          },
-        ),
-        ListTile(
-          leading: const Icon(Icons.casino_rounded),
-          title: const Text('عجلة القرار'),
-          onTap: () {
-            Navigator.pop(ctx);
-            Navigator.of(context).push(MaterialPageRoute(
-                builder: (_) => DecisionWheelScreen(chatId: chatId)));
-          },
-        ),
-        ListTile(
-          leading: const Icon(Icons.grid_view_rounded),
-          title: const Text('إكس أو'),
-          onTap: () {
-            Navigator.pop(ctx);
-            Navigator.of(context).push(MaterialPageRoute(
-                builder: (_) => TicTacToeScreen(chatId: chatId)));
-          },
-        ),
-        ListTile(
-          leading: const Icon(Icons.pan_tool_rounded),
-          title: const Text('حجر ورقة مقص'),
-          onTap: () {
-            Navigator.pop(ctx);
-            Navigator.of(context)
-                .push(MaterialPageRoute(builder: (_) => RpsScreen(chatId: chatId)));
-          },
-        ),
-        ListTile(
-          leading: const Icon(Icons.quiz_rounded),
-          title: const Text('كم تعرفني؟'),
-          onTap: () {
-            Navigator.pop(ctx);
-            Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => QuizScreen(chatId: chatId)));
-          },
-        ),
-        ListTile(
-          leading: const Icon(Icons.checklist_rounded),
-          title: const Text('قوايم مشتركة'),
-          onTap: () {
-            Navigator.pop(ctx);
-            Navigator.of(context).push(MaterialPageRoute(
-                builder: (_) => SharedListsScreen(chatId: chatId)));
-          },
-        ),
-        ListTile(
-          leading: const Icon(Icons.search_rounded),
-          title: const Text('بحث في المحادثة'),
-          onTap: () {
-            Navigator.pop(ctx);
-            Navigator.of(context).push(MaterialPageRoute(
-                builder: (_) => SearchScreen(chatId: chatId)));
-          },
-        ),
-        ListTile(
-          leading: const Icon(Icons.flash_on_rounded),
-          title: const Text('ردود سريعة'),
-          onTap: () {
-            Navigator.pop(ctx);
-            showQuickReplies(context, chatId);
-          },
-        ),
-        const Padding(
-          padding: EdgeInsetsDirectional.fromSTEB(16, 8, 16, 0),
-          child: Align(
-            alignment: AlignmentDirectional.centerStart,
-            child: Text('ألعاب جديدة',
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xB3FFFFFF))),
-          ),
-        ),
-        for (final g in <(IconData, String, String, Widget Function())>[
-          (Icons.people_alt_rounded, 'مين فينا؟', 'أنا ولا هو؟ وشوفوا كم اتفقتوا',
-              () => WhoOfUsScreen(chatId: chatId)),
-          (Icons.fact_check_rounded, 'صح أو غلط عني', '3 جمل عنك، وهو يخمّن',
-              () => TrueFalseScreen(chatId: chatId)),
-          (Icons.grid_view_rounded, 'لعبة الذاكرة', 'اقلبوا البطاقات بالدور',
-              () => MemoryGameScreen(chatId: chatId)),
-          (Icons.psychology_alt_rounded, '20 سؤال', 'فكّر بشي وهو يخمّن',
-              () => TwentyQScreen(chatId: chatId)),
-          (Icons.emoji_emotions_rounded, 'خمّن من الإيموجي', 'أفلام وأماكن وأمثال',
-              () => EmojiGuessScreen(chatId: chatId)),
-          (Icons.blur_circular_rounded, 'داما', 'الأكل إجباري، والملك يمشي بكل الاتجاهات',
-              () => CheckersScreen(chatId: chatId)),
-          (Icons.castle_rounded, 'شطرنج', 'شطرنج كامل بالدور',
-              () => ChessScreen(chatId: chatId)),
-          (Icons.leaderboard_rounded, 'نتائجنا وشاراتنا', 'النقاط والإنجازات',
-              () => ScoresScreen(chatId: chatId)),
-        ])
-          ListTile(
-            leading: Icon(g.$1),
-            title: Text(g.$2),
-            subtitle: Text(g.$3),
-            onTap: () {
-              Navigator.pop(ctx);
-              Navigator.of(context).push(MaterialPageRoute(builder: (_) => g.$4()));
-            },
-          ),
-        ListTile(
-          leading: const Icon(Icons.menu_book_rounded),
-          title: const Text('يومياتنا'),
-          subtitle: const Text('كل واحد يكتب يومه والثاني يقراه'),
-          onTap: () {
-            Navigator.pop(ctx);
-            Navigator.of(context).push(MaterialPageRoute(
-                builder: (_) => DiaryScreen(chatId: chatId)));
-          },
-        ),
-        ListTile(
-          leading: const Icon(Icons.account_balance_wallet_rounded),
-          title: const Text('ميزانيتنا'),
-          subtitle: const Text('مصاريف مشتركة ومين دفع'),
-          onTap: () {
-            Navigator.pop(ctx);
-            Navigator.of(context).push(MaterialPageRoute(
-                builder: (_) => BudgetScreen(chatId: chatId)));
-          },
-        ),
-        ListTile(
-          leading: const Icon(Icons.spa_rounded),
-          title: const Text('تذكير لطيف'),
-          subtitle: const Text('اشرب ماي، نام بدري، لا تنسى تاكل...'),
-          onTap: () {
-            Navigator.pop(ctx);
-            unawaited(_sendGentle(context, chatId));
-          },
-        ),
-        ListTile(
-          leading: const Icon(Icons.flag_rounded),
-          title: const Text('تحدي 30 يوم'),
-          subtitle: const Text('مهمة صغيرة كل يوم لكم الاثنين'),
-          onTap: () {
-            Navigator.pop(ctx);
-            unawaited(_start30Day(context, chatId));
-          },
-        ),
-        ListTile(
-          leading: const Icon(Icons.auto_graph_rounded),
-          title: const Text('ملخصنا'),
-          subtitle: const Text('بطاقة الشهر أو السنة، تنحفظ كصورة'),
-          onTap: () {
-            Navigator.pop(ctx);
-            Navigator.of(context).push(MaterialPageRoute(
-                builder: (_) => SummaryScreen(chatId: chatId)));
-          },
-        ),
-        ListTile(
-          leading: const Icon(Icons.draw_rounded),
-          title: const Text('ارسم وخمّن'),
-          subtitle: const Text('ترسم كلمة سرية وهو يخمّن بالمحادثة'),
-          onTap: () {
-            Navigator.pop(ctx);
-            unawaited(_drawAndGuess(context, chatId));
-          },
-        ),
-        const Divider(height: 20),
-        ListTile(
-          leading: const Icon(Icons.push_pin_rounded, color: Color(0xFFFFD60A)),
-          title: const Text('جدار الحب'),
-          subtitle: const Text('ملاحظات قصيرة تبقى لبعض'),
-          onTap: () {
-            Navigator.pop(ctx);
-            Navigator.of(context).push(MaterialPageRoute(
-                builder: (_) => LoveNotesScreen(chatId: chatId)));
-          },
-        ),
-        ListTile(
-          leading: const Icon(Icons.photo_camera_front_rounded),
-          title: const Text('تحدي الصورة اليومي'),
-          subtitle: const Text('الصورتين تنكشف لما الاثنين يصوّرون'),
-          onTap: () {
-            Navigator.pop(ctx);
-            Navigator.of(context).push(MaterialPageRoute(
-                builder: (_) => PhotoChallengeScreen(chatId: chatId)));
-          },
-        ),
-        ListTile(
-          leading: const Icon(Icons.calendar_month_rounded),
-          title: const Text('تقويمنا'),
-          subtitle: const Text('المواعيد المهمة لكم الاثنين'),
-          onTap: () {
-            Navigator.pop(ctx);
-            Navigator.of(context).push(MaterialPageRoute(
-                builder: (_) => CalendarScreen(chatId: chatId)));
-          },
-        ),
-        ListTile(
-          leading: const Icon(Icons.timeline_rounded),
-          title: const Text('قصتنا'),
-          subtitle: const Text('أول رسالة، أول صورة، أول مكالمة...'),
-          onTap: () {
-            Navigator.pop(ctx);
-            Navigator.of(context).push(MaterialPageRoute(
-                builder: (_) => StoryScreen(chatId: chatId)));
-          },
-        ),
-        ListTile(
-          leading: const Icon(Icons.favorite_rounded, color: Color(0xFFFF5FA2)),
-          title: const Text('تاريخ بدايتنا'),
-          subtitle: const Text('لعدّاد الأيام والاحتفالات'),
-          onTap: () {
-            Navigator.pop(ctx);
-            unawaited(_setStartDate(context, chatId));
-          },
-        ),
-        ListTile(
-          leading: const Icon(Icons.hourglass_top_rounded),
-          title: const Text('عدّ تنازلي لموعد'),
-          onTap: () {
-            Navigator.pop(ctx);
-            unawaited(_setCountdown(context, chatId));
-          },
-        ),
-        ListTile(
-          leading: const Icon(Icons.star_rounded, color: Color(0xFFFFD60A)),
-          title: const Text('الرسائل المفضلة'),
-          onTap: () {
-            Navigator.pop(ctx);
-            Navigator.of(context).push(MaterialPageRoute(
-                builder: (_) => StarredScreen(chatId: chatId)));
-          },
-        ),
-        ListTile(
-          leading: const Icon(Icons.insights_rounded),
-          title: const Text('إحصائياتنا'),
-          onTap: () {
-            Navigator.pop(ctx);
-            Navigator.of(context).push(MaterialPageRoute(
-                builder: (_) => StatsScreen(chatId: chatId)));
-          },
-        ),
-      ]),
       ),
     ),
   );

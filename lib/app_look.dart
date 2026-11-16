@@ -50,7 +50,7 @@ void _startAppLook() {
       url = path == null ? null : await MediaUrls.get('chat-bg', path);
     }
     _appLook.value = AppLook(
-      theme: chatThemeById(id),
+      theme: _shownTheme(id),
       kind: kind,
       strength: strength,
       url: url,

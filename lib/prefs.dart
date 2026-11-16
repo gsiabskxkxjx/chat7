@@ -18,6 +18,8 @@ class _Prefs {
   static final ring = ValueNotifier<int>(0); // إطار صورة الطرف الثاني
   static final crashReports = ValueNotifier<bool>(true);
   static final animBg = ValueNotifier<int>(0); // خلفية متحركة بالمحادثة
+  static final autoDayNight = ValueNotifier<bool>(false); // ثيم فاتح بالنهار وغامق بالليل
+  static final dailyReminder = ValueNotifier<int>(-1); // ساعة تذكير سؤال اليوم، -1 مطفي
 
   /// داخل ساعات وضع النوم؟
   static bool inQuiet([DateTime? at]) {
@@ -54,6 +56,8 @@ class _Prefs {
       ring.value = (m['ring'] as num?)?.toInt() ?? 0;
       crashReports.value = m['crashReports'] as bool? ?? true;
       animBg.value = (m['animBg'] as num?)?.toInt() ?? 0;
+      autoDayNight.value = m['autoDayNight'] as bool? ?? false;
+      dailyReminder.value = (m['dailyReminder'] as num?)?.toInt() ?? -1;
       final r = (m['reactions'] as List?)?.map((e) => '$e').toList();
       if (r != null && r.length >= 3 && r.length <= 6) reactions.value = r;
     } catch (_) {}
@@ -78,6 +82,8 @@ class _Prefs {
         'ring': ring.value,
         'crashReports': crashReports.value,
         'animBg': animBg.value,
+        'autoDayNight': autoDayNight.value,
+        'dailyReminder': dailyReminder.value,
         'reactions': reactions.value,
       }));
     } catch (_) {}
@@ -145,6 +151,39 @@ class _PrefsCardState extends State<_PrefsCard> {
               await _pickBubbleColors(context);
               if (mounted) setState(() {});
             },
+          ),
+          SwitchListTile(
+            secondary: const Icon(Icons.brightness_6_rounded),
+            title: const Text('نهار وليل تلقائي'),
+            subtitle: const Text('ثيم فاتح بالنهار وغامق بالليل (عندك بس)'),
+            value: _Prefs.autoDayNight.value,
+            onChanged: (x) {
+              setState(() => _Prefs.autoDayNight.value = x);
+              unawaited(_Prefs.save());
+              _startAppLook();
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.alarm_rounded),
+            title: const Text('تذكير سؤال اليوم'),
+            trailing: DropdownButton<int>(
+              value: _Prefs.dailyReminder.value,
+              underline: const SizedBox.shrink(),
+              borderRadius: BorderRadius.circular(16),
+              items: const [
+                DropdownMenuItem(value: -1, child: Text('مطفي')),
+                DropdownMenuItem(value: 10, child: Text('10 الصبح')),
+                DropdownMenuItem(value: 14, child: Text('2 الظهر')),
+                DropdownMenuItem(value: 20, child: Text('8 بالليل')),
+                DropdownMenuItem(value: 22, child: Text('10 بالليل')),
+              ],
+              onChanged: (x) async {
+                if (x == null) return;
+                setState(() => _Prefs.dailyReminder.value = x);
+                await _Prefs.save();
+                await _scheduleDailyReminder();
+              },
+            ),
           ),
           _choice<int>('خلفية متحركة بالمحادثة', Icons.auto_awesome_rounded,
               _Prefs.animBg, [
@@ -378,3 +417,36 @@ Future<void> _pickBubbleColors(BuildContext context) => showDialog<void>(
         },
       ),
     );
+
+const _dailyReminderId = 9100;
+
+/// تذكير يومي محلي: "سؤال اليوم بانتظارك" بالساعة اللي تختارها
+Future<void> _scheduleDailyReminder() async {
+  try {
+    await _callNotifier.cancel(_dailyReminderId);
+    final h = _Prefs.dailyReminder.value;
+    if (h < 0) return;
+    tz_data.initializeTimeZones();
+    final now = DateTime.now();
+    var at = DateTime(now.year, now.month, now.day, h);
+    if (!at.isAfter(now)) at = at.add(const Duration(days: 1));
+    await _callNotifier.zonedSchedule(
+      _dailyReminderId,
+      'سؤال اليوم بانتظارك 💬',
+      'جاوب وشوف جوابه، ولا تقطع سلسلتكم 🔥',
+      tz.TZDateTime.from(at.toUtc(), tz.UTC),
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          'daily',
+          'تذكير سؤال اليوم',
+          channelDescription: 'تذكير مرة باليوم',
+          importance: Importance.defaultImportance,
+          priority: Priority.defaultPriority,
+        ),
+      ),
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+      matchDateTimeComponents: DateTimeComponents.time,
+    );
+  } catch (_) {}
+}

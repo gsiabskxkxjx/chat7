@@ -409,7 +409,7 @@ extension _ChatLook on _ChatState {
     final path = r['bg_path'] as String?;
     final pathChanged = path != _bgPath;
     setState(() {
-      _t = chatThemeById((r['theme_id'] as num?)?.toInt() ?? 1);
+      _t = _shownTheme((r['theme_id'] as num?)?.toInt() ?? 1);
       _bgKind = (r['bg_kind'] as String?) ?? 'gradient';
       _bgStrength = (r['bg_strength'] as num?)?.toInt() ?? 10;
       _bgPath = path;

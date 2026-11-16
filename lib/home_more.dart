@@ -1,0 +1,166 @@
+part of 'main.dart';
+
+// ---------- ويدجت الشاشة الرئيسية، اختصارات الأيقونة، إشعار المكالمة الجارية ----------
+
+// ===== ويدجت: عدّاد الأيام + آخر «أفكر فيك»، وصورة من ذكرياتكم =====
+
+/// البيانات تنكتب بملف widget.json (نفس مجلد التطبيق)، والويدجت (كود أندرويد) يقراها.
+class _HomeWidgets {
+  static const _ch = MethodChannel('bainatna/widgets');
+  static Map<String, dynamic>? _cache;
+
+  static Future<File> _file() async =>
+      File('${(await getApplicationSupportDirectory()).path}/widget.json');
+
+  static Future<void> _save(Map<String, String?> data, String widget) async {
+    try {
+      final f = await _file();
+      final cur = _cache ??= await f.exists()
+          ? Map<String, dynamic>.from(jsonDecode(await f.readAsString()) as Map)
+          : <String, dynamic>{};
+      var changed = false;
+      for (final e in data.entries) {
+        if (cur[e.key] != e.value) {
+          cur[e.key] = e.value;
+          changed = true;
+        }
+      }
+      if (!changed) return;
+      await f.writeAsString(jsonEncode(cur));
+      await _ch.invokeMethod<void>('refresh', {'widget': widget});
+    } catch (_) {}
+  }
+
+  static Future<void> days(DateTime start, String partner) => _save({
+        'start_ms': '${DateTime(start.year, start.month, start.day).millisecondsSinceEpoch}',
+        'partner': partner,
+      }, 'DaysWidget');
+
+  static Future<void> think(DateTime at) =>
+      _save({'think': '❤️ آخر «أفكر فيك» ${_clockOf(at)}'}, 'DaysWidget');
+
+  static DateTime? _photoDay;
+
+  /// صورة عشوائية من آخر 60 صورة (مرة باليوم)
+  static Future<void> photo(String chatId) async {
+    final today = _today();
+    if (_photoDay == today) return;
+    _photoDay = today;
+    try {
+      final rows = await _db
+          .from('messages')
+          .select('media_path')
+          .eq('chat_id', chatId)
+          .eq('kind', 'image')
+          .order('id', ascending: false)
+          .limit(60);
+      final paths = [for (final r in rows) if (r['media_path'] != null) '${r['media_path']}'];
+      if (paths.isEmpty) return;
+      final f = await _MediaFiles.get(paths[Random().nextInt(paths.length)]);
+      if (f == null) return;
+      final dir = await getApplicationSupportDirectory();
+      final out = await f.copy('${dir.path}/widget_photo.img');
+      await _save({'photo': out.path, 'photo_v': '${DateTime.now().millisecondsSinceEpoch}'}, 'PhotoWidget');
+    } catch (_) {}
+  }
+
+  static Future<void> clear() async {
+    await _save({'start_ms': null, 'partner': null, 'think': null}, 'DaysWidget');
+    await _save({'photo': null}, 'PhotoWidget');
+  }
+}
+
+// ===== اختصارات الضغط المطوّل على أيقونة التطبيق =====
+
+void _setupShortcuts() {
+  try {
+    const qa = QuickActions();
+    unawaited(qa.initialize((type) {
+      if (type == 'think') unawaited(_shortcutThink());
+    }));
+    unawaited(qa.setShortcutItems(const [
+      ShortcutItem(type: 'think', localizedTitle: 'أفكر فيك ❤️'),
+      ShortcutItem(type: 'open', localizedTitle: 'افتح المحادثة'),
+    ]));
+  } catch (_) {}
+}
+
+/// يرسل «أفكر فيك» بدون ما تدخل المحادثة
+Future<void> _shortcutThink() async {
+  for (var i = 0; i < 20 && _db.auth.currentUser == null; i++) {
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+  }
+  final uid = _db.auth.currentUser?.id;
+  if (uid == null) return;
+  try {
+    final c = await _db
+        .from('chats')
+        .select('id')
+        .or('user_a.eq.$uid,user_b.eq.$uid')
+        .limit(1)
+        .maybeSingle();
+    if (c == null) return;
+    await _db.from('messages').insert({'chat_id': c['id'], 'kind': 'think', 'body': '❤️ أفكر فيك'});
+    _messengerKey.currentState?.showSnackBar(const SnackBar(content: Text('وصله «أفكر فيك» ❤️')));
+  } catch (_) {}
+}
+
+// ===== إشعار المكالمة الجارية (إنهاء وكتم من الإشعار) =====
+
+const _ongoingId = 9002;
+CallSession? _liveCall;
+
+Future<void> _showOngoing(CallSession s) async {
+  try {
+    await _callNotifier.show(
+      _ongoingId,
+      s.video ? 'مكالمة فيديو جارية' : 'مكالمة جارية',
+      s.muted.value ? 'المايك مكتوم' : 'اضغط ترجع للمكالمة',
+      NotificationDetails(
+        android: AndroidNotificationDetails(
+          'call_ongoing',
+          'المكالمة الجارية',
+          channelDescription: 'يظهر وقت المكالمة حتى ترجع لها أو تنهيها',
+          importance: Importance.low,
+          priority: Priority.low,
+          ongoing: true,
+          autoCancel: false,
+          onlyAlertOnce: true,
+          usesChronometer: true,
+          when: (s.connectedAt ?? DateTime.now()).millisecondsSinceEpoch,
+          category: AndroidNotificationCategory.call,
+          actions: <AndroidNotificationAction>[
+            AndroidNotificationAction('call_mute', s.muted.value ? 'إلغاء الكتم' : 'كتم',
+                showsUserInterface: true, cancelNotification: false),
+            AndroidNotificationAction('call_end', 'إنهاء',
+                showsUserInterface: true, cancelNotification: true),
+          ],
+        ),
+      ),
+    );
+  } catch (_) {}
+}
+
+Future<void> _hideOngoing() async {
+  try {
+    await _callNotifier.cancel(_ongoingId);
+  } catch (_) {}
+}
+
+/// أزرار الإشعارات لما التطبيق شغّال
+void _fgNotifResponse(NotificationResponse r) {
+  final s = _liveCall;
+  if (s == null) return;
+  if (r.actionId == 'call_end') {
+    unawaited(s.hangup());
+  } else if (r.actionId == 'call_mute') {
+    s.toggleMute();
+    unawaited(_showOngoing(s));
+  }
+}
+
+String _qualityLabel(double rtt, double loss) {
+  if (rtt < 0.25 && loss < 0.02) return '📶 ممتاز';
+  if (rtt < 0.6 && loss < 0.08) return '📶 متوسط';
+  return '📶 ضعيف';
+}

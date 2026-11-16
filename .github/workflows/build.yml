@@ -170,11 +170,40 @@ jobs:
           import android.app.NotificationManager
           import android.media.AudioAttributes
           import android.media.RingtoneManager
+          import android.appwidget.AppWidgetManager
+          import android.content.ComponentName
+          import android.content.Intent
           import android.os.Build
           import android.os.Bundle
           import io.flutter.embedding.android.FlutterFragmentActivity
+          import io.flutter.embedding.engine.FlutterEngine
+          import io.flutter.plugin.common.MethodChannel
 
           class MainActivity : FlutterFragmentActivity() {
+              override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
+                  super.configureFlutterEngine(flutterEngine)
+                  // تحديث ويدجت الشاشة الرئيسية لما التطبيق يكتب بيانات جديدة
+                  MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "bainatna/widgets").setMethodCallHandler { call, result ->
+                      if (call.method == "refresh") {
+                          for (name in listOf("com.bainatna.chat.DaysWidget", "com.bainatna.chat.PhotoWidget")) {
+                              try {
+                                  val cn = ComponentName(packageName, name)
+                                  val ids = AppWidgetManager.getInstance(this).getAppWidgetIds(cn)
+                                  if (ids.isNotEmpty()) {
+                                      val i = Intent(AppWidgetManager.ACTION_APPWIDGET_UPDATE)
+                                      i.component = cn
+                                      i.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, ids)
+                                      sendBroadcast(i)
+                                  }
+                              } catch (e: Exception) {}
+                          }
+                          result.success(null)
+                      } else {
+                          result.notImplemented()
+                      }
+                  }
+              }
+
               override fun onCreate(savedInstanceState: Bundle?) {
                   super.onCreate(savedInstanceState)
                   if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
@@ -200,6 +229,176 @@ jobs:
           KT
           echo "MainActivity.kt updated:"
           head -3 "$F"
+
+      - name: Home screen widgets (Android)
+        run: |
+          F=$(find android/app/src/main -name MainActivity.kt | head -n 1)
+          if [ -z "$F" ]; then echo "WARNING: no MainActivity.kt - skipping widgets"; exit 0; fi
+          PKG=$(grep -m1 '^package ' "$F" | sed -E 's/^package +//; s/;//')
+          NS=$(grep -hoE 'namespace *=? *"[^"]+"' android/app/build.gradle* | head -n 1 | sed -E 's/.*"([^"]+)"/\1/')
+          [ -z "$NS" ] && NS="$PKG"
+          echo "activity package: $PKG, namespace: $NS"
+          RES=android/app/src/main/res
+          D=android/app/src/main/kotlin/com/bainatna/chat
+          mkdir -p "$D" "$RES/layout" "$RES/xml" "$RES/drawable"
+          cat > "$D/BainatnaWidgets.kt" <<KT
+          package com.bainatna.chat
+
+          import android.app.PendingIntent
+          import android.appwidget.AppWidgetManager
+          import android.appwidget.AppWidgetProvider
+          import android.content.Context
+          import android.content.Intent
+          import android.graphics.BitmapFactory
+          import android.view.View
+          import android.widget.RemoteViews
+          import java.io.File
+          import java.util.TimeZone
+          import org.json.JSONObject
+          import ${NS}.R
+          import ${PKG}.MainActivity
+
+          private fun widgetData(context: Context): JSONObject =
+              try { JSONObject(File(context.filesDir, "widget.json").readText()) } catch (e: Exception) { JSONObject() }
+
+          private fun openApp(context: Context): PendingIntent {
+              val i = Intent(context, MainActivity::class.java)
+              i.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+              return PendingIntent.getActivity(context, 0, i, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+          }
+
+          class DaysWidget : AppWidgetProvider() {
+              override fun onUpdate(context: Context, manager: AppWidgetManager, ids: IntArray) {
+                  val d = widgetData(context)
+                  val start = d.optString("start_ms", "").toLongOrNull()
+                  val now = System.currentTimeMillis()
+                  val tz = TimeZone.getDefault()
+                  val day = 86400000L
+                  val days = if (start == null) null else ((now + tz.getOffset(now)) / day - (start + tz.getOffset(start)) / day + 1)
+                  for (id in ids) {
+                      val v = RemoteViews(context.packageName, R.layout.bainatna_days_widget)
+                      v.setTextViewText(R.id.w_days, days?.toString() ?: "♡")
+                      v.setTextViewText(R.id.w_label, if (days == null) "افتح بيناتنا" else "يوم سوا")
+                      v.setTextViewText(R.id.w_name, if (d.isNull("partner")) "" else d.optString("partner", ""))
+                      v.setTextViewText(R.id.w_think, if (d.isNull("think")) "" else d.optString("think", ""))
+                      v.setOnClickPendingIntent(R.id.w_root, openApp(context))
+                      manager.updateAppWidget(id, v)
+                  }
+              }
+          }
+
+          class PhotoWidget : AppWidgetProvider() {
+              override fun onUpdate(context: Context, manager: AppWidgetManager, ids: IntArray) {
+                  val d = widgetData(context)
+                  val path = if (d.isNull("photo")) null else d.optString("photo", "")
+                  for (id in ids) {
+                      val v = RemoteViews(context.packageName, R.layout.bainatna_photo_widget)
+                      var shown = false
+                      if (!path.isNullOrEmpty() && File(path).exists()) {
+                          try {
+                              val o = BitmapFactory.Options()
+                              o.inJustDecodeBounds = true
+                              BitmapFactory.decodeFile(path, o)
+                              var s = 1
+                              while (o.outWidth / s > 700 || o.outHeight / s > 700) s *= 2
+                              val o2 = BitmapFactory.Options()
+                              o2.inSampleSize = s
+                              val bmp = BitmapFactory.decodeFile(path, o2)
+                              if (bmp != null) {
+                                  v.setImageViewBitmap(R.id.w_photo, bmp)
+                                  shown = true
+                              }
+                          } catch (e: Exception) {}
+                      }
+                      v.setViewVisibility(R.id.w_empty, if (shown) View.GONE else View.VISIBLE)
+                      v.setOnClickPendingIntent(R.id.w_root, openApp(context))
+                      manager.updateAppWidget(id, v)
+                  }
+              }
+          }
+          KT
+          cat > "$RES/drawable/bainatna_widget_bg.xml" <<'XML'
+          <?xml version="1.0" encoding="utf-8"?>
+          <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+              <gradient android:startColor="#FFFF5FA2" android:centerColor="#FF7B5CFA" android:endColor="#FF0A84FF" android:angle="315"/>
+              <corners android:radius="26dp"/>
+          </shape>
+          XML
+          cat > "$RES/layout/bainatna_days_widget.xml" <<'XML'
+          <?xml version="1.0" encoding="utf-8"?>
+          <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:id="@+id/w_root"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent"
+              android:background="@drawable/bainatna_widget_bg"
+              android:gravity="center"
+              android:orientation="vertical"
+              android:padding="12dp">
+              <TextView android:id="@+id/w_name" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                  android:textColor="#E6FFFFFF" android:textSize="13sp" android:maxLines="1" android:ellipsize="end"/>
+              <TextView android:id="@+id/w_days" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                  android:textColor="#FFFFFFFF" android:textSize="40sp" android:textStyle="bold" android:text="♡"/>
+              <TextView android:id="@+id/w_label" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                  android:textColor="#E6FFFFFF" android:textSize="13sp" android:text="بيناتنا"/>
+              <TextView android:id="@+id/w_think" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                  android:layout_marginTop="4dp" android:textColor="#FFFFFFFF" android:textSize="11sp" android:maxLines="2"
+                  android:gravity="center"/>
+          </LinearLayout>
+          XML
+          cat > "$RES/layout/bainatna_photo_widget.xml" <<'XML'
+          <?xml version="1.0" encoding="utf-8"?>
+          <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:id="@+id/w_root"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent"
+              android:background="@drawable/bainatna_widget_bg"
+              android:padding="4dp">
+              <ImageView android:id="@+id/w_photo" android:layout_width="match_parent" android:layout_height="match_parent"
+                  android:scaleType="centerCrop" android:contentDescription="ذكرى"/>
+              <TextView android:id="@+id/w_empty" android:layout_width="match_parent" android:layout_height="match_parent"
+                  android:gravity="center" android:textColor="#FFFFFFFF" android:textSize="14sp" android:text="صوركم تطلع هنا 📷"/>
+          </FrameLayout>
+          XML
+          cat > "$RES/xml/bainatna_days_info.xml" <<'XML'
+          <?xml version="1.0" encoding="utf-8"?>
+          <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+              android:minWidth="110dp" android:minHeight="110dp"
+              android:targetCellWidth="2" android:targetCellHeight="2"
+              android:updatePeriodMillis="3600000"
+              android:initialLayout="@layout/bainatna_days_widget"
+              android:resizeMode="horizontal|vertical"
+              android:widgetCategory="home_screen"/>
+          XML
+          cat > "$RES/xml/bainatna_photo_info.xml" <<'XML'
+          <?xml version="1.0" encoding="utf-8"?>
+          <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+              android:minWidth="110dp" android:minHeight="110dp"
+              android:targetCellWidth="2" android:targetCellHeight="2"
+              android:updatePeriodMillis="21600000"
+              android:initialLayout="@layout/bainatna_photo_widget"
+              android:resizeMode="horizontal|vertical"
+              android:widgetCategory="home_screen"/>
+          XML
+          python3 - <<'PY'
+          p = 'android/app/src/main/AndroidManifest.xml'
+          s = open(p, encoding='utf-8').read()
+          rec = '''
+                  <receiver android:name="com.bainatna.chat.DaysWidget" android:exported="true" android:label="عدّاد أيامنا">
+                      <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE"/></intent-filter>
+                      <meta-data android:name="android.appwidget.provider" android:resource="@xml/bainatna_days_info"/>
+                  </receiver>
+                  <receiver android:name="com.bainatna.chat.PhotoWidget" android:exported="true" android:label="صورة من ذكرياتنا">
+                      <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE"/></intent-filter>
+                      <meta-data android:name="android.appwidget.provider" android:resource="@xml/bainatna_photo_info"/>
+                  </receiver>
+              </application>'''
+          if '</application>' not in s:
+              raise SystemExit('ERROR: no </application> in AndroidManifest.xml')
+          s = s.replace('</application>', rec, 1)
+          open(p, 'w', encoding='utf-8').write(s)
+          print('widgets added to manifest')
+          PY
+          ls -la "$D"
 
       - name: App icon (Android)
         run: |

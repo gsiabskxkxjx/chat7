@@ -428,7 +428,10 @@ extension _ChatLook on _ChatState {
       if (pathChanged) _bgUrl = null;
     });
     if (pathChanged && path != null) unawaited(_loadBgUrl(path));
-    if (_linkedAt != null) unawaited(_checkMilestone());
+    if (_linkedAt != null) {
+      unawaited(_checkMilestone());
+      unawaited(_HomeWidgets.days(_linkedAt!, _title()));
+    }
   }
 
   Future<void> _loadBgUrl(String path) async {

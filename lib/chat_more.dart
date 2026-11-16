@@ -84,7 +84,17 @@ extension _ChatMore on _ChatState {
       final unread = msgs.where((m) => !m.mine && !m.read).toList();
       if (unread.length >= 3) _unreadFrom = unread.last.id;
     }
-    if (prev == null || newest <= prev) return;
+    if (prev == null || newest <= prev) {
+      if (prev == null) unawaited(_HomeWidgets.photo(widget.chat.id));
+      return;
+    }
+    for (final m in msgs) {
+      if (m.id <= prev) break;
+      if (!m.mine && m.kind == 'think') {
+        unawaited(_HomeWidgets.think(m.at ?? DateTime.now()));
+        break;
+      }
+    }
     if (_Prefs.autoSave.value) {
       for (final m in msgs) {
         if (m.id <= prev) break;

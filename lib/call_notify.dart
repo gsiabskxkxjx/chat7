@@ -13,6 +13,7 @@ Future<void> _initCallNotifier() async {
     const InitializationSettings(
       android: AndroidInitializationSettings('@mipmap/ic_launcher'),
     ),
+    onDidReceiveNotificationResponse: _fgNotifResponse,
     onDidReceiveBackgroundNotificationResponse: _bgNotifResponse,
   );
 }

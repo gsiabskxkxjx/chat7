@@ -278,7 +278,8 @@ class _CallState extends State<CallScreen> {
                   ? '$t\nبانتظار ظهور صورة الطرف الثاني...'
                   : '$t\nالطرف الثاني ما يرسل فيديو (تأكد من إذن الكاميرا عنده)');
         }
-        return t;
+        final q = s.quality.value;
+        return q == null ? t : '$t   $q';
       case CallPhase.ended:
         return s.endReason ?? 'انتهت المكالمة.';
     }

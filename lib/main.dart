@@ -16,6 +16,7 @@ import 'package:image_picker/image_picker.dart'
 import 'package:file_selector/file_selector.dart' show openFile;
 import 'package:qr_flutter/qr_flutter.dart' show QrImageView;
 import 'package:app_links/app_links.dart' show AppLinks;
+import 'package:quick_actions/quick_actions.dart' show QuickActions, ShortcutItem;
 import 'package:path_provider/path_provider.dart'
     show getTemporaryDirectory, getApplicationSupportDirectory;
 import 'package:local_auth/local_auth.dart'
@@ -112,6 +113,7 @@ part 'extras2.dart';
 part 'games3.dart';
 part 'invite_more.dart';
 part 'shared_more.dart';
+part 'home_more.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -126,6 +128,7 @@ Future<void> main() async {
   }
   runApp(const App());
   _listenInvites();
+  _setupShortcuts();
   // الإشعارات تبدأ بعد أول شاشة، حتى يفتح التطبيق أسرع
   unawaited(() async {
     try {

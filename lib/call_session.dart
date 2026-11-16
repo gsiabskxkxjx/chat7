@@ -34,6 +34,10 @@ class CallSession {
   /// وصل مسار فيديو من الطرف الثاني؟
   bool gotRemoteVideo = false;
 
+  /// جودة الاتصال (ممتاز/متوسط/ضعيف)
+  final quality = ValueNotifier<String?>(null);
+  Timer? _stats;
+
   /// ظهرت فعلاً صورة الطرف الثاني؟
   bool get remoteVideoReady => (remote?.videoWidth ?? 0) > 0;
 
@@ -145,6 +149,9 @@ class CallSession {
           _watchRemote();
         }
         unawaited(Helper.setSpeakerphoneOn(speaker.value));
+        _liveCall = this;
+        unawaited(_showOngoing(this));
+        _stats ??= Timer.periodic(const Duration(seconds: 3), (_) => unawaited(_readStats()));
         break;
       case RTCPeerConnectionState.RTCPeerConnectionStateFailed:
         unawaited(end('انقطع الاتصال.', send: 'hangup'));
@@ -300,9 +307,37 @@ class CallSession {
         send: !outgoing && !_accepted ? 'decline' : 'hangup',
       );
 
+  Future<void> _readStats() async {
+    final pc = _pc;
+    if (pc == null || _done) return;
+    try {
+      double? rtt;
+      var lost = 0.0, got = 0.0;
+      for (final r in await pc.getStats()) {
+        final v = r.values;
+        if (r.type == 'candidate-pair' && (v['state'] == 'succeeded' || v['nominated'] == true)) {
+          final x = v['currentRoundTripTime'];
+          if (x is num) rtt = x.toDouble();
+        } else if (r.type == 'inbound-rtp') {
+          final l = v['packetsLost'], g = v['packetsReceived'];
+          if (l is num) lost += l.toDouble();
+          if (g is num) got += g.toDouble();
+        }
+      }
+      if (rtt == null) return;
+      final loss = got + lost > 0 ? lost / (got + lost) : 0.0;
+      quality.value = _qualityLabel(rtt, loss);
+    } catch (_) {}
+  }
+
   Future<void> end(String reason, {String? send}) async {
     if (_done) return;
     _done = true;
+    _stats?.cancel();
+    if (identical(_liveCall, this)) {
+      _liveCall = null;
+      unawaited(_hideOngoing());
+    }
     endReason = reason;
     if (outgoing) unawaited(_logCall()); // المتصل يسجّل المكالمة بالمحادثة
     _timer?.cancel();

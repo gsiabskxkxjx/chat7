@@ -353,7 +353,13 @@ class _CallState extends State<CallScreen> {
                           onTap: s.toggleSpeaker,
                         ),
                       ),
-                      if (s.video)
+                      if (!s.sendingVideo && !ended && s.phase.value == CallPhase.connected)
+                        _CallBtn(
+                          icon: Icons.videocam_rounded,
+                          label: s.video ? 'كاميرتي' : 'فيديو',
+                          onTap: () => unawaited(s.upgradeToVideo()),
+                        ),
+                      if (s.sendingVideo)
                         ValueListenableBuilder<bool>(
                           valueListenable: s.camOff,
                           builder: (_, off, __) => _CallBtn(
@@ -364,7 +370,7 @@ class _CallState extends State<CallScreen> {
                             onTap: s.toggleCam,
                           ),
                         ),
-                      if (s.video)
+                      if (s.sendingVideo)
                         _CallBtn(
                           icon: Icons.cameraswitch_rounded,
                           label: 'قلب',
@@ -381,7 +387,7 @@ class _CallState extends State<CallScreen> {
                 ),
               ]),
             ),
-            if (s.video && l != null && !ended)
+            if (s.sendingVideo && l != null && !ended)
               Positioned(
                 top: 64,
                 left: 16,

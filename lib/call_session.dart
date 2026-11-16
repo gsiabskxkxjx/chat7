@@ -16,7 +16,7 @@ class CallSession {
 
   final CallHub hub;
   final String callId;
-  final bool video;
+  bool video; // يصير true لو حوّلتوا المكالمة لفيديو
   final bool outgoing;
   final Map<String, dynamic>? _offer;
 
@@ -37,6 +37,39 @@ class CallSession {
   /// جودة الاتصال (ممتاز/متوسط/ضعيف)
   final quality = ValueNotifier<String?>(null);
   Timer? _stats;
+
+  /// أنا أرسل فيديو؟
+  bool get sendingVideo => _stream?.getVideoTracks().isNotEmpty ?? false;
+
+  /// تحويل مكالمة صوتية لفيديو (أو تشغيل كاميرتي بمكالمة صار فيها فيديو)
+  Future<void> upgradeToVideo() async {
+    final pc = _pc;
+    final st = _stream;
+    if (pc == null || st == null || _done || sendingVideo) return;
+    try {
+      final cam = await navigator.mediaDevices.getUserMedia({
+        'audio': false,
+        'video': {
+          'mandatory': {'minWidth': '640', 'minHeight': '480', 'minFrameRate': '24'},
+          'facingMode': 'user',
+          'optional': [],
+        },
+      });
+      final track = cam.getVideoTracks().first;
+      await st.addTrack(track);
+      await pc.addTrack(track, st);
+      local?.srcObject = st;
+      if (!video) {
+        video = true;
+        speaker.value = true;
+        unawaited(Helper.setSpeakerphoneOn(true));
+        unawaited(_allowPip(true));
+      }
+      final offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      await hub.send('candidate', callId, {'renego': 'offer', 'sdp': offer.sdp, 'type': offer.type});
+    } catch (_) {}
+  }
 
   /// انقطع الإنترنت وقت المكالمة ونحاول نرجّعها (مثلاً تبدّل من واي فاي لبيانات)
   final reconnecting = ValueNotifier<bool>(false);
@@ -305,6 +338,30 @@ class CallSession {
           await _flush();
           break;
         case 'candidate':
+          // الطرف الثاني شغّل كاميرته (تحويل لفيديو): نرد بجواب جديد
+          final renego = d['renego'];
+          if (renego != null) {
+            final pc = _pc;
+            if (pc == null) return;
+            if (renego == 'offer') {
+              await pc.setRemoteDescription(
+                  RTCSessionDescription(d['sdp'] as String?, d['type'] as String?));
+              if (!video && '${d['sdp']}'.contains('m=video')) {
+                video = true;
+                speaker.value = true;
+                unawaited(Helper.setSpeakerphoneOn(true));
+                unawaited(_allowPip(true));
+              }
+              final answer = await pc.createAnswer();
+              await pc.setLocalDescription(answer);
+              await hub.send('candidate', callId,
+                  {'renego': 'answer', 'sdp': answer.sdp, 'type': answer.type});
+            } else if (renego == 'answer') {
+              await pc.setRemoteDescription(
+                  RTCSessionDescription(d['sdp'] as String?, d['type'] as String?));
+            }
+            return;
+          }
           final restart = d['restart'];
           if (restart != null) {
             final pc = _pc;

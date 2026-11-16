@@ -122,7 +122,8 @@ class _LockGateState extends State<_LockGate> with WidgetsBindingObserver {
       final left = _leftAt;
       _leftAt = null;
       if (left != null &&
-          DateTime.now().difference(left) > const Duration(seconds: 30)) {
+          DateTime.now().difference(left) >=
+              Duration(seconds: _Prefs.lockAfterSec.value)) {
         _lockNow();
       }
     }

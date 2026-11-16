@@ -152,7 +152,9 @@ extension _ChatUi on _ChatState {
               !newest.mine &&
               newest.at != null &&
               newest.id != _dismissedRemindId &&
-              DateTime.now().difference(newest.at!) >= _remindAfter) {
+              _Prefs.remindHours.value > 0 &&
+              DateTime.now().difference(newest.at!) >=
+                  Duration(hours: _Prefs.remindHours.value)) {
             entries.insert(0, _RemindMarker(newest.id, newest.at!));
           }
           return ListView.builder(
@@ -645,7 +647,6 @@ extension _ChatOffline on _ChatState {
 
 // ---------- تنبيه: ما رديت على الطرف الثاني ----------
 
-const _remindAfter = Duration(hours: 2);
 
 class _RemindMarker {
   const _RemindMarker(this.msgId, this.since);

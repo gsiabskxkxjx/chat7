@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert' show jsonDecode, jsonEncode;
 import 'dart:io' show File, HttpClient;
 import 'dart:math' show Random;
 import 'dart:math' as math;
@@ -6,6 +7,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart' show GoogleFonts;
 import 'package:image_picker/image_picker.dart'
     show ImagePicker, ImageSource, XFile;
 import 'package:path_provider/path_provider.dart'
@@ -92,9 +94,11 @@ part 'effects.dart';
 part 'onboarding.dart';
 part 'extras.dart';
 part 'fun.dart';
+part 'prefs.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await _Prefs.load();
   if (_configured) {
     await Supabase.initialize(url: supabaseUrl, anonKey: supabaseAnonKey);
   }
@@ -124,12 +128,22 @@ class App extends StatelessWidget {
   const App({super.key});
 
   @override
-  Widget build(BuildContext context) => MaterialApp(
+  Widget build(BuildContext context) => ValueListenableBuilder<bool>(
+        valueListenable: _Prefs.arabicFont,
+        builder: (c, arabic, __) => _app(c, arabic),
+      );
+
+  Widget _app(BuildContext context, bool arabic) => MaterialApp(
         title: appName,
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
           useMaterial3: true,
           brightness: Brightness.dark,
+          // خط عربي حديث (IBM Plex Sans Arabic)، ولو ما انحمّل يرجع للخط العادي
+          textTheme: arabic
+              ? GoogleFonts.ibmPlexSansArabicTextTheme(
+                  ThemeData(brightness: Brightness.dark).textTheme)
+              : null,
           colorScheme: ColorScheme.fromSeed(
               seedColor: _blue, brightness: Brightness.dark),
           // نوافذ وتنبيهات وقوائم بشكل زجاجي بدل شكل أندرويد الافتراضي

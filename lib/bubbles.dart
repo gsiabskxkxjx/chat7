@@ -94,8 +94,10 @@ class _Bubble extends StatelessWidget {
             key: ValueKey('voice-${m.id}'), path: path, ms: m.durationMs);
       }
     }
-    if (_emojiOnly) return Text(m.text, style: const TextStyle(fontSize: 44));
-    return Text(m.text, style: TextStyle(fontSize: 16, color: m.mine ? Colors.white : t.text));
+    final k = _Prefs.fontScale.value;
+    if (_emojiOnly) return Text(m.text, style: TextStyle(fontSize: 44 * k));
+    return Text(m.text,
+        style: TextStyle(fontSize: 16 * k, color: m.mine ? Colors.white : t.text));
   }
 
   BorderRadiusDirectional _corners() {

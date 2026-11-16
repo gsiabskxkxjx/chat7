@@ -374,6 +374,8 @@ class _ProfileState extends State<ProfileScreen> {
                           ),
                         ],
                         const SizedBox(height: 16),
+                        const _PrefsCard(),
+                        const SizedBox(height: 16),
                         Glass(
                           radius: 28,
                           padding: const EdgeInsets.symmetric(vertical: 4),

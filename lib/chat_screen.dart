@@ -147,6 +147,7 @@ class _ChatState extends State<ChatScreen> {
     unawaited(_loadAnniv());
     if (_outbox.isNotEmpty) unawaited(_flushOutbox());
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) unawaited(_maybeWhatsNew(context));
       if (mounted) {
         unawaited(_tipOnce(context, 'chat',
             'اضغط مطوّل على زر الإرسال للتأثيرات، ومطوّل على أي رسالة للخيارات، واسحبها للرد.'));

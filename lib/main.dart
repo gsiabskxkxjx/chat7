@@ -116,6 +116,7 @@ part 'games3.dart';
 part 'invite_more.dart';
 part 'shared_more.dart';
 part 'home_more.dart';
+part 'whats_new.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

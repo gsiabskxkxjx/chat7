@@ -1,4 +1,5 @@
 -- بيناتنا تحديث 3: الاهتمامات (تظهر بالمطابقة وتقدّم الناس المتشابهين) + تاريخ بداية العلاقة
+-- + إصلاح صلاحيات: حفظ تاريخ الميلاد، زر «أثق فيه»، العدّ التنازلي، تاريخ البداية
 -- شغّله بعد update_1 و update_2. آمن لو انعاد.
 
 alter table public.profiles add column if not exists interests text[] not null default '{}';
@@ -9,6 +10,17 @@ alter table public.chats add column if not exists started_on date;
 alter table public.chats drop constraint if exists chats_started_on_past;
 alter table public.chats add constraint chats_started_on_past
   check (started_on is null or (started_on <= current_date + 1 and started_on >= date '1950-01-01'));
+
+-- ===== إصلاح الصلاحيات =====
+-- التطبيق يقدر يعدّل أعمدة محددة بس. هذي الأعمدة الجديدة ما كانت مسموحة.
+grant update (birth_date, interests) on public.profiles to authenticated;
+
+-- المحادثة: كل طرف يعدّل هذي الأعمدة بس (الثقة محمية بالتريقر: كل واحد علامته، ولـ true بس)
+grant update (trust_a, trust_b, countdown_title, countdown_at, started_on) on public.chats to authenticated;
+drop policy if exists chats_update_member on public.chats;
+create policy chats_update_member on public.chats for update to authenticated
+  using (auth.uid() in (user_a, user_b))
+  with check (auth.uid() in (user_a, user_b));
 
 -- البحث يقدّم اللي عندهم اهتمامات مشتركة أكثر
 create or replace function public.match_start() returns jsonb
@@ -110,3 +122,8 @@ grant execute on function public.match_start(), public.match_card(bigint) to aut
 select
   (select count(*) from information_schema.columns where table_schema = 'public' and table_name = 'profiles' and column_name = 'interests') as interests,
   (select count(*) from information_schema.columns where table_schema = 'public' and table_name = 'chats' and column_name = 'started_on') as started_on;
+
+-- فحص الصلاحيات (لازم الثنين true)
+select
+  has_column_privilege('authenticated', 'public.profiles', 'birth_date', 'UPDATE') as birth_ok,
+  has_column_privilege('authenticated', 'public.chats', 'trust_a', 'UPDATE') as trust_ok;

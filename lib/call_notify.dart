@@ -64,19 +64,33 @@ Future<void> _showCall(Map<String, dynamic> data) async {
 Future<void> _showMessage(Map<String, dynamic> data) async {
   final chat = (data['chat'] ?? '').toString();
   if (chat.length < 7) return;
+  await _Prefs.load(); // ممكن نكون بالخلفية: نقرا الإعدادات من الملف
+  final quiet = _Prefs.inQuiet();
+  final buzz = _Prefs.buzz.value && !quiet;
   await _callNotifier.show(
     _msgNotifId(chat),
     (data['title'] ?? 'بيناتنا').toString(),
     (data['body'] ?? 'رسالة جديدة').toString(),
     NotificationDetails(
       android: AndroidNotificationDetails(
-        'messages',
-        'الرسائل',
+        buzz ? 'messages_buzz' : 'messages',
+        buzz ? 'رسائله (اهتزاز مميز)' : 'الرسائل',
         channelDescription: 'إشعارات الرسائل الجديدة',
         importance: Importance.high,
         priority: Priority.high,
         visibility: NotificationVisibility.private,
+        silent: quiet,
+        enableVibration: true,
+        vibrationPattern: buzz
+            ? Int64List.fromList([0, 120, 90, 120, 90, 120, 240, 420])
+            : null,
         actions: <AndroidNotificationAction>[
+          AndroidNotificationAction(
+            'love',
+            '❤️',
+            showsUserInterface: false,
+            cancelNotification: true,
+          ),
           AndroidNotificationAction(
             'reply',
             'رد',
@@ -96,17 +110,38 @@ Future<void> _showMessage(Map<String, dynamic> data) async {
 /// يرسل الرد من الإشعار مباشرة (بدون ما تفتح التطبيق)
 @pragma('vm:entry-point')
 Future<void> _bgNotifResponse(NotificationResponse r) async {
-  if (r.actionId != 'reply') return;
-  final text = (r.input ?? '').trim();
   final chat = r.payload ?? '';
-  if (text.isEmpty || chat.length < 7) return;
-  try {
-    await Supabase.initialize(url: supabaseUrl, anonKey: supabaseAnonKey);
-    await Supabase.instance.client
-        .from('messages')
-        .insert({'chat_id': chat, 'body': text});
-    await _callNotifier.cancel(_msgNotifId(chat));
-  } catch (_) {}
+  if (chat.length < 7) return;
+  if (r.actionId == 'reply') {
+    final text = (r.input ?? '').trim();
+    if (text.isEmpty) return;
+    try {
+      await Supabase.initialize(url: supabaseUrl, anonKey: supabaseAnonKey);
+      await Supabase.instance.client
+          .from('messages')
+          .insert({'chat_id': chat, 'body': text});
+      await _callNotifier.cancel(_msgNotifId(chat));
+    } catch (_) {}
+  } else if (r.actionId == 'love') {
+    // قلب على آخر رسالة منه، بدون ما تفتح التطبيق
+    try {
+      await Supabase.initialize(url: supabaseUrl, anonKey: supabaseAnonKey);
+      final c = Supabase.instance.client;
+      final uid = c.auth.currentUser?.id;
+      if (uid == null) return;
+      final last = await c
+          .from('messages')
+          .select('id')
+          .eq('chat_id', chat)
+          .neq('sender_id', uid)
+          .order('id', ascending: false)
+          .limit(1);
+      if (last.isEmpty) return;
+      await c.from('reactions').upsert(
+          {'message_id': last.first['id'], 'user_id': uid, 'emoji': '❤️'});
+      await _callNotifier.cancel(_msgNotifId(chat));
+    } catch (_) {}
+  }
 }
 
 /// يلغي إشعار المكالمة (لما تفتح شاشة المكالمة داخل التطبيق)

@@ -96,6 +96,7 @@ class _ListsState extends State<SharedListsScreen> {
                 padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
                 child: Row(children: [
                   IconButton(
+                      tooltip: 'رجوع',
                       onPressed: () => Navigator.of(context).pop(),
                       icon: const Icon(Icons.arrow_back_rounded)),
                   const Text('قوايم مشتركة',
@@ -168,6 +169,7 @@ class _ListsState extends State<SharedListsScreen> {
                                               : null,
                                         )),
                                     trailing: IconButton(
+                                      tooltip: 'حذف',
                                       icon: const Icon(Icons.delete_outline_rounded,
                                           size: 20),
                                       onPressed: () => _delete(it),
@@ -195,6 +197,7 @@ class _ListsState extends State<SharedListsScreen> {
                               ),
                             ),
                             IconButton(
+                              tooltip: 'إرفاق',
                               onPressed: _add,
                               icon: const Icon(Icons.add_circle_outline_rounded),
                             ),

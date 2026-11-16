@@ -175,6 +175,7 @@ class _PairState extends State<PairScreen> {
                                         letterSpacing: 6)),
                           ),
                           IconButton(
+                            tooltip: 'نسخ',
                             icon: const Icon(Icons.copy_rounded),
                             onPressed: _code == null
                                 ? null
@@ -185,6 +186,7 @@ class _PairState extends State<PairScreen> {
                                   },
                           ),
                           IconButton(
+                            tooltip: 'مشاركة',
                             icon: const Icon(Icons.share_rounded),
                             onPressed: _code == null
                                 ? null

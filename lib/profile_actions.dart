@@ -245,6 +245,7 @@ extension _ProfileActions on _ProfileState {
       ),
     );
     if (ok != true || !mounted) return;
+    if (!await _confirmPassword(context, p.username) || !mounted) return;
     setState(() => _busy = true);
     try {
       // نمسح ملفات الصور من التخزين (ما يهم لو فشل)
@@ -385,6 +386,10 @@ extension _ProfileClear on _ProfileState {
       ),
     );
     if (ok != true || !mounted) return;
+    final me = _p;
+    if (me == null || !await _confirmPassword(context, me.username) || !mounted) {
+      return;
+    }
     setState(() => _busy = true);
     try {
       final res = await _db.rpc('clear_chat', params: {'p_chat': chat.id});

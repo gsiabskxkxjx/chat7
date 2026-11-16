@@ -29,6 +29,66 @@ class MediaUrls {
   }
 }
 
+/// نسخة محلية من الصور (تنزل مرة وحدة بس، توفّر الإنترنت وتفتح أسرع)
+class _MediaFiles {
+  static final _inflight = <String, Future<File?>>{};
+  static bool _cleaned = false;
+
+  static Future<Directory> _dir() async {
+    final d = Directory('${(await getTemporaryDirectory()).path}/media_cache');
+    if (!await d.exists()) await d.create(recursive: true);
+    return d;
+  }
+
+  static Future<File?> get(String path) =>
+      _inflight[path] ??= _get(path).whenComplete(() => _inflight.remove(path));
+
+  static Future<File?> _get(String path) async {
+    try {
+      final dir = await _dir();
+      if (!_cleaned) {
+        _cleaned = true;
+        unawaited(_clean(dir));
+      }
+      final f = File('${dir.path}/${path.replaceAll('/', '_')}');
+      if (await f.exists() && await f.length() > 0) return f;
+      final url = await MediaUrls.get('chat-media', path);
+      if (url == null) return null;
+      final client = HttpClient()..connectionTimeout = const Duration(seconds: 10);
+      try {
+        final req = await client.getUrl(Uri.parse(url));
+        final res = await req.close();
+        if (res.statusCode != 200) return null;
+        final tmp = File('${f.path}.part');
+        await res.pipe(tmp.openWrite());
+        await tmp.rename(f.path);
+        return f;
+      } finally {
+        client.close(force: true);
+      }
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// نحذف الصور اللي ما انفتحت من 30 يوم
+  static Future<void> _clean(Directory dir) async {
+    try {
+      final old = DateTime.now().subtract(const Duration(days: 30));
+      await for (final e in dir.list()) {
+        if (e is File && (await e.lastModified()).isBefore(old)) await e.delete();
+      }
+    } catch (_) {}
+  }
+
+  static Future<void> clearAll() async {
+    try {
+      final d = await _dir();
+      await d.delete(recursive: true);
+    } catch (_) {}
+  }
+}
+
 String _extFor(String path) {
   final p = path.toLowerCase();
   if (p.endsWith('.png')) return 'png';
@@ -138,12 +198,14 @@ class _NetImage extends StatefulWidget {
 }
 
 class _NetImageState extends State<_NetImage> {
+  late Future<File?> _file = _MediaFiles.get(widget.path);
   late Future<String?> _f = MediaUrls.get('chat-media', widget.path);
 
   @override
   void didUpdateWidget(_NetImage old) {
     super.didUpdateWidget(old);
     if (old.path != widget.path) {
+      _file = _MediaFiles.get(widget.path);
       _f = MediaUrls.get('chat-media', widget.path);
     }
   }
@@ -153,7 +215,33 @@ class _NetImageState extends State<_NetImage> {
       : SizedBox(width: 220, height: 220, child: Center(child: child));
 
   @override
-  Widget build(BuildContext context) => FutureBuilder<String?>(
+  Widget build(BuildContext context) => FutureBuilder<File?>(
+        future: _file,
+        builder: (_, fs) {
+          if (fs.connectionState != ConnectionState.done) {
+            return _box(const CircularProgressIndicator(strokeWidth: 2));
+          }
+          final file = fs.data;
+          if (file != null) {
+            return ClipRRect(
+              borderRadius: BorderRadius.circular(widget.full ? 0 : 16),
+              child: Image.file(
+                file,
+                width: widget.full ? null : 220,
+                height: widget.full ? null : 220,
+                cacheWidth: widget.full ? null : 480,
+                fit: widget.full ? BoxFit.contain : BoxFit.cover,
+                errorBuilder: (_, __, ___) =>
+                    _box(const Icon(Icons.broken_image_rounded, size: 36)),
+              ),
+            );
+          }
+          return _urlImage();
+        },
+      );
+
+  // لو ما قدرنا ننزل نسخة محلية: نعرضها من الرابط مباشرة
+  Widget _urlImage() => FutureBuilder<String?>(
         future: _f,
         builder: (_, s) {
           if (s.connectionState != ConnectionState.done) {
@@ -213,23 +301,13 @@ class ImageViewerScreen extends StatelessWidget {
 
 Future<void> _saveImage(BuildContext context, String path) async {
   try {
-    final url = await MediaUrls.get('chat-media', path);
-    if (url == null) throw Exception('no url');
-    final client = HttpClient();
-    String? local;
-    try {
-      final req = await client.getUrl(Uri.parse(url));
-      final res = await req.close();
-      if (res.statusCode != 200) throw Exception('http ${res.statusCode}');
-      final dir = await getTemporaryDirectory();
-      final f = File(
-          '${dir.path}/save_${DateTime.now().millisecondsSinceEpoch}.${_extFor(path)}');
-      await res.pipe(f.openWrite());
-      local = f.path;
-    } finally {
-      client.close();
-    }
-    await Gal.putImage(local);
+    final cached = await _MediaFiles.get(path);
+    if (cached == null) throw Exception('no file');
+    // نسخة باسم فيه الامتداد الصحيح حتى يتعرف عليها المعرض
+    final dir = await getTemporaryDirectory();
+    final f = await cached.copy(
+        '${dir.path}/save_${DateTime.now().millisecondsSinceEpoch}.${_extFor(path)}');
+    await Gal.putImage(f.path, album: appName);
     if (context.mounted) _toast(context, 'تم حفظ الصورة في المعرض');
   } catch (_) {
     if (context.mounted) {

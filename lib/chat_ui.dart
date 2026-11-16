@@ -252,6 +252,7 @@ extension _ChatUi on _ChatState {
               style: const TextStyle(fontSize: 13, color: Colors.white70)),
         ),
         IconButton(
+          tooltip: 'إغلاق',
           onPressed: () => setState(() => _replyTo = null),
           icon: const Icon(Icons.close_rounded, size: 18),
         ),
@@ -261,6 +262,7 @@ extension _ChatUi on _ChatState {
 
   Widget _recordingRow() => Row(children: [
         IconButton(
+          tooltip: 'حذف',
           onPressed: () => unawaited(_finishRec(false)),
           icon: const Icon(Icons.delete_outline_rounded, color: Color(0xFFFF6B60)),
         ),
@@ -272,6 +274,7 @@ extension _ChatUi on _ChatState {
               style: const TextStyle(fontSize: 15)),
         ),
         IconButton(
+          tooltip: 'إرسال',
           onPressed: () => unawaited(_finishRec(true)),
           icon: const Icon(Icons.arrow_upward_rounded, color: _blue),
         ),
@@ -279,6 +282,7 @@ extension _ChatUi on _ChatState {
 
   Widget _typingRow(bool typing) => Row(children: [
         IconButton(
+          tooltip: 'إرفاق',
           onPressed: _uploading ? null : _attach,
           icon: _uploading
               ? const SizedBox(
@@ -312,6 +316,7 @@ extension _ChatUi on _ChatState {
         ),
         if (!typing)
           IconButton(
+            tooltip: 'الألعاب والمزيد',
             onPressed: () => showGamesMenu(context, widget.chat.id),
             icon: Icon(Icons.sports_esports_rounded, color: _t.accent),
           ),
@@ -709,6 +714,7 @@ class _RemindBanner extends StatelessWidget {
           const SizedBox(width: 6),
           Text(text, style: const TextStyle(fontSize: 12, color: Colors.white)),
           IconButton(
+            tooltip: 'إغلاق',
             visualDensity: VisualDensity.compact,
             onPressed: onClose,
             icon: const Icon(Icons.close_rounded, size: 16, color: Colors.white),
@@ -826,9 +832,26 @@ extension _ChatEmpty on _ChatState {
           const Text('بداية حلوة',
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
           const SizedBox(height: 6),
-          Text('اختر شي تبدأ فيه',
+          Text(_matched ? 'تعرّفوا على بعض بسؤال خفيف' : 'اختر شي تبدأ فيه',
               style: TextStyle(color: _t.text.withValues(alpha: 0.7))),
           const SizedBox(height: 18),
+          if (_matched) ...[
+            Wrap(
+              alignment: WrapAlignment.center,
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                for (final q in (List.of(_iceBreakers)
+                      ..shuffle(Random(widget.chat.id.hashCode)))
+                    .take(4))
+                  chip(q, () {
+                    _c.text = q;
+                    unawaited(_send());
+                  }),
+              ],
+            ),
+            const SizedBox(height: 14),
+          ],
           Wrap(
             alignment: WrapAlignment.center,
             spacing: 10,

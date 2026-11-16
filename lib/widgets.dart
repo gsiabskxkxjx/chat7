@@ -564,8 +564,6 @@ void _toast(BuildContext c, String msg) =>
       behavior: SnackBarBehavior.floating,
     ));
 
-void _soon(BuildContext c, String what) => _toast(c, '$what — قريباً');
-
 // ---------- بيانات المحادثة ----------
 
 class ChatInfo {

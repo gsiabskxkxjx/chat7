@@ -82,6 +82,7 @@ class _RecoveryState extends State<RecoveryCodeScreen> {
                   ),
                 ),
                 IconButton(
+                  tooltip: 'نسخ',
                   icon: const Icon(Icons.copy_rounded),
                   onPressed: () {
                     Clipboard.setData(

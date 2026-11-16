@@ -261,86 +261,6 @@ class StatsScreen extends StatelessWidget {
 
 // ========== الرسائل المفضلة ==========
 
-class StarredScreen extends StatelessWidget {
-  const StarredScreen({super.key, required this.chatId});
-  final String chatId;
-
-  @override
-  Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(
-            title: const Text('الرسائل المفضلة'),
-            backgroundColor: Colors.transparent),
-        extendBodyBehindAppBar: true,
-        body: Backdrop(
-          child: SafeArea(
-            child: FutureBuilder<List<Map<String, dynamic>>>(
-              future: _db
-                  .from('message_stars')
-                  .select('created_at, messages(id, body, kind, created_at, chat_id)')
-                  .order('created_at', ascending: false)
-                  .limit(200),
-              builder: (_, snap) {
-                if (snap.hasError) {
-                  return const Center(
-                      child: Text('المفضلة غير متوفرة بالسيرفر بعد.'));
-                }
-                if (!snap.hasData) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                final rows = snap.data!
-                    .map((r) => r['messages'])
-                    .whereType<Map>()
-                    .where((m) => m['chat_id'] == chatId)
-                    .toList();
-                if (rows.isEmpty) {
-                  return const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(32),
-                      child: Text(
-                          'ما عندك رسائل مفضلة. اضغط مطوّل على أي رسالة واختر «نجمة».',
-                          textAlign: TextAlign.center),
-                    ),
-                  );
-                }
-                return ListView.separated(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: rows.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 10),
-                  itemBuilder: (_, i) {
-                    final m = rows[i];
-                    final at = DateTime.tryParse('${m['created_at']}')?.toLocal();
-                    final kind = m['kind'] as String? ?? 'text';
-                    return Glass(
-                      radius: 20,
-                      shadow: false,
-                      padding: const EdgeInsets.all(14),
-                      child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                                kind == 'text'
-                                    ? '${m['body']}'
-                                    : kind == 'image'
-                                        ? '📷 صورة'
-                                        : kind == 'audio'
-                                            ? '🎙️ رسالة صوتية'
-                                            : '🎬 فيديو',
-                                style: const TextStyle(fontSize: 16)),
-                            const SizedBox(height: 6),
-                            Text(at == null ? '' : '${at.day}/${at.month}/${at.year}',
-                                style: const TextStyle(
-                                    fontSize: 12, color: Color(0x99FFFFFF))),
-                          ]),
-                    );
-                  },
-                );
-              },
-            ),
-          ),
-        ),
-      );
-}
-
 // ========== عدّ تنازلي لموعد قادم ==========
 
 Future<void> _setCountdown(BuildContext context, String chatId) async {
@@ -716,6 +636,7 @@ extension _ChatExtras on _ChatState {
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(fontSize: 13))),
               IconButton(
+                  tooltip: 'إغلاق',
                   onPressed: onClose,
                   icon: const Icon(Icons.close_rounded, size: 18)),
             ]),
@@ -739,6 +660,10 @@ extension _ChatExtras on _ChatState {
         out.add(bar('🎁', 'عيد ميلاد $name بعد ${b['in_days']} يوم',
             () => setState(() => _bdayDismissed = true)));
       }
+    }
+    if (!_pushDismissed && Push.status.startsWith('مرفوضة')) {
+      out.add(bar('🔕', 'الإشعارات مطفية، ما راح تعرف لما يرسل لك. فعّلها من إعدادات الجوال ثم التطبيقات ثم بيناتنا.',
+          () => setState(() => _pushDismissed = true)));
     }
     final mem = _memory;
     if (mem != null && !_memoryDismissed) {

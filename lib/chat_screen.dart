@@ -108,6 +108,7 @@ class _ChatState extends State<ChatScreen> {
   bool _bdayDismissed = false;
   Map<String, dynamic>? _memory; // مثل هذا اليوم
   bool _memoryDismissed = false;
+  bool _pushDismissed = false; // شريط "الإشعارات مطفية"
   bool _offline = false; // ما نقدر نوصل للسيرفر (يظهر شريط)
   String? _myGender; // جنسي (نقراه من السيرفر، عشان يتحدث إذا غيّرته)
   int? _dismissedRemindId; // آخر تذكير أغلقته (رقم آخر رسالة وقتها)

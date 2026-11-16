@@ -212,6 +212,7 @@ class _VoiceState extends State<_VoiceBubble> {
                     padding: EdgeInsets.all(8),
                     child: CircularProgressIndicator(strokeWidth: 2)))
             : IconButton(
+                tooltip: 'تشغيل',
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
                 iconSize: 36,
@@ -365,6 +366,7 @@ class _VideoScreenState extends State<VideoScreen> {
                     ),
                     VideoProgressIndicator(c, allowScrubbing: true),
                     IconButton(
+                      tooltip: 'تشغيل أو إيقاف',
                       iconSize: 44,
                       onPressed: () =>
                           c.value.isPlaying ? c.pause() : c.play(),

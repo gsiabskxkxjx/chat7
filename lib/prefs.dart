@@ -9,6 +9,17 @@ class _Prefs {
   static final arabicFont = ValueNotifier<bool>(true);
   static final lowFx = ValueNotifier<bool>(false); // تخفيف التمويه والحركات
   static final linkPreviews = ValueNotifier<bool>(true);
+  static final autoSave = ValueNotifier<bool>(false); // حفظ صور الطرف الثاني بالمعرض
+  static final quiet = ValueNotifier<int>(-1); // وضع النوم: البداية*100+النهاية، -1 مطفي
+  static final buzz = ValueNotifier<bool>(false); // اهتزاز مميز لرسائل الطرف الثاني
+
+  /// داخل ساعات وضع النوم؟
+  static bool inQuiet([DateTime? at]) {
+    final v = quiet.value;
+    if (v < 0) return false;
+    final s = v ~/ 100, e = v % 100, h = (at ?? DateTime.now()).hour;
+    return s < e ? (h >= s && h < e) : (h >= s || h < e);
+  }
   static const defaultReactions = ['👍', '😂', '😮', '😢', '🙏', '🔥'];
   static final reactions = ValueNotifier<List<String>>(defaultReactions);
 
@@ -28,6 +39,9 @@ class _Prefs {
       arabicFont.value = m['arabicFont'] as bool? ?? true;
       lowFx.value = m['lowFx'] as bool? ?? false;
       linkPreviews.value = m['linkPreviews'] as bool? ?? true;
+      autoSave.value = m['autoSave'] as bool? ?? false;
+      quiet.value = (m['quiet'] as num?)?.toInt() ?? -1;
+      buzz.value = m['buzz'] as bool? ?? false;
       final r = (m['reactions'] as List?)?.map((e) => '$e').toList();
       if (r != null && r.length >= 3 && r.length <= 6) reactions.value = r;
     } catch (_) {}
@@ -43,6 +57,9 @@ class _Prefs {
         'arabicFont': arabicFont.value,
         'lowFx': lowFx.value,
         'linkPreviews': linkPreviews.value,
+        'autoSave': autoSave.value,
+        'quiet': quiet.value,
+        'buzz': buzz.value,
         'reactions': reactions.value,
       }));
     } catch (_) {}
@@ -98,6 +115,34 @@ class _PrefsCardState extends State<_PrefsCard> {
             (2, 'بعد ساعتين'),
             (6, 'بعد 6 ساعات'),
           ]),
+          _choice<int>('وضع النوم (إشعارات بدون صوت)', Icons.bedtime_rounded,
+              _Prefs.quiet, const [
+            (-1, 'مطفي'),
+            (2207, '10م إلى 7ص'),
+            (2308, '11م إلى 8ص'),
+            (8, '12ص إلى 8ص'),
+            (109, '1ص إلى 9ص'),
+          ]),
+          SwitchListTile(
+            secondary: const Icon(Icons.vibration_rounded),
+            title: const Text('اهتزاز مميز لرسائله'),
+            subtitle: const Text('تعرف إنها منه بدون ما تشوف الجوال'),
+            value: _Prefs.buzz.value,
+            onChanged: (x) {
+              setState(() => _Prefs.buzz.value = x);
+              unawaited(_Prefs.save());
+            },
+          ),
+          SwitchListTile(
+            secondary: const Icon(Icons.save_alt_rounded),
+            title: const Text('حفظ صوره بالمعرض تلقائياً'),
+            subtitle: const Text('الصور اللي توصلك وأنت فاتح المحادثة'),
+            value: _Prefs.autoSave.value,
+            onChanged: (x) {
+              setState(() => _Prefs.autoSave.value = x);
+              unawaited(_Prefs.save());
+            },
+          ),
           _choice<int>('القفل بعد الخروج', Icons.lock_clock_rounded,
               _Prefs.lockAfterSec, const [
             (0, 'فوراً'),

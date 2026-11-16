@@ -84,7 +84,17 @@ extension _ChatMore on _ChatState {
       final unread = msgs.where((m) => !m.mine && !m.read).toList();
       if (unread.length >= 3) _unreadFrom = unread.last.id;
     }
-    if (prev == null || newest <= prev || !_showDown) return;
+    if (prev == null || newest <= prev) return;
+    if (_Prefs.autoSave.value) {
+      for (final m in msgs) {
+        if (m.id <= prev) break;
+        final path = m.mediaPath;
+        if (!m.mine && m.kind == 'image' && path != null) {
+          unawaited(_autoSaveImage(path));
+        }
+      }
+    }
+    if (!_showDown) return;
     final n = msgs.where((m) => m.id > prev && !m.mine).length;
     if (n == 0) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -273,4 +283,16 @@ extension _ChatMore on _ChatState {
     }
     if (mounted) setState(() => _uploading = false);
   }
+}
+
+/// يحفظ صورة وصلت بالمعرض (بصمت، بدون رسائل خطأ)
+Future<void> _autoSaveImage(String path) async {
+  try {
+    final f = await _MediaFiles.get(path);
+    if (f == null) return;
+    final dir = await getTemporaryDirectory();
+    final c = await f.copy(
+        '${dir.path}/auto_${DateTime.now().microsecondsSinceEpoch}.${_extFor(path)}');
+    await Gal.putImage(c.path, album: appName);
+  } catch (_) {}
 }

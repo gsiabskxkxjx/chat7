@@ -113,6 +113,7 @@ class _TicState extends State<TicTacToeScreen> {
                 padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
                 child: Row(children: [
                   IconButton(
+                      tooltip: 'رجوع',
                       onPressed: () => Navigator.of(context).pop(),
                       icon: const Icon(Icons.arrow_back_rounded)),
                   const Text('إكس أو',
@@ -298,6 +299,16 @@ void showGamesMenu(BuildContext context, String chatId) {
           },
         ),
         ListTile(
+          leading: const Icon(Icons.timeline_rounded),
+          title: const Text('قصتنا'),
+          subtitle: const Text('أول رسالة، أول صورة، أول مكالمة...'),
+          onTap: () {
+            Navigator.pop(ctx);
+            Navigator.of(context).push(MaterialPageRoute(
+                builder: (_) => StoryScreen(chatId: chatId)));
+          },
+        ),
+        ListTile(
           leading: const Icon(Icons.favorite_rounded, color: Color(0xFFFF5FA2)),
           title: const Text('تاريخ بدايتنا'),
           subtitle: const Text('لعدّاد الأيام والاحتفالات'),
@@ -447,6 +458,7 @@ class _RpsState extends State<RpsScreen> {
                 padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
                 child: Row(children: [
                   IconButton(
+                      tooltip: 'رجوع',
                       onPressed: () => Navigator.of(context).pop(),
                       icon: const Icon(Icons.arrow_back_rounded)),
                   const Text('حجر ورقة مقص',

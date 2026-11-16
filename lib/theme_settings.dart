@@ -199,6 +199,7 @@ class _ThemeSettingsState extends State<ThemeSettingsScreen> {
                 padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
                 child: Row(children: [
                   IconButton(
+                      tooltip: 'رجوع',
                       onPressed: () => Navigator.of(context).pop(),
                       icon: const Icon(Icons.arrow_back_rounded)),
                   const Text('مظهر المحادثة',

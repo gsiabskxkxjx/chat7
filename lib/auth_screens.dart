@@ -82,6 +82,7 @@ class _PassFieldState extends State<_PassField> {
           labelText: widget.label,
           prefixIcon: const Icon(Icons.lock_outline_rounded),
           suffixIcon: IconButton(
+            tooltip: 'إظهار أو إخفاء كلمة السر',
             icon: Icon(_hide ? Icons.visibility_off_rounded : Icons.visibility_rounded),
             onPressed: () => setState(() => _hide = !_hide),
           ),

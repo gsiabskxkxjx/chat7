@@ -277,6 +277,7 @@ class _MsgCache {
   static Future<void> clearAll() async {
     _outboxes.clear();
     _drafts.clear();
+    await _MediaFiles.clearAll();
     try {
       final dir = await getApplicationSupportDirectory();
       await for (final e in dir.list()) {

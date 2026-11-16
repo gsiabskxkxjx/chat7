@@ -136,7 +136,7 @@ class _SearchState extends State<SearchScreen> {
                 child: Row(children: [
                   IconButton(
                       onPressed: () => Navigator.of(context).pop(),
-                      icon: const Icon(Icons.arrow_back)),
+                      icon: const Icon(Icons.arrow_back_rounded)),
                   Expanded(
                     child: Glass(
                       radius: 24,

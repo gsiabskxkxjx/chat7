@@ -114,7 +114,7 @@ class _TicState extends State<TicTacToeScreen> {
                 child: Row(children: [
                   IconButton(
                       onPressed: () => Navigator.of(context).pop(),
-                      icon: const Icon(Icons.arrow_back)),
+                      icon: const Icon(Icons.arrow_back_rounded)),
                   const Text('إكس أو',
                       style:
                           TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
@@ -201,7 +201,7 @@ void showGamesMenu(BuildContext context, String chatId) {
     builder: (ctx) => SafeArea(
       child: Column(mainAxisSize: MainAxisSize.min, children: [
         ListTile(
-          leading: const Icon(Icons.grid_view),
+          leading: const Icon(Icons.grid_view_rounded),
           title: const Text('إكس أو'),
           onTap: () {
             Navigator.pop(ctx);
@@ -210,7 +210,7 @@ void showGamesMenu(BuildContext context, String chatId) {
           },
         ),
         ListTile(
-          leading: const Icon(Icons.pan_tool_outlined),
+          leading: const Icon(Icons.pan_tool_rounded),
           title: const Text('حجر ورقة مقص'),
           onTap: () {
             Navigator.pop(ctx);
@@ -219,7 +219,7 @@ void showGamesMenu(BuildContext context, String chatId) {
           },
         ),
         ListTile(
-          leading: const Icon(Icons.quiz_outlined),
+          leading: const Icon(Icons.quiz_rounded),
           title: const Text('كم تعرفني؟'),
           onTap: () {
             Navigator.pop(ctx);
@@ -228,7 +228,7 @@ void showGamesMenu(BuildContext context, String chatId) {
           },
         ),
         ListTile(
-          leading: const Icon(Icons.checklist_outlined),
+          leading: const Icon(Icons.checklist_rounded),
           title: const Text('قوايم مشتركة'),
           onTap: () {
             Navigator.pop(ctx);
@@ -237,7 +237,7 @@ void showGamesMenu(BuildContext context, String chatId) {
           },
         ),
         ListTile(
-          leading: const Icon(Icons.search),
+          leading: const Icon(Icons.search_rounded),
           title: const Text('بحث في المحادثة'),
           onTap: () {
             Navigator.pop(ctx);
@@ -246,7 +246,7 @@ void showGamesMenu(BuildContext context, String chatId) {
           },
         ),
         ListTile(
-          leading: const Icon(Icons.flash_on_outlined),
+          leading: const Icon(Icons.flash_on_rounded),
           title: const Text('ردود سريعة'),
           onTap: () {
             Navigator.pop(ctx);
@@ -368,7 +368,7 @@ class _RpsState extends State<RpsScreen> {
                 child: Row(children: [
                   IconButton(
                       onPressed: () => Navigator.of(context).pop(),
-                      icon: const Icon(Icons.arrow_back)),
+                      icon: const Icon(Icons.arrow_back_rounded)),
                   const Text('حجر ورقة مقص',
                       style:
                           TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),

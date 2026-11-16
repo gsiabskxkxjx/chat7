@@ -55,7 +55,7 @@ class _Who extends StatelessWidget {
         CircleAvatar(
           radius: big ? 56 : 26,
           backgroundColor: _blue,
-          child: Icon(Icons.person, size: big ? 64 : 30, color: Colors.white),
+          child: Icon(Icons.person_rounded, size: big ? 64 : 30, color: Colors.white),
         ),
         const SizedBox(height: 14),
         Text('@$name',
@@ -154,13 +154,13 @@ class _IncomingState extends State<IncomingCallScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
                       _CallBtn(
-                        icon: Icons.call_end,
+                        icon: Icons.call_end_rounded,
                         bg: const Color(0xFFE5392E),
                         label: 'رفض',
                         onTap: _busy ? null : () => unawaited(s.hangup()),
                       ),
                       _CallBtn(
-                        icon: s.video ? Icons.videocam : Icons.call,
+                        icon: s.video ? Icons.videocam_rounded : Icons.call_rounded,
                         bg: const Color(0xFF2FB344),
                         label: _busy ? 'لحظة...' : 'رد',
                         onTap: _busy ? null : _accept,
@@ -284,7 +284,7 @@ class _CallState extends State<CallScreen> {
                       ValueListenableBuilder<bool>(
                         valueListenable: s.muted,
                         builder: (_, m, __) => _CallBtn(
-                          icon: m ? Icons.mic_off : Icons.mic,
+                          icon: m ? Icons.mic_off_rounded : Icons.mic_rounded,
                           label: 'كتم',
                           bg: m ? Colors.white : const Color(0x33FFFFFF),
                           fg: m ? Colors.black : Colors.white,
@@ -294,7 +294,7 @@ class _CallState extends State<CallScreen> {
                       ValueListenableBuilder<bool>(
                         valueListenable: s.speaker,
                         builder: (_, on, __) => _CallBtn(
-                          icon: on ? Icons.volume_up : Icons.volume_down,
+                          icon: on ? Icons.volume_up_rounded : Icons.volume_down_rounded,
                           label: 'السماعة',
                           bg: on ? Colors.white : const Color(0x33FFFFFF),
                           fg: on ? Colors.black : Colors.white,
@@ -305,7 +305,7 @@ class _CallState extends State<CallScreen> {
                         ValueListenableBuilder<bool>(
                           valueListenable: s.camOff,
                           builder: (_, off, __) => _CallBtn(
-                            icon: off ? Icons.videocam_off : Icons.videocam,
+                            icon: off ? Icons.videocam_off_rounded : Icons.videocam_rounded,
                             label: 'الكاميرا',
                             bg: off ? Colors.white : const Color(0x33FFFFFF),
                             fg: off ? Colors.black : Colors.white,
@@ -314,12 +314,12 @@ class _CallState extends State<CallScreen> {
                         ),
                       if (s.video)
                         _CallBtn(
-                          icon: Icons.cameraswitch,
+                          icon: Icons.cameraswitch_rounded,
                           label: 'قلب',
                           onTap: () => unawaited(s.flipCamera()),
                         ),
                       _CallBtn(
-                        icon: Icons.call_end,
+                        icon: Icons.call_end_rounded,
                         bg: const Color(0xFFE5392E),
                         label: 'إنهاء',
                         onTap: () => unawaited(s.hangup()),

@@ -217,10 +217,10 @@ class _VoiceState extends State<_VoiceBubble> {
                 iconSize: 36,
                 onPressed: _failed ? null : _toggle,
                 icon: Icon(_failed
-                    ? Icons.error_outline
+                    ? Icons.error_outline_rounded
                     : (playing
-                        ? Icons.pause_circle_filled
-                        : Icons.play_circle_fill)),
+                        ? Icons.pause_circle_filled_rounded
+                        : Icons.play_circle_fill_rounded)),
               ),
         const SizedBox(width: 6),
         Expanded(
@@ -275,7 +275,7 @@ class _VideoTile extends StatelessWidget {
             color: const Color(0x66000000),
             borderRadius: BorderRadius.circular(16)),
         child: Stack(alignment: Alignment.center, children: [
-          const Icon(Icons.play_circle_fill, size: 56, color: Colors.white),
+          const Icon(Icons.play_circle_fill_rounded, size: 56, color: Colors.white),
           if (ms > 0)
             PositionedDirectional(
               bottom: 8,
@@ -365,8 +365,8 @@ class _VideoScreenState extends State<VideoScreen> {
                       onPressed: () =>
                           c.value.isPlaying ? c.pause() : c.play(),
                       icon: Icon(c.value.isPlaying
-                          ? Icons.pause_circle_filled
-                          : Icons.play_circle_fill),
+                          ? Icons.pause_circle_filled_rounded
+                          : Icons.play_circle_fill_rounded),
                     ),
                   ]),
       ),

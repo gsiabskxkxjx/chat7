@@ -57,19 +57,19 @@ Future<String?> _photoSheet(BuildContext context, {bool canRemove = false}) =>
       builder: (ctx) => SafeArea(
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           ListTile(
-            leading: const Icon(Icons.photo_library_outlined),
+            leading: const Icon(Icons.photo_library_rounded),
             title: const Text('من المعرض'),
             onTap: () => Navigator.pop(ctx, 'gallery'),
           ),
           ListTile(
-            leading: const Icon(Icons.photo_camera_outlined),
+            leading: const Icon(Icons.photo_camera_rounded),
             title: const Text('تصوير بالكاميرا'),
             onTap: () => Navigator.pop(ctx, 'camera'),
           ),
           if (canRemove)
             ListTile(
               leading:
-                  const Icon(Icons.delete_outline, color: Color(0xFFFF6B60)),
+                  const Icon(Icons.delete_outline_rounded, color: Color(0xFFFF6B60)),
               title: const Text('حذف الصورة'),
               onTap: () => Navigator.pop(ctx, 'remove'),
             ),
@@ -119,7 +119,7 @@ class _AvatarState extends State<_Avatar> {
             backgroundColor: _genderColor(widget.gender),
             backgroundImage: url != null ? NetworkImage(url) : null,
             child: url == null
-                ? Icon(Icons.person, color: Colors.white, size: widget.radius)
+                ? Icon(Icons.person_rounded, color: Colors.white, size: widget.radius)
                 : null,
           );
         },
@@ -161,7 +161,7 @@ class _NetImageState extends State<_NetImage> {
           }
           final url = s.data;
           if (url == null) {
-            return _box(const Icon(Icons.broken_image_outlined, size: 36));
+            return _box(const Icon(Icons.broken_image_rounded, size: 36));
           }
           return ClipRRect(
             borderRadius: BorderRadius.circular(widget.full ? 0 : 16),
@@ -174,7 +174,7 @@ class _NetImageState extends State<_NetImage> {
                   ? child
                   : _box(const CircularProgressIndicator(strokeWidth: 2)),
               errorBuilder: (_, __, ___) =>
-                  _box(const Icon(Icons.broken_image_outlined, size: 36)),
+                  _box(const Icon(Icons.broken_image_rounded, size: 36)),
             ),
           );
         },

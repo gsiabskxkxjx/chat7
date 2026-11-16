@@ -199,7 +199,7 @@ class _PairState extends State<PairScreen> {
                       _Field(
                         controller: _c,
                         label: 'رمز الشخص الآخر',
-                        icon: Icons.link,
+                        icon: Icons.link_rounded,
                         maxLength: 6,
                         pattern: r'[A-Za-z0-9]',
                         upper: true,

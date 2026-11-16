@@ -31,7 +31,7 @@ extension _ChatActions on _ChatState {
                   Navigator.pop(ctx);
                   _reportPartner();
                 },
-                icon: const Icon(Icons.flag_outlined, size: 18),
+                icon: const Icon(Icons.flag_rounded, size: 18),
                 label: const Text('إبلاغ'),
               ),
               TextButton.icon(
@@ -39,7 +39,7 @@ extension _ChatActions on _ChatState {
                   Navigator.pop(ctx);
                   _blockPartner();
                 },
-                icon: const Icon(Icons.block,
+                icon: const Icon(Icons.block_rounded,
                     size: 18, color: Color(0xFFFF6B60)),
                 label: const Text('حظر',
                     style: TextStyle(color: Color(0xFFFF6B60))),
@@ -52,7 +52,7 @@ extension _ChatActions on _ChatState {
                 Navigator.of(context).push(MaterialPageRoute(
                     builder: (_) => MemoriesScreen(chatId: widget.chat.id)));
               },
-              icon: const Icon(Icons.photo_library_outlined),
+              icon: const Icon(Icons.photo_library_rounded),
               label: const Text('معرض الذكريات'),
             ),
           ]),
@@ -222,22 +222,22 @@ extension _ChatActions on _ChatState {
         builder: (ctx) => SafeArea(
           child: Column(mainAxisSize: MainAxisSize.min, children: [
             ListTile(
-              leading: const Icon(Icons.photo_library_outlined),
+              leading: const Icon(Icons.photo_library_rounded),
               title: const Text('صورة من المعرض'),
               onTap: () => Navigator.pop(ctx, 'photo_gallery'),
             ),
             ListTile(
-              leading: const Icon(Icons.photo_camera_outlined),
+              leading: const Icon(Icons.photo_camera_rounded),
               title: const Text('تصوير صورة'),
               onTap: () => Navigator.pop(ctx, 'photo_camera'),
             ),
             ListTile(
-              leading: const Icon(Icons.video_library_outlined),
+              leading: const Icon(Icons.video_library_rounded),
               title: const Text('فيديو من المعرض'),
               onTap: () => Navigator.pop(ctx, 'video_gallery'),
             ),
             ListTile(
-              leading: const Icon(Icons.videocam_outlined),
+              leading: const Icon(Icons.videocam_rounded),
               title: const Text('تسجيل فيديو'),
               onTap: () => Navigator.pop(ctx, 'video_camera'),
             ),
@@ -362,20 +362,20 @@ extension _ChatActions on _ChatState {
             ]),
           ),
           ListTile(
-            leading: const Icon(Icons.reply),
+            leading: const Icon(Icons.reply_rounded),
             title: const Text('رد'),
             onTap: () => Navigator.pop(ctx, 'reply'),
           ),
           if (m.kind == 'text')
             ListTile(
-              leading: const Icon(Icons.copy),
+              leading: const Icon(Icons.copy_rounded),
               title: const Text('نسخ'),
               onTap: () => Navigator.pop(ctx, 'copy'),
             ),
           if (m.mine)
             ListTile(
               leading:
-                  const Icon(Icons.delete_outline, color: Color(0xFFFF6B60)),
+                  const Icon(Icons.delete_outline_rounded, color: Color(0xFFFF6B60)),
               title: const Text('حذف عند الطرفين'),
               onTap: () => Navigator.pop(ctx, 'del'),
             ),

@@ -139,7 +139,7 @@ class _LockGateState extends State<_LockGate> with WidgetsBindingObserver {
               child: SafeArea(
                 child: Center(
                   child: Column(mainAxisSize: MainAxisSize.min, children: [
-                    const Icon(Icons.lock_outline,
+                    const Icon(Icons.lock_outline_rounded,
                         size: 64, color: Colors.white),
                     const SizedBox(height: 16),
                     const Text('بيناتنا مقفول',

@@ -117,7 +117,7 @@ class _ProfileState extends State<ProfileScreen> {
               child: Row(children: [
                 IconButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.arrow_back)),
+                    icon: const Icon(Icons.arrow_back_rounded)),
                 const Text('ملفي الشخصي',
                     style:
                         TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
@@ -152,7 +152,7 @@ class _ProfileState extends State<ProfileScreen> {
                                             height: 16,
                                             child: CircularProgressIndicator(
                                                 strokeWidth: 2))
-                                        : const Icon(Icons.camera_alt,
+                                        : const Icon(Icons.camera_alt_rounded,
                                             size: 18, color: Colors.black),
                                   ),
                                 ),
@@ -172,7 +172,7 @@ class _ProfileState extends State<ProfileScreen> {
                               onSubmitted: (_) => _saveName(),
                               decoration: InputDecoration(
                                 labelText: 'الاسم الظاهر',
-                                prefixIcon: const Icon(Icons.badge_outlined),
+                                prefixIcon: const Icon(Icons.badge_rounded),
                                 filled: true,
                                 fillColor: const Color(0x1FFFFFFF),
                                 border: OutlineInputBorder(
@@ -197,7 +197,7 @@ class _ProfileState extends State<ProfileScreen> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 16, vertical: 14),
                           child: Row(children: [
-                            const Icon(Icons.wc_outlined),
+                            const Icon(Icons.wc_rounded),
                             const SizedBox(width: 12),
                             const Text('الجنس',
                                 style: TextStyle(fontSize: 16)),
@@ -270,10 +270,10 @@ class _ProfileState extends State<ProfileScreen> {
                           radius: 28,
                           padding: const EdgeInsets.symmetric(vertical: 4),
                           child: ListTile(
-                            leading: const Icon(Icons.notifications_outlined),
+                            leading: const Icon(Icons.notifications_rounded),
                             title: const Text('الإشعارات'),
                             subtitle: Text(Push.status),
-                            trailing: const Icon(Icons.refresh),
+                            trailing: const Icon(Icons.refresh_rounded),
                             onTap: () async {
                               await Push.start();
                               if (mounted) setState(() {});
@@ -286,7 +286,7 @@ class _ProfileState extends State<ProfileScreen> {
                           padding: const EdgeInsets.symmetric(vertical: 4),
                           child: Column(children: [
                             ListTile(
-                              leading: const Icon(Icons.feedback_outlined),
+                              leading: const Icon(Icons.feedback_rounded),
                               title: const Text('إرسال ملاحظة'),
                               subtitle: const Text('مشكلة أو اقتراح يوصل للمطوّر'),
                               onTap: () => Navigator.of(context).push(
@@ -294,13 +294,13 @@ class _ProfileState extends State<ProfileScreen> {
                                       builder: (_) => const FeedbackScreen())),
                             ),
                             ListTile(
-                              leading: const Icon(Icons.alternate_email),
+                              leading: const Icon(Icons.alternate_email_rounded),
                               title: const Text('تغيير اسم المستخدم'),
                               subtitle: Text('@${p.username} (مرة كل 30 يوم)'),
                               onTap: _busy ? null : _changeUsername,
                             ),
                             ListTile(
-                              leading: const Icon(Icons.key_outlined),
+                              leading: const Icon(Icons.key_rounded),
                               title: const Text('تغيير كلمة السر'),
                               onTap: () => Navigator.of(context).push(
                                   MaterialPageRoute(
@@ -308,19 +308,19 @@ class _ProfileState extends State<ProfileScreen> {
                                           const ChangePasswordScreen())),
                             ),
                             ListTile(
-                              leading: const Icon(Icons.vpn_key_outlined),
+                              leading: const Icon(Icons.vpn_key_rounded),
                               title: const Text('رمز استرجاع الحساب'),
                               subtitle:
                                   const Text('ينشئ رمز جديد ويلغي القديم'),
                               onTap: _busy ? null : _newRecovery,
                             ),
                             ListTile(
-                              leading: const Icon(Icons.logout),
+                              leading: const Icon(Icons.logout_rounded),
                               title: const Text('تسجيل الخروج'),
                               onTap: _busy ? null : _logout,
                             ),
                             ListTile(
-                              leading: const Icon(Icons.delete_forever,
+                              leading: const Icon(Icons.delete_forever_rounded,
                                   color: Color(0xFFFF6B60)),
                               title: const Text('حذف الحساب',
                                   style: TextStyle(color: Color(0xFFFF6B60))),
@@ -333,7 +333,7 @@ class _ProfileState extends State<ProfileScreen> {
                             radius: 28,
                             padding: const EdgeInsets.symmetric(vertical: 4),
                             child: ListTile(
-                              leading: const Icon(Icons.delete_sweep_outlined,
+                              leading: const Icon(Icons.delete_sweep_rounded,
                                   color: Color(0xFFFF6B60)),
                               title: const Text('مسح سجل المحادثة',
                                   style: TextStyle(color: Color(0xFFFF6B60))),
@@ -347,7 +347,7 @@ class _ProfileState extends State<ProfileScreen> {
                             radius: 28,
                             padding: const EdgeInsets.symmetric(vertical: 4),
                             child: ListTile(
-                              leading: const Icon(Icons.palette_outlined),
+                              leading: const Icon(Icons.palette_rounded),
                               title: const Text('مظهر التطبيق'),
                               subtitle: const Text(
                                   'الثيم والخلفية للتطبيق كله، يشوفها الطرفين'),
@@ -363,7 +363,7 @@ class _ProfileState extends State<ProfileScreen> {
                             radius: 28,
                             padding: const EdgeInsets.symmetric(vertical: 4),
                             child: ListTile(
-                              leading: const Icon(Icons.link_off,
+                              leading: const Icon(Icons.link_off_rounded,
                                   color: Color(0xFFFF6B60)),
                               title: const Text('إلغاء الارتباط',
                                   style: TextStyle(color: Color(0xFFFF6B60))),

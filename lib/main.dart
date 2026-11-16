@@ -125,6 +125,45 @@ class App extends StatelessWidget {
           brightness: Brightness.dark,
           colorScheme: ColorScheme.fromSeed(
               seedColor: _blue, brightness: Brightness.dark),
+          // نوافذ وتنبيهات وقوائم بشكل زجاجي بدل شكل أندرويد الافتراضي
+          dialogTheme: DialogThemeData(
+            backgroundColor: const Color(0xE6161C3A),
+            surfaceTintColor: Colors.transparent,
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(28),
+              side: const BorderSide(color: Color(0x4DFFFFFF)),
+            ),
+          ),
+          snackBarTheme: const SnackBarThemeData(
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: Color(0xE6202A55),
+            contentTextStyle: TextStyle(color: Colors.white, fontSize: 14),
+            actionTextColor: Color(0xFF7CC0FF),
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.all(Radius.circular(20)),
+              side: BorderSide(color: Color(0x4DFFFFFF)),
+            ),
+          ),
+          bottomSheetTheme: const BottomSheetThemeData(
+            backgroundColor: Color(0xEB161C3A),
+            surfaceTintColor: Colors.transparent,
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+              side: BorderSide(color: Color(0x40FFFFFF)),
+            ),
+          ),
+          popupMenuTheme: PopupMenuThemeData(
+            color: const Color(0xEB1B2247),
+            surfaceTintColor: Colors.transparent,
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(18),
+              side: const BorderSide(color: Color(0x4DFFFFFF)),
+            ),
+          ),
         ),
         builder: (c, child) => Directionality(
             textDirection: TextDirection.rtl, child: _LockGate(child: child!)),

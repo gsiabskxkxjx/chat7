@@ -69,7 +69,7 @@ class _GenderState extends State<GenderScreen> {
                       Row(children: [
                         Expanded(
                           child: _GenderCard(
-                            icon: Icons.male,
+                            icon: Icons.male_rounded,
                             label: 'ذكر',
                             color: _blue,
                             selected: _g == 'male',
@@ -79,7 +79,7 @@ class _GenderState extends State<GenderScreen> {
                         const SizedBox(width: 12),
                         Expanded(
                           child: _GenderCard(
-                            icon: Icons.female,
+                            icon: Icons.female_rounded,
                             label: 'أنثى',
                             color: _femaleColor,
                             selected: _g == 'female',

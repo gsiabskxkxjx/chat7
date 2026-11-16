@@ -80,9 +80,9 @@ class _PassFieldState extends State<_PassField> {
         onSubmitted: (_) => widget.onSubmit(),
         decoration: InputDecoration(
           labelText: widget.label,
-          prefixIcon: const Icon(Icons.lock_outline),
+          prefixIcon: const Icon(Icons.lock_outline_rounded),
           suffixIcon: IconButton(
-            icon: Icon(_hide ? Icons.visibility_off : Icons.visibility),
+            icon: Icon(_hide ? Icons.visibility_off_rounded : Icons.visibility_rounded),
             onPressed: () => setState(() => _hide = !_hide),
           ),
           errorText: widget.error,
@@ -261,7 +261,7 @@ class _SignUpState extends State<SignUpScreen> {
           _Field(
               controller: _u,
               label: 'اسم المستخدم',
-              icon: Icons.alternate_email,
+              icon: Icons.alternate_email_rounded,
               onSubmit: _submit),
           const SizedBox(height: 12),
           _PassField(
@@ -337,7 +337,7 @@ class _LoginState extends State<LoginScreen> {
           _Field(
               controller: _u,
               label: 'اسم المستخدم',
-              icon: Icons.alternate_email,
+              icon: Icons.alternate_email_rounded,
               onSubmit: _submit),
           const SizedBox(height: 12),
           _PassField(

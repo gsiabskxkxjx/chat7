@@ -138,7 +138,7 @@ class _Bubble extends StatelessWidget {
                       style: TextStyle(fontSize: 11, color: m.mine ? const Color(0xB3FFFFFF) : t.text.withValues(alpha: 0.7))),
                   if (m.mine) ...[
                     const SizedBox(width: 4),
-                    Icon(m.read ? Icons.done_all : Icons.done,
+                    Icon(m.read ? Icons.done_all_rounded : Icons.done_rounded,
                         size: 15,
                         color: m.read
                             ? const Color(0xFF7CFFB2)

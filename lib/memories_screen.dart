@@ -34,7 +34,7 @@ class _MemoriesState extends State<MemoriesScreen> {
                 child: Row(children: [
                   IconButton(
                       onPressed: () => Navigator.of(context).pop(),
-                      icon: const Icon(Icons.arrow_back)),
+                      icon: const Icon(Icons.arrow_back_rounded)),
                   const Text('معرض الذكريات',
                       style:
                           TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
@@ -101,7 +101,7 @@ class _MemoryTile extends StatelessWidget {
           color: const Color(0x33000000),
           child: isVideo
               ? const Center(
-                  child: Icon(Icons.play_circle_fill,
+                  child: Icon(Icons.play_circle_fill_rounded,
                       size: 40, color: Colors.white))
               : _ThumbImage(path: path),
         ),
@@ -120,7 +120,7 @@ class _ThumbImage extends StatelessWidget {
         builder: (_, s) {
           final url = s.data;
           if (url == null) {
-            return const Center(child: Icon(Icons.broken_image_outlined));
+            return const Center(child: Icon(Icons.broken_image_rounded));
           }
           return Image.network(
             url,
@@ -128,7 +128,7 @@ class _ThumbImage extends StatelessWidget {
             width: double.infinity,
             height: double.infinity,
             errorBuilder: (_, __, ___) =>
-                const Center(child: Icon(Icons.broken_image_outlined)),
+                const Center(child: Icon(Icons.broken_image_rounded)),
           );
         },
       );

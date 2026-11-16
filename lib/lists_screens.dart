@@ -97,7 +97,7 @@ class _ListsState extends State<SharedListsScreen> {
                 child: Row(children: [
                   IconButton(
                       onPressed: () => Navigator.of(context).pop(),
-                      icon: const Icon(Icons.arrow_back)),
+                      icon: const Icon(Icons.arrow_back_rounded)),
                   const Text('قوايم مشتركة',
                       style:
                           TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
@@ -168,7 +168,7 @@ class _ListsState extends State<SharedListsScreen> {
                                               : null,
                                         )),
                                     trailing: IconButton(
-                                      icon: const Icon(Icons.delete_outline,
+                                      icon: const Icon(Icons.delete_outline_rounded,
                                           size: 20),
                                       onPressed: () => _delete(it),
                                     ),
@@ -196,7 +196,7 @@ class _ListsState extends State<SharedListsScreen> {
                             ),
                             IconButton(
                               onPressed: _add,
-                              icon: const Icon(Icons.add_circle_outline),
+                              icon: const Icon(Icons.add_circle_outline_rounded),
                             ),
                           ]),
                         ),

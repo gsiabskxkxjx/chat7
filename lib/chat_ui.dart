@@ -36,17 +36,27 @@ extension _ChatUi on _ChatState {
                 ]),
               ),
             ),
-            IconButton(
-                onPressed: () => _call(false), icon: const Icon(Icons.call)),
-            IconButton(
-                onPressed: () => _call(true), icon: const Icon(Icons.videocam)),
-            IconButton(
-                onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+            const SizedBox(width: 4),
+            _GlassIcon(
+                label: 'مكالمة صوتية',
+                onTap: () => _call(false),
+                icon: Icons.call_rounded),
+            const SizedBox(width: 6),
+            _GlassIcon(
+                label: 'مكالمة فيديو',
+                onTap: () => _call(true),
+                icon: Icons.videocam_rounded),
+            const SizedBox(width: 6),
+            _GlassIcon(
+                label: 'مظهر التطبيق',
+                onTap: () => Navigator.of(context).push(MaterialPageRoute(
                     builder: (_) => ThemeSettingsScreen(chatId: widget.chat.id))),
-                icon: const Icon(Icons.palette_outlined)),
-            IconButton(
-                onPressed: _openProfile,
-                icon: const Icon(Icons.settings_outlined)),
+                icon: Icons.palette_rounded),
+            const SizedBox(width: 6),
+            _GlassIcon(
+                label: 'الإعدادات',
+                onTap: _openProfile,
+                icon: Icons.settings_rounded),
           ]),
         ),
       );
@@ -156,7 +166,7 @@ extension _ChatUi on _ChatState {
         ),
         IconButton(
           onPressed: () => setState(() => _replyTo = null),
-          icon: const Icon(Icons.close, size: 18),
+          icon: const Icon(Icons.close_rounded, size: 18),
         ),
       ]),
     );
@@ -165,10 +175,10 @@ extension _ChatUi on _ChatState {
   Widget _recordingRow() => Row(children: [
         IconButton(
           onPressed: () => unawaited(_finishRec(false)),
-          icon: const Icon(Icons.delete_outline, color: Color(0xFFFF6B60)),
+          icon: const Icon(Icons.delete_outline_rounded, color: Color(0xFFFF6B60)),
         ),
         const SizedBox(width: 4),
-        const Icon(Icons.fiber_manual_record, color: Color(0xFFFF3B30), size: 14),
+        const Icon(Icons.fiber_manual_record_rounded, color: Color(0xFFFF3B30), size: 14),
         const SizedBox(width: 8),
         Expanded(
           child: Text('جاري التسجيل... ${_mmss(_recSecs * 1000)}',
@@ -188,7 +198,7 @@ extension _ChatUi on _ChatState {
                   width: 22,
                   height: 22,
                   child: CircularProgressIndicator(strokeWidth: 2))
-              : const Icon(Icons.add_circle_outline),
+              : const Icon(Icons.add_circle_outline_rounded),
         ),
         Expanded(
           child: TextField(
@@ -207,17 +217,52 @@ extension _ChatUi on _ChatState {
         if (!typing)
           IconButton(
             onPressed: () => showGamesMenu(context, widget.chat.id),
-            icon: Icon(Icons.sports_esports_outlined, color: _t.accent),
+            icon: Icon(Icons.sports_esports_rounded, color: _t.accent),
           ),
         if (!typing)
           IconButton(
             onPressed: _thinkOfYou,
-            icon: Icon(Icons.favorite_border, color: _t.accent),
+            icon: Icon(Icons.favorite_border_rounded, color: _t.accent),
           ),
-        IconButton(
-          onPressed: typing ? _send : _startRec,
-          icon: Icon(typing ? Icons.arrow_upward_rounded : Icons.mic,
-              color: typing ? _t.accent : null),
+        // زر الإرسال: يتحول من المايك للسهم بحركة دوران
+        Semantics(
+          button: true,
+          label: typing ? 'إرسال' : 'تسجيل صوتي',
+          child: _Press(
+            onTap: typing ? _send : _startRec,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 220),
+              curve: Curves.easeOut,
+              width: 42,
+              height: 42,
+              margin: const EdgeInsets.all(3),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: typing ? _t.accent : const Color(0x1FFFFFFF),
+                border: Border.all(color: const Color(0x4DFFFFFF), width: 0.8),
+                boxShadow: typing
+                    ? [
+                        BoxShadow(
+                            color: _t.accent.withValues(alpha: 0.45),
+                            blurRadius: 14),
+                      ]
+                    : null,
+              ),
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 220),
+                transitionBuilder: (child, a) => RotationTransition(
+                  turns: Tween<double>(begin: 0.75, end: 1).animate(a),
+                  child: ScaleTransition(scale: a, child: child),
+                ),
+                child: Icon(
+                  typing ? Icons.arrow_upward_rounded : Icons.mic_rounded,
+                  key: ValueKey<bool>(typing),
+                  size: 22,
+                  color: typing ? Colors.white : null,
+                ),
+              ),
+            ),
+          ),
         ),
       ]);
 }
@@ -362,7 +407,7 @@ class _CallPill extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
         ),
         child: Row(mainAxisSize: MainAxisSize.min, children: [
-          Icon(missed ? Icons.call_missed : Icons.call,
+          Icon(missed ? Icons.call_missed_rounded : Icons.call_rounded,
               size: 14,
               color: missed ? const Color(0xFFFF6B60) : Colors.white),
           const SizedBox(width: 6),
@@ -421,7 +466,7 @@ class _SincePill extends StatelessWidget {
           borderRadius: BorderRadius.circular(14),
         ),
         child: Row(mainAxisSize: MainAxisSize.min, children: [
-          const Icon(Icons.favorite, size: 14, color: Color(0xFFFF6B9D)),
+          const Icon(Icons.favorite_rounded, size: 14, color: Color(0xFFFF6B9D)),
           const SizedBox(width: 6),
           Text(text, style: const TextStyle(fontSize: 12, color: Colors.white)),
         ]),
@@ -502,7 +547,7 @@ extension _ChatOffline on _ChatState {
           borderRadius: BorderRadius.circular(12),
         ),
         child: const Row(mainAxisSize: MainAxisSize.min, children: [
-          Icon(Icons.wifi_off, size: 16, color: Colors.white),
+          Icon(Icons.wifi_off_rounded, size: 16, color: Colors.white),
           SizedBox(width: 8),
           Flexible(
             child: Text('لا يوجد اتصال، ننتظر الشبكة...',
@@ -541,13 +586,13 @@ class _RemindBanner extends StatelessWidget {
           borderRadius: BorderRadius.circular(14),
         ),
         child: Row(mainAxisSize: MainAxisSize.min, children: [
-          const Icon(Icons.schedule, size: 14, color: Colors.white),
+          const Icon(Icons.schedule_rounded, size: 14, color: Colors.white),
           const SizedBox(width: 6),
           Text(text, style: const TextStyle(fontSize: 12, color: Colors.white)),
           IconButton(
             visualDensity: VisualDensity.compact,
             onPressed: onClose,
-            icon: const Icon(Icons.close, size: 16, color: Colors.white),
+            icon: const Icon(Icons.close_rounded, size: 16, color: Colors.white),
           ),
         ]),
       ),

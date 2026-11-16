@@ -168,7 +168,7 @@ class _ThemeSettingsState extends State<ThemeSettingsScreen> {
       const SizedBox(height: 8),
       OutlinedButton.icon(
         onPressed: _busy ? null : _pickImage,
-        icon: const Icon(Icons.photo_library_outlined),
+        icon: const Icon(Icons.photo_library_rounded),
         label: Text(label),
       ),
     ];
@@ -200,7 +200,7 @@ class _ThemeSettingsState extends State<ThemeSettingsScreen> {
                 child: Row(children: [
                   IconButton(
                       onPressed: () => Navigator.of(context).pop(),
-                      icon: const Icon(Icons.arrow_back)),
+                      icon: const Icon(Icons.arrow_back_rounded)),
                   const Text('مظهر المحادثة',
                       style:
                           TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),

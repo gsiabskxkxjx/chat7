@@ -56,7 +56,7 @@ class _FeedbackState extends State<FeedbackScreen> {
                 child: Row(children: [
                   IconButton(
                       onPressed: () => Navigator.of(context).pop(),
-                      icon: const Icon(Icons.arrow_back)),
+                      icon: const Icon(Icons.arrow_back_rounded)),
                   const Text('إرسال ملاحظة',
                       style:
                           TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),

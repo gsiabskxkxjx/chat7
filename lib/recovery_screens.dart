@@ -191,13 +191,13 @@ class _ResetState extends State<ResetPasswordScreen> {
           _Field(
               controller: _u,
               label: 'اسم المستخدم',
-              icon: Icons.alternate_email,
+              icon: Icons.alternate_email_rounded,
               onSubmit: _submit),
           const SizedBox(height: 12),
           _Field(
               controller: _c,
               label: 'رمز الاسترجاع',
-              icon: Icons.vpn_key_outlined,
+              icon: Icons.vpn_key_rounded,
               onSubmit: _submit,
               maxLength: 19,
               pattern: r'[A-Za-z0-9-]',

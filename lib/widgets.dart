@@ -2,33 +2,241 @@ part of 'main.dart';
 
 // ---------- مكونات الزجاج ----------
 
+/// يزيد تشبّع الألوان وراء الزجاج (مثل زجاج آيفون)
+const _saturate = ColorFilter.matrix(<double>[
+  1.47244, -0.42912, -0.04332, 0, 0, //
+  -0.12756, 1.17088, -0.04332, 0, 0, //
+  -0.12756, -0.42912, 1.55668, 0, 0, //
+  0, 0, 0, 1, 0,
+]);
+
+/// هل الثيم الحالي نهاري (زجاج أبيض حليبي بدل الشفاف)
+bool _lightLook(AppLook? look) => look != null && !look.theme.dark;
+
+/// بطاقة زجاجية: تمويه وتشبّع للخلفية، تدرّج ضوئي، إطار لامع، خط انعكاس، وظل ناعم
 class Glass extends StatelessWidget {
   const Glass({
     super.key,
     required this.child,
     this.radius = 24,
     this.padding = const EdgeInsets.all(16),
+    this.blur = 24,
+    this.shadow = true,
+    this.tint,
   });
   final Widget child;
   final double radius;
   final EdgeInsets padding;
 
+  /// قوة التمويه: 24 للبطاقات العادية، وأكثر للنوافذ
+  final double blur;
+  final bool shadow;
+
+  /// لون خفيف يصبغ الزجاج (اختياري)
+  final Color? tint;
+
   @override
-  Widget build(BuildContext context) => ClipRRect(
-        borderRadius: BorderRadius.circular(radius),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-          child: Container(
-            padding: padding,
+  Widget build(BuildContext context) => ValueListenableBuilder<AppLook?>(
+        valueListenable: _appLook,
+        builder: (_, look, __) {
+          final light = _lightLook(look);
+          final br = BorderRadius.circular(radius);
+          final top = tint?.withValues(alpha: 0.30) ??
+              (light ? const Color(0x8CFFFFFF) : const Color(0x3DFFFFFF));
+          final bottom = tint?.withValues(alpha: 0.12) ??
+              (light ? const Color(0x52FFFFFF) : const Color(0x12FFFFFF));
+          return DecoratedBox(
             decoration: BoxDecoration(
-              color: _glass,
-              borderRadius: BorderRadius.circular(radius),
-              border: Border.all(color: _edge),
+              borderRadius: br,
+              boxShadow: shadow
+                  ? const [
+                      BoxShadow(
+                        color: Color(0x40000000),
+                        blurRadius: 28,
+                        offset: Offset(0, 12),
+                        blurStyle: BlurStyle.outer,
+                      ),
+                    ]
+                  : null,
             ),
-            child: child,
-          ),
-        ),
+            child: ClipRRect(
+              borderRadius: br,
+              child: BackdropFilter(
+                filter: ImageFilter.compose(
+                  outer: _saturate,
+                  inner: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
+                ),
+                child: CustomPaint(
+                  foregroundPainter: _GlassEdge(radius, light),
+                  child: Container(
+                    padding: padding,
+                    decoration: BoxDecoration(
+                      borderRadius: br,
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [top, bottom],
+                      ),
+                    ),
+                    child: child,
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
       );
+}
+
+/// الإطار اللامع وخط الانعكاس بأعلى الزجاج
+class _GlassEdge extends CustomPainter {
+  const _GlassEdge(this.radius, this.light);
+  final double radius;
+  final bool light;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (size.isEmpty) return;
+    final rect = Offset.zero & size;
+    final rr =
+        RRect.fromRectAndRadius(rect, Radius.circular(radius)).deflate(0.5);
+    final edge = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1
+      ..shader = LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          Colors.white.withValues(alpha: light ? 0.95 : 0.62),
+          Colors.white.withValues(alpha: light ? 0.40 : 0.10),
+          Colors.white.withValues(alpha: light ? 0.70 : 0.26),
+        ],
+        stops: const [0, 0.55, 1],
+      ).createShader(rect);
+    canvas.drawRRect(rr, edge);
+    final r = radius < size.width / 3 ? radius : size.width / 3;
+    if (size.width > r * 2 + 12) {
+      final line = Rect.fromLTWH(r, 0, size.width - r * 2, 3);
+      final shine = Paint()
+        ..strokeWidth = 1.2
+        ..shader = LinearGradient(colors: [
+          Colors.white.withValues(alpha: 0),
+          Colors.white.withValues(alpha: light ? 0.9 : 0.55),
+          Colors.white.withValues(alpha: 0),
+        ]).createShader(line);
+      canvas.drawLine(Offset(r, 1.6), Offset(size.width - r, 1.6), shine);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_GlassEdge old) =>
+      old.radius != radius || old.light != light;
+}
+
+/// يصغّر العنصر لحظة اللمس ويعطي اهتزاز خفيف
+class _Press extends StatefulWidget {
+  const _Press({
+    required this.child,
+    required this.onTap,
+    this.onLongPress,
+    this.scale = 0.92,
+    this.haptic = true,
+    this.dimWhenOff = true,
+  });
+  final Widget child;
+  final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
+  final double scale;
+  final bool haptic;
+  final bool dimWhenOff;
+
+  @override
+  State<_Press> createState() => _PressState();
+}
+
+class _PressState extends State<_Press> {
+  bool _down = false;
+
+  void _set(bool v) {
+    if (mounted && _down != v) setState(() => _down = v);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final on = widget.onTap != null;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTapDown: on ? (_) => _set(true) : null,
+      onTapUp: on ? (_) => _set(false) : null,
+      onTapCancel: () => _set(false),
+      onLongPress: widget.onLongPress,
+      onTap: on
+          ? () {
+              if (widget.haptic) unawaited(HapticFeedback.lightImpact());
+              widget.onTap!();
+            }
+          : null,
+      child: AnimatedScale(
+        scale: _down ? widget.scale : 1,
+        duration: const Duration(milliseconds: 110),
+        curve: Curves.easeOut,
+        child: AnimatedOpacity(
+          opacity: !on && widget.dimWhenOff ? 0.45 : 1,
+          duration: const Duration(milliseconds: 150),
+          child: widget.child,
+        ),
+      ),
+    );
+  }
+}
+
+/// زر أيقونة زجاجي دائري موحّد
+class _GlassIcon extends StatelessWidget {
+  const _GlassIcon({
+    required this.icon,
+    required this.onTap,
+    this.label,
+    this.size = 40,
+    this.color,
+    this.tint,
+  });
+  final IconData icon;
+  final VoidCallback? onTap;
+  final String? label;
+  final double size;
+  final Color? color;
+
+  /// لون الزجاج (مثلاً أحمر لزر الإنهاء)
+  final Color? tint;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = tint;
+    final body = _Press(
+      onTap: onTap,
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: t == null
+                ? const [Color(0x38FFFFFF), Color(0x0FFFFFFF)]
+                : [t.withValues(alpha: 0.95), t.withValues(alpha: 0.70)],
+          ),
+          border: Border.all(color: const Color(0x4DFFFFFF), width: 0.8),
+          boxShadow: t == null
+              ? null
+              : [BoxShadow(color: t.withValues(alpha: 0.45), blurRadius: 16)],
+        ),
+        child: Icon(icon,
+            size: size * 0.5, color: color ?? (t == null ? null : Colors.white)),
+      ),
+    );
+    return Semantics(button: true, label: label, child: body);
+  }
 }
 
 class Backdrop extends StatelessWidget {
@@ -207,24 +415,63 @@ class _Btn extends StatelessWidget {
   final bool busy;
 
   @override
-  Widget build(BuildContext context) => FilledButton(
-        onPressed: busy ? null : onTap,
-        style: FilledButton.styleFrom(
-          backgroundColor: _blue,
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+  Widget build(BuildContext context) => Semantics(
+        button: true,
+        label: label,
+        child: _Press(
+          onTap: busy ? null : onTap,
+          dimWhenOff: false,
+          scale: 0.96,
+          child: Container(
+            constraints: const BoxConstraints(minHeight: 54),
+            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 15),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(18),
+              gradient: const LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Color(0xFF4FA6FF), Color(0xFF0A6CFF)],
+              ),
+              border: Border.all(color: const Color(0x73FFFFFF), width: 0.8),
+              boxShadow: const [
+                BoxShadow(
+                    color: Color(0x660A84FF),
+                    blurRadius: 22,
+                    offset: Offset(0, 8)),
+              ],
+            ),
+            foregroundDecoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(18),
+              gradient: const LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment(0, 0.15),
+                colors: [Color(0x40FFFFFF), Color(0x00FFFFFF)],
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (busy)
+                  const SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2.5, color: Colors.white),
+                  )
+                else
+                  Flexible(
+                    child: Text(label,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600)),
+                  ),
+              ],
+            ),
+          ),
         ),
-        child: busy
-            ? const SizedBox(
-                width: 22,
-                height: 22,
-                child: CircularProgressIndicator(strokeWidth: 2.5),
-              )
-            : Text(label,
-                style:
-                    const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
       );
 }
 

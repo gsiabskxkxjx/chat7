@@ -10,11 +10,11 @@ permissions:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
@@ -100,6 +100,26 @@ jobs:
             echo "ERROR: could not set applicationId to com.bainatna.chat in $F"
             exit 1
           fi
+
+      - name: Skip release lint (avoids a lint crash in plugin sources)
+        run: |
+          python3 - <<'PY'
+          import os
+          kts = 'android/app/build.gradle.kts'
+          p = kts if os.path.exists(kts) else 'android/app/build.gradle'
+          s = open(p, encoding='utf-8').read()
+          if kts == p:
+              block = 'android {\n    lint {\n        checkReleaseBuilds = false\n        abortOnError = false\n    }\n'
+          else:
+              block = 'android {\n    lint {\n        checkReleaseBuilds false\n        abortOnError false\n    }\n'
+          if 'checkReleaseBuilds' not in s:
+              if '\nandroid {\n' not in s:
+                  raise SystemExit('ERROR: no android { block in ' + p)
+              s = s.replace('\nandroid {\n', '\n' + block, 1)
+              open(p, 'w', encoding='utf-8').write(s)
+          print(p)
+          PY
+          grep -n -A3 "lint {" android/app/build.gradle* || true
 
       - name: Firebase config (Android)
         run: |

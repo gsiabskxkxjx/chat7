@@ -12,7 +12,8 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart' show GoogleFonts;
 import 'package:url_launcher/url_launcher.dart' show launchUrl, LaunchMode;
 import 'package:image_picker/image_picker.dart'
-    show ImagePicker, ImageSource, XFile;
+    show CameraDevice, ImagePicker, ImageSource, XFile;
+import 'package:file_picker/file_picker.dart' show FilePicker, FilePickerResult;
 import 'package:path_provider/path_provider.dart'
     show getTemporaryDirectory, getApplicationSupportDirectory;
 import 'package:local_auth/local_auth.dart'
@@ -103,6 +104,7 @@ part 'net_more.dart';
 part 'story.dart';
 part 'together.dart';
 part 'games2.dart';
+part 'media_more.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

@@ -267,14 +267,53 @@ extension _ChatActions on _ChatState {
               title: const Text('ارسم وأرسل'),
               onTap: () => Navigator.pop(ctx, 'draw'),
             ),
+            ListTile(
+              leading: const Icon(Icons.radio_button_checked_rounded),
+              title: const Text('فيديو دائري'),
+              subtitle: const Text('لين 30 ثانية بالكاميرا الأمامية'),
+              onTap: () => Navigator.pop(ctx, 'vnote'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.graphic_eq_rounded),
+              title: const Text('نبضة'),
+              subtitle: const Text('صوتك 5 ثواني وينرسل لحاله'),
+              onTap: () => Navigator.pop(ctx, 'pulse'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.style_rounded),
+              title: const Text('بطاقة ملوّنة'),
+              subtitle: const Text('رسالة مهمة كبيرة وملوّنة'),
+              onTap: () => Navigator.pop(ctx, 'card'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.attach_file_rounded),
+              title: const Text('ملف أو PDF'),
+              onTap: () => Navigator.pop(ctx, 'file'),
+            ),
           ]),
         ),
       );
 
-  Future<void> _attach() async {
-    if (_blockedByTrust()) return;
-    final act = await _attachSheet();
+  Future<void> _attach({String? preset}) async {
+    final act = preset ?? await _attachSheet();
     if (!mounted || act == null) return;
+    if (act == 'card') {
+      await _sendCard();
+      return;
+    }
+    if (_blockedByTrust()) return;
+    if (act == 'pulse') {
+      await _sendPulse();
+      return;
+    }
+    if (act == 'vnote') {
+      await _recordVideoNote();
+      return;
+    }
+    if (act == 'file') {
+      await _sendFile();
+      return;
+    }
     if (act == 'draw') {
       await Navigator.of(context).push(MaterialPageRoute(
           builder: (_) => DrawScreen(chatId: widget.chat.id)));
@@ -302,13 +341,20 @@ extension _ChatActions on _ChatState {
           picked = await _picker.pickMultiImage(
               maxWidth: 1600, maxHeight: 1600, imageQuality: 82, limit: 10);
         }
-        for (final x in picked.take(10)) {
+        var files = picked.take(10).map((x) => File(x.path)).toList();
+        // صورة وحدة: نفتح شاشة التعديل (فلاتر، تدوير، قص)
+        if (files.length == 1 && mounted) {
+          final edited = await Navigator.of(context).push<File>(MaterialPageRoute(
+              builder: (_) => _ImageEditScreen(file: files.first)));
+          files = edited == null ? <File>[] : [edited];
+        }
+        for (final f in files) {
           await _sendMedia(
               chatId: widget.chat.id,
-              file: File(x.path),
+              file: f,
               kind: 'image',
-              ext: _extFor(x.path),
-              mime: _mimeFor(x.path));
+              ext: _extFor(f.path),
+              mime: _mimeFor(f.path));
         }
       } else {
         final x = await _picker.pickVideo(

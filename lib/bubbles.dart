@@ -77,6 +77,13 @@ class _Bubble extends StatelessWidget {
 
   Widget _content(BuildContext context) {
     final path = m.mediaPath;
+    if (m.kind == 'card') return _CardMsg(text: m.text, color: m.durationMs);
+    if (m.kind == 'vnote' && path != null) {
+      return _VideoNote(key: ValueKey('vn-${m.id}'), path: path, ms: m.durationMs);
+    }
+    if (m.kind == 'file' && path != null) {
+      return _FileTile(path: path, name: m.text, size: m.durationMs);
+    }
     if (path != null) {
       if (m.kind == 'image') {
         return GestureDetector(
@@ -110,8 +117,9 @@ class _Bubble extends StatelessWidget {
   }
 
   BorderRadiusDirectional _corners() {
-    const big = Radius.circular(20);
-    const small = Radius.circular(6);
+    final shape = _Prefs.bubbleShape.value;
+    final big = Radius.circular(shape == 1 ? 10 : (shape == 2 ? 26 : 20));
+    final small = Radius.circular(shape == 1 ? 3 : (shape == 2 ? 12 : 6));
     return m.mine
         ? BorderRadiusDirectional.only(
             topStart: joinPrev ? small : big,
@@ -135,9 +143,13 @@ class _Bubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final big = m.mediaPath != null && m.kind != 'audio';
-    final base = m.mine ? t.mine : t.theirs;
-    final emoji = _emojiOnly;
+    final big = m.mediaPath != null && m.kind != 'audio' && m.kind != 'file';
+    final custom = m.mine ? _Prefs.myBubble.value : _Prefs.theirBubble.value;
+    final base = custom >= 0
+        ? _bubblePalette[custom % _bubblePalette.length].withValues(alpha: 0.85)
+        : (m.mine ? t.mine : t.theirs);
+    // بدون فقاعة: إيموجي لحاله، بطاقة ملوّنة، فيديو دائري
+    final emoji = _emojiOnly || m.kind == 'card' || m.kind == 'vnote';
     // رسالة وصلت توها: تدخل بانزلاق وتلاشي
     final fresh =
         m.at != null && DateTime.now().difference(m.at!).inSeconds.abs() < 8;

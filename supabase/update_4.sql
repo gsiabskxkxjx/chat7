@@ -1,5 +1,6 @@
 -- بيناتنا تحديث 4: جدار ملاحظات الحب، تقويم مشترك، تحدي الصورة اليومي،
--- أسبوع التعارف «نكمل؟»، رسالة وداع، تواريخ لبنود القوائم، ألعاب جديدة
+-- أسبوع التعارف «نكمل؟»، رسالة وداع، تواريخ لبنود القوائم، ألعاب جديدة،
+-- بطاقات ملوّنة، فيديو دائري، ملفات
 -- شغّله بعد update_1 و update_2 و update_3. آمن لو انعاد.
 
 -- دالة مساعدة: هل أنا طرف بهذي المحادثة؟
@@ -162,6 +163,22 @@ grant execute on function public.say_farewell(text), public.farewell_take() to a
 alter table public.chat_games drop constraint if exists chat_games_kind_check;
 alter table public.chat_games add constraint chat_games_kind_check check (kind in
   ('tictactoe', 'rps', 'quiz', 'whoof', 'truefalse', 'memory', 'guess20', 'emoji', 'checkers', 'chess'));
+
+-- ===== 8) أنواع رسائل جديدة: بطاقة ملوّنة، فيديو دائري، ملف =====
+alter table public.messages drop constraint if exists messages_kind_check;
+alter table public.messages add constraint messages_kind_check check (kind in
+  ('text', 'image', 'video', 'audio', 'call', 'think', 'card', 'vnote', 'file'));
+
+-- الفيديو الدائري والملفات مقفلة بالمطابقة الجديدة مثل الصور
+create or replace function public.guard_match_media() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  if new.kind in ('image', 'video', 'audio', 'vnote', 'file') and exists (
+       select 1 from chats where id = new.chat_id and matched and not (trust_a and trust_b)) then
+    raise exception 'media_locked';
+  end if;
+  return new;
+end; $$;
 
 -- فحص: لازم يطلع 4
 select

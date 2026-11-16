@@ -12,6 +12,10 @@ class _Prefs {
   static final autoSave = ValueNotifier<bool>(false); // حفظ صور الطرف الثاني بالمعرض
   static final quiet = ValueNotifier<int>(-1); // وضع النوم: البداية*100+النهاية، -1 مطفي
   static final buzz = ValueNotifier<bool>(false); // اهتزاز مميز لرسائل الطرف الثاني
+  static final bubbleShape = ValueNotifier<int>(0); // 0 مدوّرة، 1 حادة، 2 كبسولة
+  static final myBubble = ValueNotifier<int>(-1); // -1 لون الثيم
+  static final theirBubble = ValueNotifier<int>(-1);
+  static final ring = ValueNotifier<int>(0); // إطار صورة الطرف الثاني
 
   /// داخل ساعات وضع النوم؟
   static bool inQuiet([DateTime? at]) {
@@ -42,6 +46,10 @@ class _Prefs {
       autoSave.value = m['autoSave'] as bool? ?? false;
       quiet.value = (m['quiet'] as num?)?.toInt() ?? -1;
       buzz.value = m['buzz'] as bool? ?? false;
+      bubbleShape.value = (m['bubbleShape'] as num?)?.toInt() ?? 0;
+      myBubble.value = (m['myBubble'] as num?)?.toInt() ?? -1;
+      theirBubble.value = (m['theirBubble'] as num?)?.toInt() ?? -1;
+      ring.value = (m['ring'] as num?)?.toInt() ?? 0;
       final r = (m['reactions'] as List?)?.map((e) => '$e').toList();
       if (r != null && r.length >= 3 && r.length <= 6) reactions.value = r;
     } catch (_) {}
@@ -60,6 +68,10 @@ class _Prefs {
         'autoSave': autoSave.value,
         'quiet': quiet.value,
         'buzz': buzz.value,
+        'bubbleShape': bubbleShape.value,
+        'myBubble': myBubble.value,
+        'theirBubble': theirBubble.value,
+        'ring': ring.value,
         'reactions': reactions.value,
       }));
     } catch (_) {}
@@ -107,6 +119,30 @@ class _PrefsCardState extends State<_PrefsCard> {
             (1.0, 'عادي'),
             (1.15, 'كبير'),
             (1.3, 'أكبر'),
+          ]),
+          _choice<int>('شكل الفقاعات', Icons.chat_bubble_outline_rounded,
+              _Prefs.bubbleShape, const [
+            (0, 'مدوّرة'),
+            (1, 'حادة'),
+            (2, 'كبسولة'),
+          ]),
+          ListTile(
+            leading: const Icon(Icons.format_color_fill_rounded),
+            title: const Text('لون فقاعاتي وفقاعاته'),
+            subtitle: const Text('يتغير عندك بس'),
+            trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+              _dot(_Prefs.myBubble.value),
+              const SizedBox(width: 4),
+              _dot(_Prefs.theirBubble.value),
+            ]),
+            onTap: () async {
+              await _pickBubbleColors(context);
+              if (mounted) setState(() {});
+            },
+          ),
+          _choice<int>('إطار صورته بالمحادثة', Icons.account_circle_rounded,
+              _Prefs.ring, [
+            for (var i = 0; i < _ringStyles.length; i++) (i, _ringStyles[i]),
           ]),
           _choice<int>('تذكير «ما رديت»', Icons.notifications_active_rounded,
               _Prefs.remindHours, const [
@@ -264,3 +300,61 @@ Future<void> _pickReactions(BuildContext context) async {
   _Prefs.reactions.value = res;
   await _Prefs.save();
 }
+
+Widget _dot(int i) => Container(
+      width: 18,
+      height: 18,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: i < 0 ? null : _bubblePalette[i % _bubblePalette.length],
+        gradient: i < 0
+            ? const LinearGradient(colors: [Color(0xFF0A84FF), Color(0xFFFF5FA2)])
+            : null,
+        border: Border.all(color: Colors.white54),
+      ),
+    );
+
+Future<void> _pickBubbleColors(BuildContext context) => showDialog<void>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, set) {
+          Widget row(String title, ValueNotifier<int> v) => Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 8),
+                  Wrap(spacing: 8, runSpacing: 8, children: [
+                    for (var i = -1; i < _bubblePalette.length; i++)
+                      GestureDetector(
+                        onTap: () {
+                          set(() => v.value = i);
+                          unawaited(_Prefs.save());
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(2),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                                color: v.value == i ? Colors.white : Colors.transparent,
+                                width: 2),
+                          ),
+                          child: Transform.scale(scale: 1.5, child: _dot(i)),
+                        ),
+                      ),
+                  ]),
+                ],
+              );
+          return AlertDialog(
+            title: const Text('ألوان الفقاعات'),
+            content: Column(mainAxisSize: MainAxisSize.min, children: [
+              row('فقاعاتي (أول دائرة = لون الثيم)', _Prefs.myBubble),
+              const SizedBox(height: 16),
+              row('فقاعاته', _Prefs.theirBubble),
+            ]),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('تم')),
+            ],
+          );
+        },
+      ),
+    );

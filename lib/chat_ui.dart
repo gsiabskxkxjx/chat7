@@ -17,11 +17,10 @@ extension _ChatUi on _ChatState {
                       padding: const EdgeInsets.all(2),
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [_t.accent, const Color(0xFFFF7EB6)],
-                        ),
+                        gradient: _ringColors(_Prefs.ring.value, _t.accent) == null
+                            ? null
+                            : SweepGradient(
+                                colors: _ringColors(_Prefs.ring.value, _t.accent)!),
                       ),
                       child: _Avatar(path: _pAvatar, radius: 19, gender: _pGender),
                     ),
@@ -314,6 +313,12 @@ extension _ChatUi on _ChatState {
                 hintText: 'اكتب رسالة', border: InputBorder.none),
           ),
         ),
+        if (!typing)
+          IconButton(
+            tooltip: 'كاميرا',
+            onPressed: () => unawaited(_attach(preset: 'photo_camera')),
+            icon: Icon(Icons.photo_camera_rounded, color: _t.accent),
+          ),
         if (!typing)
           IconButton(
             tooltip: 'الألعاب والمزيد',
@@ -618,6 +623,10 @@ String? _quoteOf(List<Msg> msgs, int? id) {
       return '🎬 فيديو';
     case 'audio':
       return '🎤 رسالة صوتية';
+    case 'vnote':
+      return '⭕ فيديو دائري';
+    case 'file':
+      return '📎 ${x.text}';
     default:
       return x.text;
   }

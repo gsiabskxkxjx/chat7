@@ -198,8 +198,19 @@ class _TicState extends State<TicTacToeScreen> {
 void showGamesMenu(BuildContext context, String chatId) {
   showModalBottomSheet<void>(
     context: context,
+    isScrollControlled: true,
     builder: (ctx) => SafeArea(
+      child: SingleChildScrollView(
       child: Column(mainAxisSize: MainAxisSize.min, children: [
+        ListTile(
+          leading: const Icon(Icons.casino_rounded),
+          title: const Text('عجلة القرار'),
+          onTap: () {
+            Navigator.pop(ctx);
+            Navigator.of(context).push(MaterialPageRoute(
+                builder: (_) => DecisionWheelScreen(chatId: chatId)));
+          },
+        ),
         ListTile(
           leading: const Icon(Icons.grid_view_rounded),
           title: const Text('إكس أو'),
@@ -253,7 +264,34 @@ void showGamesMenu(BuildContext context, String chatId) {
             showQuickReplies(context, chatId);
           },
         ),
+        ListTile(
+          leading: const Icon(Icons.hourglass_top_rounded),
+          title: const Text('عدّ تنازلي لموعد'),
+          onTap: () {
+            Navigator.pop(ctx);
+            unawaited(_setCountdown(context, chatId));
+          },
+        ),
+        ListTile(
+          leading: const Icon(Icons.star_rounded, color: Color(0xFFFFD60A)),
+          title: const Text('الرسائل المفضلة'),
+          onTap: () {
+            Navigator.pop(ctx);
+            Navigator.of(context).push(MaterialPageRoute(
+                builder: (_) => StarredScreen(chatId: chatId)));
+          },
+        ),
+        ListTile(
+          leading: const Icon(Icons.insights_rounded),
+          title: const Text('إحصائياتنا'),
+          onTap: () {
+            Navigator.pop(ctx);
+            Navigator.of(context).push(MaterialPageRoute(
+                builder: (_) => StatsScreen(chatId: chatId)));
+          },
+        ),
       ]),
+      ),
     ),
   );
 }

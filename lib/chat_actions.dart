@@ -264,9 +264,16 @@ extension _ChatActions on _ChatState {
       final camera = act.endsWith('camera');
       final src = camera ? ImageSource.camera : ImageSource.gallery;
       if (act.startsWith('photo')) {
-        final x = await _picker.pickImage(
-            source: src, maxWidth: 1600, maxHeight: 1600, imageQuality: 82);
-        if (x != null) {
+        final List<XFile> picked;
+        if (camera) {
+          final one = await _picker.pickImage(
+              source: src, maxWidth: 1600, maxHeight: 1600, imageQuality: 82);
+          picked = one == null ? const [] : [one];
+        } else {
+          picked = await _picker.pickMultiImage(
+              maxWidth: 1600, maxHeight: 1600, imageQuality: 82, limit: 10);
+        }
+        for (final x in picked.take(10)) {
           await _sendMedia(
               chatId: widget.chat.id,
               file: File(x.path),
@@ -384,6 +391,19 @@ extension _ChatActions on _ChatState {
               title: const Text('نسخ'),
               onTap: () => Navigator.pop(ctx, 'copy'),
             ),
+          ListTile(
+            leading: Icon(
+                _stars.contains(m.id) ? Icons.star_rounded : Icons.star_border_rounded,
+                color: const Color(0xFFFFD60A)),
+            title: Text(_stars.contains(m.id) ? 'إزالة من المفضلة' : 'نجمة (المفضلة)'),
+            onTap: () => Navigator.pop(ctx, 'star'),
+          ),
+          if (_canEdit(m))
+            ListTile(
+              leading: const Icon(Icons.edit_rounded),
+              title: const Text('تعديل'),
+              onTap: () => Navigator.pop(ctx, 'edit'),
+            ),
           if (m.mine)
             ListTile(
               leading:
@@ -404,6 +424,10 @@ extension _ChatActions on _ChatState {
       if (mounted) _toast(context, 'تم النسخ');
     } else if (act == 'del') {
       await _delete(m);
+    } else if (act == 'star') {
+      await _toggleStar(m);
+    } else if (act == 'edit') {
+      await _editMsg(m);
     }
   }
 

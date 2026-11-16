@@ -171,7 +171,10 @@ extension _ChatUi on _ChatState {
                 );
               }
               final m = e as Msg;
-              if (m.kind == 'call') return _CallPill(text: m.text);
+              if (m.kind == 'call') {
+                return _CallPill(
+                    text: m.text, onTap: () => _call(m.text.contains('فيديو')));
+              }
               bool same(Object? o) =>
                   o is Msg &&
                   o.kind != 'call' &&
@@ -188,6 +191,8 @@ extension _ChatUi on _ChatState {
                 t: _t,
                 quote: _quoteOf(msgs, m.replyToId),
                 reactions: _reactionChips(_reactions, m.id),
+                starred: _stars.contains(m.id),
+                onReply: () => setState(() => _replyTo = m),
               );
             },
           );
@@ -357,6 +362,8 @@ extension _ChatLook on _ChatState {
       _matched = r['matched'] == true;
       _trustMine = (iAmA ? r['trust_a'] : r['trust_b']) == true;
       _trustTheirs = (iAmA ? r['trust_b'] : r['trust_a']) == true;
+      _cdTitle = r['countdown_title'] as String?;
+      _cdAt = DateTime.tryParse((r['countdown_at'] as String?) ?? '');
       if (pathChanged) _bgUrl = null;
     });
     if (pathChanged && path != null) unawaited(_loadBgUrl(path));
@@ -460,14 +467,19 @@ class _DayPill extends StatelessWidget {
 // ---------- سطر المكالمة بالمحادثة ----------
 
 class _CallPill extends StatelessWidget {
-  const _CallPill({required this.text});
+  const _CallPill({required this.text, this.onTap});
   final String text;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final missed = text.contains('فائتة');
     return Center(
-      child: Container(
+      child: _Press(
+        onTap: onTap,
+        dimWhenOff: false,
+        scale: 0.95,
+        child: Container(
         margin: const EdgeInsets.symmetric(vertical: 8),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
         decoration: BoxDecoration(
@@ -480,7 +492,13 @@ class _CallPill extends StatelessWidget {
               color: missed ? const Color(0xFFFF6B60) : Colors.white),
           const SizedBox(width: 6),
           Text(text, style: const TextStyle(fontSize: 12, color: Colors.white)),
+          if (onTap != null) ...[
+            const SizedBox(width: 8),
+            const Text('· اتصل',
+                style: TextStyle(fontSize: 12, color: Color(0xFF7CC0FF))),
+          ],
         ]),
+      ),
       ),
     );
   }

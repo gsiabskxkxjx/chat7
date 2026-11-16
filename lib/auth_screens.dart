@@ -266,7 +266,9 @@ class _SignUpState extends State<SignUpScreen> {
           const SizedBox(height: 12),
           _PassField(
               controller: _p, label: 'كلمة السر', onSubmit: _submit),
-          const SizedBox(height: 12),
+          const SizedBox(height: 6),
+          _Strength(controller: _p),
+          const SizedBox(height: 10),
           _PassField(
               controller: _p2,
               label: 'تأكيد كلمة السر',
@@ -507,3 +509,52 @@ class _ChangePassState extends State<ChangePasswordScreen> {
         ],
       );
 }
+
+/// مؤشر قوة كلمة السر
+class _Strength extends StatelessWidget {
+  const _Strength({required this.controller});
+  final TextEditingController controller;
+
+  static int _score(String p) {
+    var s = 0;
+    if (p.length >= 8) s++;
+    if (p.length >= 12) s++;
+    if (RegExp(r'[A-Z]').hasMatch(p) && RegExp(r'[a-z]').hasMatch(p)) s++;
+    if (RegExp(r'[0-9]').hasMatch(p)) s++;
+    if (RegExp(r'[^A-Za-z0-9]').hasMatch(p)) s++;
+    return s;
+  }
+
+  @override
+  Widget build(BuildContext context) => ValueListenableBuilder<TextEditingValue>(
+        valueListenable: controller,
+        builder: (_, v, __) {
+          final p = v.text;
+          if (p.isEmpty) return const SizedBox.shrink();
+          final s = _score(p);
+          final (label, color, frac) = p.length < 6
+              ? ('قصيرة', const Color(0xFFFF6B60), 0.15)
+              : s <= 1
+                  ? ('ضعيفة', const Color(0xFFFF9F0A), 0.35)
+                  : s <= 3
+                      ? ('متوسطة', const Color(0xFFFFD60A), 0.65)
+                      : ('قوية', const Color(0xFF34C759), 1.0);
+          return Row(children: [
+            Expanded(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: LinearProgressIndicator(
+                  value: frac,
+                  minHeight: 5,
+                  color: color,
+                  backgroundColor: const Color(0x26FFFFFF),
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Text(label, style: TextStyle(fontSize: 12, color: color)),
+          ]);
+        },
+      );
+}
+

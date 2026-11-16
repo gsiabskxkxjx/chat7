@@ -10,6 +10,9 @@ class ChatScreen extends StatefulWidget {
   State<ChatScreen> createState() => _ChatState();
 }
 
+/// مسودات الرسائل اللي ما انرسلت (تبقى لو طلعت من المحادثة ورجعت)
+final _drafts = <String, String>{};
+
 class _ChatState extends State<ChatScreen> {
   final _c = TextEditingController();
   final _picker = ImagePicker();
@@ -87,6 +90,14 @@ class _ChatState extends State<ChatScreen> {
   bool _dailyTheirDone = false;
   bool _dailySeenReveal = false;
   int _nudgeN = 0; // عدد الهزّات الواصلة (يشغّل حركة الهز)
+  Set<int> _stars = {}; // رسائلي المفضلة
+  bool _showDown = false; // زر النزول لآخر رسالة
+  String? _cdTitle; // العدّ التنازلي
+  DateTime? _cdAt;
+  Map<String, dynamic>? _bday; // عيد ميلاد الطرف الثاني (اليوم / قريب)
+  bool _bdayDismissed = false;
+  Map<String, dynamic>? _memory; // مثل هذا اليوم
+  bool _memoryDismissed = false;
   bool _offline = false; // ما نقدر نوصل للسيرفر (يظهر شريط)
   String? _myGender; // جنسي (نقراه من السيرفر، عشان يتحدث إذا غيّرته)
   int? _dismissedRemindId; // آخر تذكير أغلقته (رقم آخر رسالة وقتها)
@@ -97,11 +108,19 @@ class _ChatState extends State<ChatScreen> {
   @override
   void initState() {
     super.initState();
+    _c.text = _drafts[widget.chat.id] ?? '';
     unawaited(Push.start());
     _scroll.addListener(_onScroll);
+    _scroll.addListener(() {
+      final s = _scroll.hasClients && _scroll.offset > 500;
+      if (s != _showDown && mounted) setState(() => _showDown = s);
+    });
     _watchLook();
     unawaited(_loadStreak());
     unawaited(_loadDaily());
+    unawaited(_loadStars());
+    unawaited(_loadBirthday());
+    unawaited(_loadMemory());
     _myGender = widget.chat.myGender;
     unawaited(_reloadMyGender());
     _reactSub = _db
@@ -152,6 +171,7 @@ class _ChatState extends State<ChatScreen> {
 
   @override
   void dispose() {
+    _drafts[widget.chat.id] = _c.text;
     _pulse.stop();
     _recTimer?.cancel();
     _lookSub?.cancel();
@@ -285,7 +305,28 @@ class _ChatState extends State<ChatScreen> {
                 _header(),
                 if (_mediaLocked) _trustBar(),
                 if (_showDailyBar) _dailyBar(),
-                Expanded(child: _messages()),
+                ..._extraBars(),
+                Expanded(
+                  child: Stack(children: [
+                    Positioned.fill(child: _messages()),
+                    PositionedDirectional(
+                      bottom: 10,
+                      end: 16,
+                      child: AnimatedScale(
+                        scale: _showDown ? 1 : 0,
+                        duration: const Duration(milliseconds: 200),
+                        child: _GlassIcon(
+                          label: 'آخر الرسائل',
+                          icon: Icons.keyboard_arrow_down_rounded,
+                          size: 44,
+                          onTap: () => _scroll.animateTo(0,
+                              duration: const Duration(milliseconds: 350),
+                              curve: Curves.easeOut),
+                        ),
+                      ),
+                    ),
+                  ]),
+                ),
                 _inputBar(typing),
               ]),
             ),

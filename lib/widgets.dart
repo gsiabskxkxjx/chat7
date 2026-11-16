@@ -467,7 +467,9 @@ class _Btn extends StatelessWidget {
   final bool busy;
 
   @override
-  Widget build(BuildContext context) => Semantics(
+  Widget build(BuildContext context) {
+    final accent = _appLook.value?.theme.accent ?? _blue;
+    return Semantics(
         button: true,
         label: label,
         child: _Press(
@@ -479,17 +481,17 @@ class _Btn extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 15),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(18),
-              gradient: const LinearGradient(
+              gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [Color(0xFF4FA6FF), Color(0xFF0A6CFF)],
+                colors: [Color.lerp(accent, Colors.white, 0.28)!, accent],
               ),
               border: Border.all(color: const Color(0x73FFFFFF), width: 0.8),
-              boxShadow: const [
+              boxShadow: [
                 BoxShadow(
-                    color: Color(0x660A84FF),
+                    color: accent.withValues(alpha: 0.4),
                     blurRadius: 22,
-                    offset: Offset(0, 8)),
+                    offset: const Offset(0, 8)),
               ],
             ),
             foregroundDecoration: BoxDecoration(
@@ -525,6 +527,7 @@ class _Btn extends StatelessWidget {
           ),
         ),
       );
+  }
 }
 
 void _toast(BuildContext c, String msg) =>

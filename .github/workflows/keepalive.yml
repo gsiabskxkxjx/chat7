@@ -1,0 +1,25 @@
+name: Keep Supabase awake
+
+# Supabase يوقف المشاريع المجانية إذا ما صار عليها نشاط أسبوع.
+# هذا يسوي طلب صغير على قاعدة البيانات كل يومين.
+on:
+  schedule:
+    - cron: '17 6 */2 * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ping:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Ping the database
+        run: |
+          URL=$(grep -oE "https://[a-z0-9]+\.supabase\.co" lib/config.dart | head -n 1)
+          KEY=$(grep -oE "supabaseAnonKey = '[^']+'" lib/config.dart | sed -E "s/.*= '([^']+)'/\1/")
+          if [ -z "$URL" ] || [ -z "$KEY" ]; then echo "config.dart has no URL or key"; exit 1; fi
+          code=$(curl -s -o /tmp/out.txt -w "%{http_code}" "$URL/rest/v1/profiles?select=id&limit=1" -H "apikey: $KEY")
+          echo "HTTP $code"
+          head -c 200 /tmp/out.txt; echo

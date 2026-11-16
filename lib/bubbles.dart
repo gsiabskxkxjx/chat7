@@ -13,6 +13,7 @@ class Msg {
     this.durationMs = 0,
     this.at,
     this.replyToId,
+    this.edited = false,
   });
 
   final int id;
@@ -24,6 +25,7 @@ class Msg {
   final int durationMs;
   final DateTime? at;
   final int? replyToId; // رقم الرسالة اللي هذي رد عليها
+  final bool edited; // انعدلت بعد الإرسال
 
   factory Msg.fromRow(Map<String, dynamic> r, String uid) => Msg(
         id: (r['id'] as num).toInt(),
@@ -35,6 +37,7 @@ class Msg {
         durationMs: (r['duration_ms'] as num?)?.toInt() ?? 0,
         at: DateTime.tryParse((r['created_at'] as String?) ?? '')?.toLocal(),
         replyToId: (r['reply_to_id'] as num?)?.toInt(),
+        edited: r['edited_at'] != null,
       );
 }
 
@@ -48,7 +51,15 @@ class _Bubble extends StatelessWidget {
     this.reactions,
     this.joinPrev = false,
     this.joinNext = false,
+    this.starred = false,
+    this.onReply,
   });
+
+  /// سحب الفقاعة يمين أو يسار = رد عليها
+  final VoidCallback? onReply;
+
+  /// بالمفضلة عندي
+  final bool starred;
   final ChatTheme t;
 
   /// رسالة قبلها (فوقها) من نفس الشخص خلال دقايق: نلصقهم بزوايا متصلة
@@ -127,6 +138,8 @@ class _Bubble extends StatelessWidget {
         opacity: v,
         child: Transform.translate(offset: Offset(0, 14 * (1 - v)), child: child),
       ),
+      child: _SwipeReply(
+      onReply: onReply,
       child: Align(
       alignment: m.mine
           ? AlignmentDirectional.centerStart
@@ -216,6 +229,18 @@ class _Bubble extends StatelessWidget {
                     ? const EdgeInsets.symmetric(horizontal: 8, vertical: 2)
                     : EdgeInsets.zero,
                 child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  if (starred) ...[
+                    const Icon(Icons.star_rounded,
+                        size: 13, color: Color(0xFFFFD60A)),
+                    const SizedBox(width: 3),
+                  ],
+                  if (m.edited)
+                    Text('معدّلة · ',
+                        style: TextStyle(
+                            fontSize: 11,
+                            color: m.mine
+                                ? const Color(0xB3FFFFFF)
+                                : t.text.withValues(alpha: 0.7))),
                   Text(_hhmm(m.at),
                       style: TextStyle(fontSize: 11, color: m.mine ? const Color(0xB3FFFFFF) : t.text.withValues(alpha: 0.7))),
                   if (m.mine) ...[
@@ -233,6 +258,68 @@ class _Bubble extends StatelessWidget {
         ),
       ),
       ),
+      ),
+    );
+  }
+}
+
+class _SwipeReply extends StatefulWidget {
+  const _SwipeReply({required this.child, this.onReply});
+  final Widget child;
+  final VoidCallback? onReply;
+
+  @override
+  State<_SwipeReply> createState() => _SwipeReplyState();
+}
+
+class _SwipeReplyState extends State<_SwipeReply> {
+  double _dx = 0;
+  bool _armed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.onReply == null) return widget.child;
+    final p = (_dx.abs() / 64).clamp(0.0, 1.0);
+    return GestureDetector(
+      onHorizontalDragUpdate: (d) {
+        setState(() => _dx = (_dx + d.delta.dx).clamp(-80.0, 80.0));
+        final armed = _dx.abs() >= 64;
+        if (armed && !_armed) unawaited(HapticFeedback.selectionClick());
+        _armed = armed;
+      },
+      onHorizontalDragEnd: (_) {
+        if (_armed) widget.onReply!();
+        setState(() {
+          _dx = 0;
+          _armed = false;
+        });
+      },
+      onHorizontalDragCancel: () => setState(() {
+        _dx = 0;
+        _armed = false;
+      }),
+      child: Stack(alignment: Alignment.center, children: [
+        if (p > 0)
+          Positioned.fill(
+            child: Align(
+              alignment:
+                  _dx > 0 ? Alignment.centerLeft : Alignment.centerRight,
+              child: Opacity(
+                opacity: p,
+                child: Transform.scale(
+                  scale: 0.6 + 0.4 * p,
+                  child: const Icon(Icons.reply_rounded, size: 22),
+                ),
+              ),
+            ),
+          ),
+        AnimatedContainer(
+          duration: Duration(milliseconds: _dx == 0 ? 180 : 0),
+          curve: Curves.easeOut,
+          transform: Matrix4.translationValues(_dx, 0, 0),
+          child: widget.child,
+        ),
+      ]),
     );
   }
 }

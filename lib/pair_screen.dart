@@ -212,6 +212,10 @@ class _PairState extends State<PairScreen> {
                           textAlign: TextAlign.center,
                           style: TextStyle(
                               fontSize: 12, color: Color(0x99FFFFFF))),
+                      const SizedBox(height: 18),
+                      _RequestsPanel(onPaired: () async {
+                        await _open();
+                      }),
                       const SizedBox(height: 22),
                       const Row(children: [
                         Expanded(child: Divider(color: Color(0x40FFFFFF))),

@@ -115,6 +115,8 @@ class _ChatState extends State<ChatScreen> {
   bool? _contTheirs;
   List<String> _todayNotes = const []; // مواعيد اليوم والبنود المستحقة
   bool _todayDismissed = false;
+  int? _annivYears; // ذكرى أول رسالة
+  bool _seasonDismissed = false;
   bool _offline = false; // ما نقدر نوصل للسيرفر (يظهر شريط)
   String? _myGender; // جنسي (نقراه من السيرفر، عشان يتحدث إذا غيّرته)
   int? _dismissedRemindId; // آخر تذكير أغلقته (رقم آخر رسالة وقتها)
@@ -142,6 +144,7 @@ class _ChatState extends State<ChatScreen> {
     unawaited(_loadHiddenMine());
     unawaited(_loadMsgCache());
     unawaited(_loadToday());
+    unawaited(_loadAnniv());
     if (_outbox.isNotEmpty) unawaited(_flushOutbox());
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
@@ -191,6 +194,8 @@ class _ChatState extends State<ChatScreen> {
       onGone: _onGone,
       onNet: _onNet,
       onResume: () {
+        // نعيد الاشتراك بالرسائل حتى ما يفوتنا شي وقت ما كان التطبيق بالخلفية
+        if (mounted) setState(() => _stream = _makeStream());
         unawaited(_markRead());
         unawaited(_hub.checkPending());
       },
@@ -292,6 +297,7 @@ class _ChatState extends State<ChatScreen> {
   void _onNet(bool ok) {
     if (!mounted || _offline == !ok) return;
     setState(() => _offline = !ok);
+    if (ok) setState(() => _stream = _makeStream());
     if (ok && _outbox.isNotEmpty) unawaited(_flushOutbox());
   }
 
@@ -331,6 +337,8 @@ class _ChatState extends State<ChatScreen> {
       child: Scaffold(
       body: Stack(fit: StackFit.expand, children: [
         _chatBackground(),
+        if (_Prefs.animBg.value > 0 && !_Prefs.lowFx.value)
+          _FloatingParticles(kind: _Prefs.animBg.value),
         _shake(SafeArea(
           child: IconTheme(
             data: IconThemeData(color: _t.text),

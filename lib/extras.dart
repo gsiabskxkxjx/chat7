@@ -661,6 +661,15 @@ extension _ChatExtras on _ChatState {
             () => setState(() => _bdayDismissed = true)));
       }
     }
+    final season = _season();
+    if (season != null && !_seasonDismissed) {
+      out.add(bar(season.$1, season.$2, () => setState(() => _seasonDismissed = true)));
+    }
+    final ann = _annivYears;
+    if (ann != null) {
+      out.add(bar('🎉', 'اليوم ذكرى أول رسالة بينكم (${ann == 1 ? 'سنة' : '$ann سنين'})!',
+          () => setState(() => _annivYears = null)));
+    }
     if (_todayNotes.isNotEmpty && !_todayDismissed) {
       out.add(bar('📅', _todayNotes.join(' · '),
           () => setState(() => _todayDismissed = true)));

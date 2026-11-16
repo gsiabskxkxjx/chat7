@@ -46,6 +46,7 @@ import 'package:supabase_flutter/supabase_flutter.dart'
     show
         AuthException,
         AuthResponse,
+        CountOption,
         FileOptions,
         PostgresChangeEvent,
         PostgresChangeFilter,
@@ -105,9 +106,11 @@ part 'story.dart';
 part 'together.dart';
 part 'games2.dart';
 part 'media_more.dart';
+part 'extras2.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  _Crash.install();
   await _Prefs.load();
   if (_configured) {
     await Supabase.initialize(url: supabaseUrl, anonKey: supabaseAnonKey);
@@ -116,12 +119,16 @@ Future<void> main() async {
     _startAppLook();
     _db.auth.onAuthStateChange.listen((_) => _startAppLook());
   }
-  try {
-    if (Firebase.apps.isEmpty) await Firebase.initializeApp();
-    FirebaseMessaging.onBackgroundMessage(_bgCallMessage);
-    await _initCallNotifier();
-  } catch (_) {}
   runApp(const App());
+  // الإشعارات تبدأ بعد أول شاشة، حتى يفتح التطبيق أسرع
+  unawaited(() async {
+    try {
+      if (Firebase.apps.isEmpty) await Firebase.initializeApp();
+      FirebaseMessaging.onBackgroundMessage(_bgCallMessage);
+      await _initCallNotifier();
+    } catch (_) {}
+  }());
+  if (_configured) unawaited(Future.delayed(const Duration(seconds: 12), _Crash.sendPending));
   unawaited(Future.delayed(const Duration(seconds: 8), _checkForUpdate));
 }
 

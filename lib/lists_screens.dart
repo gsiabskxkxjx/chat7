@@ -12,8 +12,9 @@ const _suggestedLists = [
 ];
 
 class SharedListsScreen extends StatefulWidget {
-  const SharedListsScreen({super.key, required this.chatId});
+  const SharedListsScreen({super.key, required this.chatId, this.initialList});
   final String chatId;
+  final String? initialList;
 
   @override
   State<SharedListsScreen> createState() => _ListsState();
@@ -27,7 +28,7 @@ class _ListsState extends State<SharedListsScreen> {
       .order('id', ascending: true);
 
   final _input = TextEditingController();
-  String _list = _suggestedLists.first;
+  late String _list = widget.initialList ?? _suggestedLists.first;
 
   String get _me => _db.auth.currentUser?.id ?? '';
 

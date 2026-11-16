@@ -56,7 +56,13 @@ class _Bubble extends StatelessWidget {
     this.joinNext = false,
     this.starred = false,
     this.onReply,
+    this.rx,
+    this.onReact,
   });
+
+  /// تفاعلات الرسالة الخام (للتصويت)
+  final Map<String, String>? rx;
+  final void Function(String emoji)? onReact;
 
   /// سحب الفقاعة يمين أو يسار = رد عليها
   final VoidCallback? onReply;
@@ -78,6 +84,12 @@ class _Bubble extends StatelessWidget {
   Widget _content(BuildContext context) {
     final path = m.mediaPath;
     if (m.kind == 'card') return _CardMsg(text: m.text, color: m.durationMs);
+    if (m.kind == 'text') {
+      final poll = _parsePoll(m.text);
+      if (poll != null) {
+        return _PollMsg(q: poll.q, opts: poll.opts, votes: rx ?? const {}, onVote: onReact);
+      }
+    }
     if (m.kind == 'vnote' && path != null) {
       return _VideoNote(key: ValueKey('vn-${m.id}'), path: path, ms: m.durationMs);
     }

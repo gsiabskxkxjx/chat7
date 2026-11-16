@@ -357,6 +357,7 @@ extension _ChatNet on _ChatState {
       }
       return;
     }
+    _cachedRows = rows; // آخر نسخة بالذاكرة (لو انعاد الاشتراك تطلع فوراً)
     final top = (rows.first['id'] as num?)?.toInt();
     if (top == null || top == _cacheTop) return;
     _cacheTop = top;

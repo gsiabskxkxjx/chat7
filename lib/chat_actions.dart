@@ -240,7 +240,9 @@ extension _ChatActions on _ChatState {
 
   Future<String?> _attachSheet() => showModalBottomSheet<String>(
         context: context,
+        isScrollControlled: true,
         builder: (ctx) => SafeArea(
+          child: SingleChildScrollView(
           child: Column(mainAxisSize: MainAxisSize.min, children: [
             ListTile(
               leading: const Icon(Icons.photo_library_rounded),
@@ -290,7 +292,14 @@ extension _ChatActions on _ChatState {
               title: const Text('ملف أو PDF'),
               onTap: () => Navigator.pop(ctx, 'file'),
             ),
+            ListTile(
+              leading: const Icon(Icons.poll_rounded),
+              title: const Text('تصويت سريع'),
+              subtitle: const Text('سؤال وخيارات، وكل واحد يصوّت'),
+              onTap: () => Navigator.pop(ctx, 'poll'),
+            ),
           ]),
+          ),
         ),
       );
 
@@ -299,6 +308,10 @@ extension _ChatActions on _ChatState {
     if (!mounted || act == null) return;
     if (act == 'card') {
       await _sendCard();
+      return;
+    }
+    if (act == 'poll') {
+      await _sendPoll();
       return;
     }
     if (_blockedByTrust()) return;

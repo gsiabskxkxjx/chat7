@@ -16,6 +16,8 @@ class _Prefs {
   static final myBubble = ValueNotifier<int>(-1); // -1 لون الثيم
   static final theirBubble = ValueNotifier<int>(-1);
   static final ring = ValueNotifier<int>(0); // إطار صورة الطرف الثاني
+  static final crashReports = ValueNotifier<bool>(true);
+  static final animBg = ValueNotifier<int>(0); // خلفية متحركة بالمحادثة
 
   /// داخل ساعات وضع النوم؟
   static bool inQuiet([DateTime? at]) {
@@ -50,6 +52,8 @@ class _Prefs {
       myBubble.value = (m['myBubble'] as num?)?.toInt() ?? -1;
       theirBubble.value = (m['theirBubble'] as num?)?.toInt() ?? -1;
       ring.value = (m['ring'] as num?)?.toInt() ?? 0;
+      crashReports.value = m['crashReports'] as bool? ?? true;
+      animBg.value = (m['animBg'] as num?)?.toInt() ?? 0;
       final r = (m['reactions'] as List?)?.map((e) => '$e').toList();
       if (r != null && r.length >= 3 && r.length <= 6) reactions.value = r;
     } catch (_) {}
@@ -72,6 +76,8 @@ class _Prefs {
         'myBubble': myBubble.value,
         'theirBubble': theirBubble.value,
         'ring': ring.value,
+        'crashReports': crashReports.value,
+        'animBg': animBg.value,
         'reactions': reactions.value,
       }));
     } catch (_) {}
@@ -140,6 +146,10 @@ class _PrefsCardState extends State<_PrefsCard> {
               if (mounted) setState(() {});
             },
           ),
+          _choice<int>('خلفية متحركة بالمحادثة', Icons.auto_awesome_rounded,
+              _Prefs.animBg, [
+            for (var i = 0; i < _particleNames.length; i++) (i, _particleNames[i]),
+          ]),
           _choice<int>('إطار صورته بالمحادثة', Icons.account_circle_rounded,
               _Prefs.ring, [
             for (var i = 0; i < _ringStyles.length; i++) (i, _ringStyles[i]),
@@ -216,6 +226,16 @@ class _PrefsCardState extends State<_PrefsCard> {
             onTap: () async {
               await _pickReactions(context);
               if (mounted) setState(() {});
+            },
+          ),
+          SwitchListTile(
+            secondary: const Icon(Icons.bug_report_rounded),
+            title: const Text('إرسال تقارير الأعطال'),
+            subtitle: const Text('نوع الخطأ بس، بدون رسائلك'),
+            value: _Prefs.crashReports.value,
+            onChanged: (x) {
+              setState(() => _Prefs.crashReports.value = x);
+              unawaited(_Prefs.save());
             },
           ),
           SwitchListTile(

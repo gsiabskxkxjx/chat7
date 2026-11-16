@@ -214,8 +214,12 @@ extension _ChatUi on _ChatState {
                 onLongPress: () => _msgMenu(m),
                 t: _t,
                 quote: _quoteOf(msgs, m.replyToId),
-                reactions: _reactionChips(_reactions, m.id),
+                reactions: m.kind == 'text' && _parsePoll(m.text) != null
+                    ? null
+                    : _reactionChips(_reactions, m.id),
                 starred: _stars.contains(m.id),
+                rx: _reactions[m.id],
+                onReact: (e) => unawaited(_react(m.id, e)),
                 onReply: () => setState(() => _replyTo = m),
               ));
             },
@@ -225,6 +229,15 @@ extension _ChatUi on _ChatState {
   Widget _inputBar(bool typing) => Padding(
         padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
+          if (_uploading)
+            const Padding(
+              padding: EdgeInsets.only(bottom: 6),
+              child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2)),
+                SizedBox(width: 8),
+                Text('جاري الإرسال...', style: TextStyle(fontSize: 12)),
+              ]),
+            ),
           if (_replyTo != null) _replyBar(),
           Glass(
             radius: 28,

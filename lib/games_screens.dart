@@ -330,6 +330,34 @@ void showGamesMenu(BuildContext context, String chatId) {
             },
           ),
         ListTile(
+          leading: const Icon(Icons.spa_rounded),
+          title: const Text('تذكير لطيف'),
+          subtitle: const Text('اشرب ماي، نام بدري، لا تنسى تاكل...'),
+          onTap: () {
+            Navigator.pop(ctx);
+            unawaited(_sendGentle(context, chatId));
+          },
+        ),
+        ListTile(
+          leading: const Icon(Icons.flag_rounded),
+          title: const Text('تحدي 30 يوم'),
+          subtitle: const Text('مهمة صغيرة كل يوم لكم الاثنين'),
+          onTap: () {
+            Navigator.pop(ctx);
+            unawaited(_start30Day(context, chatId));
+          },
+        ),
+        ListTile(
+          leading: const Icon(Icons.auto_graph_rounded),
+          title: const Text('ملخصنا'),
+          subtitle: const Text('بطاقة الشهر أو السنة، تنحفظ كصورة'),
+          onTap: () {
+            Navigator.pop(ctx);
+            Navigator.of(context).push(MaterialPageRoute(
+                builder: (_) => SummaryScreen(chatId: chatId)));
+          },
+        ),
+        ListTile(
           leading: const Icon(Icons.draw_rounded),
           title: const Text('ارسم وخمّن'),
           subtitle: const Text('ترسم كلمة سرية وهو يخمّن بالمحادثة'),

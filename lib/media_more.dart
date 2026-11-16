@@ -564,17 +564,18 @@ extension _ChatMedia on _ChatState {
 
   Future<void> _sendFile() async {
     if (_blockedByTrust()) return;
-    FilePickerResult? r;
+    XFile? f;
+    var size = 0;
     try {
-      r = await FilePicker.platform.pickFiles(withData: false);
+      f = await openFile();
+      if (f != null) size = await f.length();
     } catch (_) {
       if (mounted) _toast(context, 'تعذر فتح الملفات.');
       return;
     }
-    final f = r?.files.single;
     final local = f?.path;
-    if (f == null || local == null || !mounted) return;
-    if (f.size > 25 * 1024 * 1024) {
+    if (f == null || local == null || local.isEmpty || !mounted) return;
+    if (size > 25 * 1024 * 1024) {
       _toast(context, 'الملف كبير، الحد 25 ميجا.');
       return;
     }
@@ -592,7 +593,7 @@ extension _ChatMedia on _ChatState {
           'kind': 'file',
           'media_path': path,
           'body': name,
-          'duration_ms': f.size,
+          'duration_ms': size,
         });
       } catch (_) {
         try {

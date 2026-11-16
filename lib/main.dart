@@ -13,7 +13,7 @@ import 'package:google_fonts/google_fonts.dart' show GoogleFonts;
 import 'package:url_launcher/url_launcher.dart' show launchUrl, LaunchMode;
 import 'package:image_picker/image_picker.dart'
     show CameraDevice, ImagePicker, ImageSource, XFile;
-import 'package:file_picker/file_picker.dart' show FilePicker, FilePickerResult;
+import 'package:file_selector/file_selector.dart' show openFile;
 import 'package:path_provider/path_provider.dart'
     show getTemporaryDirectory, getApplicationSupportDirectory;
 import 'package:local_auth/local_auth.dart'

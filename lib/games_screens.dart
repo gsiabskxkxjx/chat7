@@ -334,6 +334,26 @@ void showGamesMenu(BuildContext context, String chatId) {
             },
           ),
         ListTile(
+          leading: const Icon(Icons.menu_book_rounded),
+          title: const Text('يومياتنا'),
+          subtitle: const Text('كل واحد يكتب يومه والثاني يقراه'),
+          onTap: () {
+            Navigator.pop(ctx);
+            Navigator.of(context).push(MaterialPageRoute(
+                builder: (_) => DiaryScreen(chatId: chatId)));
+          },
+        ),
+        ListTile(
+          leading: const Icon(Icons.account_balance_wallet_rounded),
+          title: const Text('ميزانيتنا'),
+          subtitle: const Text('مصاريف مشتركة ومين دفع'),
+          onTap: () {
+            Navigator.pop(ctx);
+            Navigator.of(context).push(MaterialPageRoute(
+                builder: (_) => BudgetScreen(chatId: chatId)));
+          },
+        ),
+        ListTile(
           leading: const Icon(Icons.spa_rounded),
           title: const Text('تذكير لطيف'),
           subtitle: const Text('اشرب ماي، نام بدري، لا تنسى تاكل...'),

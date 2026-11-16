@@ -39,6 +39,13 @@ class _MemoriesState extends State<MemoriesScreen> {
                   const Text('معرض الذكريات',
                       style:
                           TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
+                  const Spacer(),
+                  TextButton.icon(
+                    onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+                        builder: (_) => AlbumsScreen(chatId: widget.chatId))),
+                    icon: const Icon(Icons.photo_album_rounded),
+                    label: const Text('الألبومات'),
+                  ),
                 ]),
               ),
               Expanded(
@@ -69,9 +76,14 @@ class _MemoriesState extends State<MemoriesScreen> {
                         crossAxisSpacing: 6,
                       ),
                       itemCount: items.length,
-                      itemBuilder: (_, i) => _MemoryTile(
-                        kind: items[i]['kind'] as String,
-                        path: items[i]['media_path'] as String,
+                      itemBuilder: (_, i) => GestureDetector(
+                        // ضغطة مطوّلة: أضفها لألبوم
+                        onLongPress: () => _addToAlbum(context, widget.chatId,
+                            (items[i]['id'] as num).toInt()),
+                        child: _MemoryTile(
+                          kind: items[i]['kind'] as String,
+                          path: items[i]['media_path'] as String,
+                        ),
                       ),
                     );
                   },

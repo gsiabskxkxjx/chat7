@@ -106,20 +106,18 @@ class _SearchState extends State<SearchScreen> {
         final mine = m['sender_id'] == _me;
         final body = (m['body'] ?? '') as String;
         return ListTile(
-          title: Text(body, maxLines: 2, overflow: TextOverflow.ellipsis),
+          title: Text.rich(_highlight(body, _last),
+              maxLines: 2, overflow: TextOverflow.ellipsis),
           subtitle: Text(
               '${mine ? 'أنت' : 'الطرف الثاني'} · ${_fmt(m['created_at'] as String?)}',
               style: const TextStyle(fontSize: 12, color: Color(0x99FFFFFF))),
-          onTap: () => showDialog<void>(
+          onTap: () => showModalBottomSheet<void>(
             context: context,
-            builder: (ctx) => AlertDialog(
-              content: SelectableText(body),
-              actions: [
-                TextButton(
-                    onPressed: () => Navigator.pop(ctx),
-                    child: const Text('إغلاق')),
-              ],
-            ),
+            isScrollControlled: true,
+            builder: (_) => _SearchContext(
+                chatId: widget.chatId,
+                id: (m['id'] as num).toInt(),
+                term: _last),
           ),
         );
       },
@@ -162,4 +160,148 @@ class _SearchState extends State<SearchScreen> {
           ),
         ),
       );
+}
+
+/// يظلّل الكلمة اللي تبحث عنها داخل النص
+TextSpan _highlight(String text, String term) {
+  final t = term.trim();
+  if (t.isEmpty) return TextSpan(text: text);
+  final low = text.toLowerCase(), q = t.toLowerCase();
+  final spans = <TextSpan>[];
+  var i = 0;
+  while (true) {
+    final j = low.indexOf(q, i);
+    if (j < 0) {
+      spans.add(TextSpan(text: text.substring(i)));
+      break;
+    }
+    if (j > i) spans.add(TextSpan(text: text.substring(i, j)));
+    spans.add(TextSpan(
+      text: text.substring(j, j + q.length),
+      style: const TextStyle(
+          backgroundColor: Color(0x88FFD60A),
+          fontWeight: FontWeight.w700,
+          color: Colors.white),
+    ));
+    i = j + q.length;
+  }
+  return TextSpan(children: spans);
+}
+
+/// الرسالة مع اللي قبلها واللي بعدها، حتى تفهم سياقها
+class _SearchContext extends StatefulWidget {
+  const _SearchContext(
+      {required this.chatId, required this.id, required this.term});
+  final String chatId;
+  final int id;
+  final String term;
+
+  @override
+  State<_SearchContext> createState() => _SearchContextState();
+}
+
+class _SearchContextState extends State<_SearchContext> {
+  List<Map<String, dynamic>>? _rows;
+  bool _failed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_load());
+  }
+
+  Future<void> _load() async {
+    const cols = 'id,body,kind,sender_id,created_at';
+    try {
+      final before = await _db
+          .from('messages')
+          .select(cols)
+          .eq('chat_id', widget.chatId)
+          .lte('id', widget.id)
+          .order('id', ascending: false)
+          .limit(5);
+      final after = await _db
+          .from('messages')
+          .select(cols)
+          .eq('chat_id', widget.chatId)
+          .gt('id', widget.id)
+          .order('id', ascending: true)
+          .limit(4);
+      if (!mounted) return;
+      setState(() => _rows = [
+            ...List<Map<String, dynamic>>.from(before).reversed,
+            ...List<Map<String, dynamic>>.from(after),
+          ]);
+    } catch (_) {
+      if (mounted) setState(() => _failed = true);
+    }
+  }
+
+  String _label(Map<String, dynamic> r) {
+    switch (r['kind']) {
+      case 'image':
+        return '📷 صورة';
+      case 'video':
+        return '🎬 فيديو';
+      case 'audio':
+        return '🎤 رسالة صوتية';
+      case 'call':
+        return '📞 ${r['body'] ?? 'مكالمة'}';
+      default:
+        return (r['body'] as String?) ?? '';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final me = _db.auth.currentUser?.id;
+    final rows = _rows;
+    return SafeArea(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+            maxHeight: MediaQuery.sizeOf(context).height * 0.75),
+        child: _failed
+            ? const Padding(
+                padding: EdgeInsets.all(32),
+                child: Text('تعذر تحميل السياق.', textAlign: TextAlign.center))
+            : rows == null
+                ? const Padding(
+                    padding: EdgeInsets.all(32),
+                    child: Center(child: CircularProgressIndicator()))
+                : ListView(
+                    shrinkWrap: true,
+                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 16),
+                    children: [
+                      for (final r in rows)
+                        Align(
+                          alignment: r['sender_id'] == me
+                              ? AlignmentDirectional.centerStart
+                              : AlignmentDirectional.centerEnd,
+                          child: Container(
+                            margin: const EdgeInsets.symmetric(vertical: 3),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 8),
+                            constraints: BoxConstraints(
+                                maxWidth:
+                                    MediaQuery.sizeOf(context).width * 0.75),
+                            decoration: BoxDecoration(
+                              color: (r['id'] as num).toInt() == widget.id
+                                  ? const Color(0x66FFD60A)
+                                  : r['sender_id'] == me
+                                      ? const Color(0x550A84FF)
+                                      : const Color(0x22FFFFFF),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: const Color(0x33FFFFFF)),
+                            ),
+                            child: (r['id'] as num).toInt() == widget.id
+                                ? SelectableText.rich(
+                                    _highlight(_label(r), widget.term))
+                                : Text(_label(r)),
+                          ),
+                        ),
+                    ],
+                  ),
+      ),
+    );
+  }
 }

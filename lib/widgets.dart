@@ -36,15 +36,42 @@ class Glass extends StatelessWidget {
   final Color? tint;
 
   @override
-  Widget build(BuildContext context) => ValueListenableBuilder<AppLook?>(
-        valueListenable: _appLook,
-        builder: (_, look, __) {
+  Widget build(BuildContext context) => ListenableBuilder(
+        listenable: Listenable.merge([_appLook, _Prefs.lowFx]),
+        builder: (_, __) {
+          final look = _appLook.value;
+          final low = _Prefs.lowFx.value; // بدون تمويه: ألوان أثقل حتى يبقى النص واضح
           final light = _lightLook(look);
           final br = BorderRadius.circular(radius);
-          final top = tint?.withValues(alpha: 0.30) ??
-              (light ? const Color(0x8CFFFFFF) : const Color(0x3DFFFFFF));
-          final bottom = tint?.withValues(alpha: 0.12) ??
-              (light ? const Color(0x52FFFFFF) : const Color(0x12FFFFFF));
+          final top = low
+              ? (tint != null
+                  ? Color.alphaBlend(
+                      tint!.withValues(alpha: 0.35), const Color(0xE6232A52))
+                  : (light ? const Color(0xE6FFFFFF) : const Color(0xE6283058)))
+              : tint?.withValues(alpha: 0.30) ??
+                  (light ? const Color(0x8CFFFFFF) : const Color(0x3DFFFFFF));
+          final bottom = low
+              ? (tint != null
+                  ? Color.alphaBlend(
+                      tint!.withValues(alpha: 0.20), const Color(0xE61A2040))
+                  : (light ? const Color(0xCCF2F4FA) : const Color(0xE61A2040)))
+              : tint?.withValues(alpha: 0.12) ??
+                  (light ? const Color(0x52FFFFFF) : const Color(0x12FFFFFF));
+          final panel = CustomPaint(
+            foregroundPainter: _GlassEdge(radius, light),
+            child: Container(
+              padding: padding,
+              decoration: BoxDecoration(
+                borderRadius: br,
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [top, bottom],
+                ),
+              ),
+              child: child,
+            ),
+          );
           return DecoratedBox(
             decoration: BoxDecoration(
               borderRadius: br,
@@ -61,27 +88,15 @@ class Glass extends StatelessWidget {
             ),
             child: ClipRRect(
               borderRadius: br,
-              child: BackdropFilter(
-                filter: ImageFilter.compose(
-                  outer: _saturate,
-                  inner: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
-                ),
-                child: CustomPaint(
-                  foregroundPainter: _GlassEdge(radius, light),
-                  child: Container(
-                    padding: padding,
-                    decoration: BoxDecoration(
-                      borderRadius: br,
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [top, bottom],
+              child: low
+                  ? panel
+                  : BackdropFilter(
+                      filter: ImageFilter.compose(
+                        outer: _saturate,
+                        inner: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
                       ),
+                      child: panel,
                     ),
-                    child: child,
-                  ),
-                ),
-              ),
             ),
           );
         },
@@ -333,9 +348,15 @@ class _DriftBlobsState extends State<_DriftBlobs>
       vsync: this, duration: const Duration(seconds: 24));
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final still = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+  void initState() {
+    super.initState();
+    _Prefs.lowFx.addListener(_sync);
+  }
+
+  void _sync() {
+    if (!mounted) return;
+    final still = (MediaQuery.maybeOf(context)?.disableAnimations ?? false) ||
+        _Prefs.lowFx.value;
     if (still) {
       _c.stop();
     } else if (!_c.isAnimating) {
@@ -344,7 +365,14 @@ class _DriftBlobsState extends State<_DriftBlobs>
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _sync();
+  }
+
+  @override
   void dispose() {
+    _Prefs.lowFx.removeListener(_sync);
     _c.dispose();
     super.dispose();
   }

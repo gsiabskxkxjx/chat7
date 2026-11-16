@@ -92,6 +92,13 @@ class _ChatState extends State<ChatScreen> {
   int _nudgeN = 0; // عدد الهزّات الواصلة (يشغّل حركة الهز)
   Set<int> _stars = {}; // رسائلي المفضلة
   bool _showDown = false; // زر النزول لآخر رسالة
+  final _newBelow = ValueNotifier<int>(0); // رسائل وصلت وأنت فوق
+  int? _newestSeen;
+  int? _unreadFrom; // أول رسالة ما قريتها لما فتحت المحادثة
+  bool _unreadChecked = false;
+  Set<int> _selected = {}; // تحديد متعدد
+  Set<int> _hiddenMine = {}; // محذوفة عندي بس
+  List<Msg> _lastMsgs = const [];
   String? _cdTitle; // العدّ التنازلي
   DateTime? _cdAt;
   Map<String, dynamic>? _bday; // عيد ميلاد الطرف الثاني (اليوم / قريب)
@@ -113,6 +120,7 @@ class _ChatState extends State<ChatScreen> {
     _scroll.addListener(_onScroll);
     _scroll.addListener(() {
       final s = _scroll.hasClients && _scroll.offset > 500;
+      if (!s && _newBelow.value != 0) _newBelow.value = 0;
       if (s != _showDown && mounted) setState(() => _showDown = s);
     });
     _watchLook();
@@ -121,6 +129,7 @@ class _ChatState extends State<ChatScreen> {
     unawaited(_loadStars());
     unawaited(_loadBirthday());
     unawaited(_loadMemory());
+    unawaited(_loadHiddenMine());
     _myGender = widget.chat.myGender;
     unawaited(_reloadMyGender());
     _reactSub = _db
@@ -181,6 +190,7 @@ class _ChatState extends State<ChatScreen> {
     final tc = _typeCh;
     if (tc != null) unawaited(_db.removeChannel(tc).then((_) {}));
     _scroll.dispose();
+    _newBelow.dispose();
     unawaited(_rec.cancel().then((_) => _rec.dispose()));
     unawaited(_hub.dispose());
     _c.dispose();
@@ -292,7 +302,12 @@ class _ChatState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     final typing = _c.text.trim().isNotEmpty;
-    return Scaffold(
+    return PopScope(
+      canPop: _selected.isEmpty,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && _selected.isNotEmpty) setState(() => _selected = {});
+      },
+      child: Scaffold(
       body: Stack(fit: StackFit.expand, children: [
         _chatBackground(),
         _shake(SafeArea(
@@ -302,7 +317,7 @@ class _ChatState extends State<ChatScreen> {
               style: TextStyle(color: _t.text),
               child: Column(children: [
                 if (_offline) _offlineBar(),
-                _header(),
+                if (_selected.isEmpty) _header() else _selectionBar(),
                 if (_mediaLocked) _trustBar(),
                 if (_showDailyBar) _dailyBar(),
                 ..._extraBars(),
@@ -315,14 +330,38 @@ class _ChatState extends State<ChatScreen> {
                       child: AnimatedScale(
                         scale: _showDown ? 1 : 0,
                         duration: const Duration(milliseconds: 200),
-                        child: _GlassIcon(
-                          label: 'آخر الرسائل',
-                          icon: Icons.keyboard_arrow_down_rounded,
-                          size: 44,
-                          onTap: () => _scroll.animateTo(0,
-                              duration: const Duration(milliseconds: 350),
-                              curve: Curves.easeOut),
-                        ),
+                        child: Stack(clipBehavior: Clip.none, children: [
+                          _GlassIcon(
+                            label: 'آخر الرسائل',
+                            icon: Icons.keyboard_arrow_down_rounded,
+                            size: 44,
+                            onTap: () => _scroll.animateTo(0,
+                                duration: const Duration(milliseconds: 350),
+                                curve: Curves.easeOut),
+                          ),
+                          PositionedDirectional(
+                            top: -6,
+                            end: -4,
+                            child: ValueListenableBuilder<int>(
+                              valueListenable: _newBelow,
+                              builder: (_, n, __) => n == 0
+                                  ? const SizedBox.shrink()
+                                  : Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 6, vertical: 1),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFFF5FA2),
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: Text(n > 99 ? '99+' : '$n',
+                                          style: const TextStyle(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w700,
+                                              color: Colors.white)),
+                                    ),
+                            ),
+                          ),
+                        ]),
                       ),
                     ),
                   ]),
@@ -333,6 +372,7 @@ class _ChatState extends State<ChatScreen> {
           ),
         )),
       ]),
+    ),
     );
   }
 }

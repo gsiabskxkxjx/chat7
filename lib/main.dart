@@ -96,6 +96,7 @@ part 'onboarding.dart';
 part 'extras.dart';
 part 'fun.dart';
 part 'prefs.dart';
+part 'chat_more.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -167,7 +168,14 @@ class App extends StatelessWidget {
               side: BorderSide(color: Color(0x4DFFFFFF)),
             ),
           ),
+          // انتقال بالتلاشي مع تكبير خفيف بين الشاشات
+          pageTransitionsTheme: const PageTransitionsTheme(builders: {
+            TargetPlatform.android: _FadePageTransitions(),
+            TargetPlatform.iOS: _FadePageTransitions(),
+          }),
           bottomSheetTheme: const BottomSheetThemeData(
+            showDragHandle: true,
+            dragHandleColor: Color(0x66FFFFFF),
             backgroundColor: Color(0xEB161C3A),
             surfaceTintColor: Colors.transparent,
             elevation: 0,
@@ -190,4 +198,27 @@ class App extends StatelessWidget {
             textDirection: TextDirection.rtl, child: _LockGate(child: child!)),
         home: const Boot(),
       );
+}
+
+class _FadePageTransitions extends PageTransitionsBuilder {
+  const _FadePageTransitions();
+
+  @override
+  Widget buildTransitions<T>(
+    PageRoute<T> route,
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) {
+    final a = CurvedAnimation(
+        parent: animation,
+        curve: Curves.easeOutCubic,
+        reverseCurve: Curves.easeInCubic);
+    return FadeTransition(
+      opacity: a,
+      child: ScaleTransition(
+          scale: Tween<double>(begin: 0.97, end: 1).animate(a), child: child),
+    );
+  }
 }

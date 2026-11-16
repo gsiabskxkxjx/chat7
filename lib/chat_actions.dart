@@ -373,12 +373,21 @@ extension _ChatActions on _ChatState {
 
   Future<void> _msgMenu(Msg m) async {
     if (m.kind == 'call') return;
+    final times = _timesOf(m);
     final act = await showModalBottomSheet<String>(
       context: context,
+      barrierColor: const Color(0x99000000),
       builder: (ctx) => SafeArea(
+        child: SingleChildScrollView(
         child: Column(mainAxisSize: MainAxisSize.min, children: [
+          if (times.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 2),
+              child: Text(times,
+                  style: const TextStyle(fontSize: 12, color: Color(0x99FFFFFF))),
+            ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
             child: Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [
               for (final e in _reactEmojis)
                 InkWell(
@@ -414,14 +423,19 @@ extension _ChatActions on _ChatState {
               title: const Text('تعديل'),
               onTap: () => Navigator.pop(ctx, 'edit'),
             ),
-          if (m.mine)
-            ListTile(
-              leading:
-                  const Icon(Icons.delete_outline_rounded, color: Color(0xFFFF6B60)),
-              title: const Text('حذف عند الطرفين'),
-              onTap: () => Navigator.pop(ctx, 'del'),
-            ),
+          ListTile(
+            leading: const Icon(Icons.checklist_rounded),
+            title: const Text('تحديد'),
+            onTap: () => Navigator.pop(ctx, 'select'),
+          ),
+          ListTile(
+            leading:
+                const Icon(Icons.delete_outline_rounded, color: Color(0xFFFF6B60)),
+            title: const Text('حذف'),
+            onTap: () => Navigator.pop(ctx, 'del'),
+          ),
         ]),
+        ),
       ),
     );
     if (!mounted || act == null) return;
@@ -433,7 +447,9 @@ extension _ChatActions on _ChatState {
       await Clipboard.setData(ClipboardData(text: m.text));
       if (mounted) _toast(context, 'تم النسخ');
     } else if (act == 'del') {
-      await _delete(m);
+      await _deleteMsgs([m], m.mine);
+    } else if (act == 'select') {
+      setState(() => _selected = {m.id});
     } else if (act == 'star') {
       await _toggleStar(m);
     } else if (act == 'edit') {

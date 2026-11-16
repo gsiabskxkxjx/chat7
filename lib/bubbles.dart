@@ -14,6 +14,7 @@ class Msg {
     this.at,
     this.replyToId,
     this.edited = false,
+    this.readAt,
   });
 
   final int id;
@@ -26,6 +27,7 @@ class Msg {
   final DateTime? at;
   final int? replyToId; // رقم الرسالة اللي هذي رد عليها
   final bool edited; // انعدلت بعد الإرسال
+  final DateTime? readAt; // متى قراها الطرف الثاني
 
   factory Msg.fromRow(Map<String, dynamic> r, String uid) => Msg(
         id: (r['id'] as num).toInt(),
@@ -38,6 +40,7 @@ class Msg {
         at: DateTime.tryParse((r['created_at'] as String?) ?? '')?.toLocal(),
         replyToId: (r['reply_to_id'] as num?)?.toInt(),
         edited: r['edited_at'] != null,
+        readAt: DateTime.tryParse((r['read_at'] as String?) ?? '')?.toLocal(),
       );
 }
 

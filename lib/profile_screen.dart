@@ -216,6 +216,7 @@ class _ProfileState extends State<ProfileScreen> {
                           ]),
                         ),
                         const SizedBox(height: 16),
+                        _secTitle('الخصوصية والأمان'),
                         Glass(
                           radius: 28,
                           padding: const EdgeInsets.symmetric(vertical: 4),
@@ -226,7 +227,7 @@ class _ProfileState extends State<ProfileScreen> {
                               onChanged: (_) => _toggleLockAuth(context),
                               title: const Text('قفل التطبيق بالبصمة أو الوجه'),
                               subtitle: const Text(
-                                  'يتقفل إذا طلعت من التطبيق أكثر من 30 ثانية'),
+                                  'المدة تختارها من «القفل بعد الخروج» تحت'),
                             ),
                           ),
                         ),
@@ -266,6 +267,7 @@ class _ProfileState extends State<ProfileScreen> {
                           ]),
                         ),
                         const SizedBox(height: 16),
+                        _secTitle('الإشعارات'),
                         Glass(
                           radius: 28,
                           padding: const EdgeInsets.symmetric(vertical: 4),
@@ -281,6 +283,7 @@ class _ProfileState extends State<ProfileScreen> {
                           ),
                         ),
                         const SizedBox(height: 16),
+                        _secTitle('الحساب'),
                         Glass(
                           radius: 28,
                           padding: const EdgeInsets.symmetric(vertical: 4),
@@ -335,6 +338,8 @@ class _ProfileState extends State<ProfileScreen> {
                           ]),
                         ),
                         if (widget.chat != null) ...[
+                          const SizedBox(height: 16),
+                          _secTitle('المحادثة'),
                           Glass(
                             radius: 28,
                             padding: const EdgeInsets.symmetric(vertical: 4),
@@ -364,7 +369,6 @@ class _ProfileState extends State<ProfileScreen> {
                             ),
                           ),
                           const SizedBox(height: 16),
-                          const SizedBox(height: 16),
                           Glass(
                             radius: 28,
                             padding: const EdgeInsets.symmetric(vertical: 4),
@@ -380,8 +384,10 @@ class _ProfileState extends State<ProfileScreen> {
                           ),
                         ],
                         const SizedBox(height: 16),
+                        _secTitle('تخصيص'),
                         const _PrefsCard(),
                         const SizedBox(height: 16),
+                        _secTitle('عن التطبيق'),
                         Glass(
                           radius: 28,
                           padding: const EdgeInsets.symmetric(vertical: 4),
@@ -392,7 +398,7 @@ class _ProfileState extends State<ProfileScreen> {
                             onTap: () => showAboutDialog(
                               context: context,
                               applicationName: appName,
-                              applicationVersion: '0.11',
+                              applicationVersion: '0.12',
                               applicationLegalese:
                                   'محادثة خاصة لشخصين.\nسياسة الخصوصية وحذف الحساب:\nhttps://gsiabskxkxjx.github.io/bainatna/',
                             ),
@@ -407,3 +413,13 @@ class _ProfileState extends State<ProfileScreen> {
     );
   }
 }
+
+/// عنوان صغير فوق كل مجموعة إعدادات
+Widget _secTitle(String t) => Padding(
+      padding: const EdgeInsetsDirectional.fromSTEB(14, 4, 14, 8),
+      child: Text(t,
+          style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: Color(0xB3FFFFFF))),
+    );

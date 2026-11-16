@@ -140,10 +140,12 @@ extension _ChatUi on _ChatState {
           _fxCheck(rows);
           final msgs = rows
               .map((r) => Msg.fromRow(r, _uid))
-              .where((m) => !_hidden.contains(m.id))
+              .where((m) => !_hidden.contains(m.id) && !_hiddenMine.contains(m.id))
               .toList();
+          _trackNew(msgs);
           if (msgs.isEmpty) return _emptyChat();
           final entries = _withDayHeaders(msgs);
+          _addUnreadMarker(entries);
           // أول شي بالمحادثة (أقدم شي): عداد الأيام، يظهر لما نكون وصلنا لأول الرسائل
           if (!_hasMore && _linkedAt != null) entries.add(_SinceMarker(_linkedAt!));
           // تذكير: الرسالة الأخيرة من الطرف الثاني، وما رديت عليها من مدة
@@ -166,6 +168,7 @@ extension _ChatUi on _ChatState {
               final e = entries[i];
               if (e is DateTime) return _DayPill(day: e);
               if (e is _SinceMarker) return _SincePill(since: e.at);
+              if (e is _UnreadMarker) return const _UnreadPill();
               if (e is _RemindMarker) {
                 return _RemindBanner(
                   since: e.since,
@@ -184,7 +187,7 @@ extension _ChatUi on _ChatState {
                   o.at != null &&
                   m.at != null &&
                   o.at!.difference(m.at!).inMinutes.abs() < 3;
-              return _Bubble(
+              return _selectable(m, _Bubble(
                 key: ValueKey(m.id),
                 joinPrev: i + 1 < entries.length && same(entries[i + 1]),
                 joinNext: i > 0 && same(entries[i - 1]),
@@ -195,7 +198,7 @@ extension _ChatUi on _ChatState {
                 reactions: _reactionChips(_reactions, m.id),
                 starred: _stars.contains(m.id),
                 onReply: () => setState(() => _replyTo = m),
-              );
+              ));
             },
           );
         },
@@ -275,6 +278,15 @@ extension _ChatUi on _ChatState {
             },
             onSubmitted: (_) => _send(),
             inputFormatters: [LengthLimitingTextInputFormatter(4000)],
+            contentInsertionConfiguration: ContentInsertionConfiguration(
+              allowedMimeTypes: const [
+                'image/png',
+                'image/jpeg',
+                'image/gif',
+                'image/webp',
+              ],
+              onContentInserted: _onKeyboardImage,
+            ),
             decoration: const InputDecoration(
                 hintText: 'اكتب رسالة', border: InputBorder.none),
           ),
@@ -585,7 +597,7 @@ String? _quoteOf(List<Msg> msgs, int? id) {
 
 // ---------- تفاعلات الإيموجي ----------
 
-const _reactEmojis = ['👍', '😂', '😮', '😢', '🙏', '🔥'];
+List<String> get _reactEmojis => _Prefs.reactions.value;
 
 /// يحوّل التفاعلات لقائمة عرض: إيموجي، ومعه العدد إذا أكثر من واحد
 List<String>? _reactionChips(Map<int, Map<String, String>> all, int id) {

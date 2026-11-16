@@ -7,6 +7,9 @@ class _Prefs {
   static final remindHours = ValueNotifier<int>(2); // 0 = مطفي
   static final lockAfterSec = ValueNotifier<int>(30);
   static final arabicFont = ValueNotifier<bool>(true);
+  static final lowFx = ValueNotifier<bool>(false); // تخفيف التمويه والحركات
+  static const defaultReactions = ['👍', '😂', '😮', '😢', '🙏', '🔥'];
+  static final reactions = ValueNotifier<List<String>>(defaultReactions);
 
   static Future<File> _file() async {
     final dir = await getApplicationSupportDirectory();
@@ -22,6 +25,9 @@ class _Prefs {
       remindHours.value = (m['remindHours'] as num?)?.toInt() ?? 2;
       lockAfterSec.value = (m['lockAfterSec'] as num?)?.toInt() ?? 30;
       arabicFont.value = m['arabicFont'] as bool? ?? true;
+      lowFx.value = m['lowFx'] as bool? ?? false;
+      final r = (m['reactions'] as List?)?.map((e) => '$e').toList();
+      if (r != null && r.length >= 3 && r.length <= 6) reactions.value = r;
     } catch (_) {}
   }
 
@@ -33,6 +39,8 @@ class _Prefs {
         'remindHours': remindHours.value,
         'lockAfterSec': lockAfterSec.value,
         'arabicFont': arabicFont.value,
+        'lowFx': lowFx.value,
+        'reactions': reactions.value,
       }));
     } catch (_) {}
   }
@@ -96,6 +104,26 @@ class _PrefsCardState extends State<_PrefsCard> {
             (900, '15 دقيقة'),
           ]),
           SwitchListTile(
+            secondary: const Icon(Icons.speed_rounded),
+            title: const Text('تخفيف المؤثرات'),
+            subtitle: const Text('أسرع وأوفر للبطارية بالأجهزة القديمة'),
+            value: _Prefs.lowFx.value,
+            onChanged: (x) {
+              setState(() => _Prefs.lowFx.value = x);
+              unawaited(_Prefs.save());
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.add_reaction_rounded),
+            title: const Text('التفاعلات السريعة'),
+            subtitle: Text(_Prefs.reactions.value.join('  '),
+                style: const TextStyle(fontSize: 18)),
+            onTap: () async {
+              await _pickReactions(context);
+              if (mounted) setState(() {});
+            },
+          ),
+          SwitchListTile(
             secondary: const Icon(Icons.font_download_rounded),
             title: const Text('الخط العربي الحديث'),
             subtitle: const Text('يتحمّل من الإنترنت أول مرة'),
@@ -107,4 +135,73 @@ class _PrefsCardState extends State<_PrefsCard> {
           ),
         ]),
       );
+}
+
+const _reactionPool = [
+  '👍', '❤️', '😂', '😮', '😢', '🙏', '🔥', '😍', '🥰', '😘', '🤍', '💔',
+  '😡', '😴', '🤔', '👏', '🎉', '💯', '😎', '🙈', '🤣', '😭', '🥺', '😅',
+  '👀', '✨', '🌹', '☕', '🤝', '👌',
+];
+
+/// اختيار التفاعلات اللي تطلع بالضغط المطوّل (3 إلى 6)
+Future<void> _pickReactions(BuildContext context) async {
+  var cur = [..._Prefs.reactions.value];
+  final res = await showDialog<List<String>>(
+    context: context,
+    builder: (ctx) => StatefulBuilder(
+      builder: (ctx, set) => AlertDialog(
+        title: const Text('التفاعلات السريعة'),
+        content: SingleChildScrollView(
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Text('اختر من 3 إلى 6 (${cur.length}/6)',
+                style: const TextStyle(color: Color(0xAAFFFFFF))),
+            const SizedBox(height: 12),
+            Wrap(spacing: 6, runSpacing: 6, children: [
+              for (final e in _reactionPool)
+                _Press(
+                  onTap: () => set(() {
+                    if (cur.contains(e)) {
+                      cur = [...cur]..remove(e);
+                    } else if (cur.length < 6) {
+                      cur = [...cur, e];
+                    }
+                  }),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    width: 46,
+                    height: 46,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: cur.contains(e)
+                          ? const Color(0x660A84FF)
+                          : const Color(0x14FFFFFF),
+                      border: Border.all(
+                          color: cur.contains(e)
+                              ? const Color(0xFF7CC0FF)
+                              : const Color(0x33FFFFFF)),
+                    ),
+                    child: Text(e, style: const TextStyle(fontSize: 24)),
+                  ),
+                ),
+            ]),
+          ]),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () =>
+                  set(() => cur = [..._Prefs.defaultReactions]),
+              child: const Text('الافتراضي')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')),
+          TextButton(
+              onPressed: cur.length < 3 ? null : () => Navigator.pop(ctx, cur),
+              child: const Text('حفظ')),
+        ],
+      ),
+    ),
+  );
+  if (res == null) return;
+  _Prefs.reactions.value = res;
+  await _Prefs.save();
 }

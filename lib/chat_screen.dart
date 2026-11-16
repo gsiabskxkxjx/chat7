@@ -99,6 +99,9 @@ class _ChatState extends State<ChatScreen> {
   Set<int> _selected = {}; // تحديد متعدد
   Set<int> _hiddenMine = {}; // محذوفة عندي بس
   List<Msg> _lastMsgs = const [];
+  Timer? _outboxTimer; // إعادة إرسال الرسائل اللي ما وصلت
+  List<Map<String, dynamic>>? _cachedRows; // نسخة محلية تظهر قبل ما يوصل السيرفر
+  int? _cacheTop;
   String? _cdTitle; // العدّ التنازلي
   DateTime? _cdAt;
   Map<String, dynamic>? _bday; // عيد ميلاد الطرف الثاني (اليوم / قريب)
@@ -130,6 +133,14 @@ class _ChatState extends State<ChatScreen> {
     unawaited(_loadBirthday());
     unawaited(_loadMemory());
     unawaited(_loadHiddenMine());
+    unawaited(_loadMsgCache());
+    if (_outbox.isNotEmpty) unawaited(_flushOutbox());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        unawaited(_tipOnce(context, 'chat',
+            'اضغط مطوّل على زر الإرسال للتأثيرات، ومطوّل على أي رسالة للخيارات، واسحبها للرد.'));
+      }
+    });
     _myGender = widget.chat.myGender;
     unawaited(_reloadMyGender());
     _reactSub = _db
@@ -183,6 +194,7 @@ class _ChatState extends State<ChatScreen> {
     _drafts[widget.chat.id] = _c.text;
     _pulse.stop();
     _recTimer?.cancel();
+    _outboxTimer?.cancel();
     _lookSub?.cancel();
     _statusTimer?.cancel();
     _reactSub?.cancel();
@@ -272,6 +284,7 @@ class _ChatState extends State<ChatScreen> {
   void _onNet(bool ok) {
     if (!mounted || _offline == !ok) return;
     setState(() => _offline = !ok);
+    if (ok && _outbox.isNotEmpty) unawaited(_flushOutbox());
   }
 
   String _status() {

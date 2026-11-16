@@ -8,6 +8,7 @@ class _Prefs {
   static final lockAfterSec = ValueNotifier<int>(30);
   static final arabicFont = ValueNotifier<bool>(true);
   static final lowFx = ValueNotifier<bool>(false); // تخفيف التمويه والحركات
+  static final linkPreviews = ValueNotifier<bool>(true);
   static const defaultReactions = ['👍', '😂', '😮', '😢', '🙏', '🔥'];
   static final reactions = ValueNotifier<List<String>>(defaultReactions);
 
@@ -26,6 +27,7 @@ class _Prefs {
       lockAfterSec.value = (m['lockAfterSec'] as num?)?.toInt() ?? 30;
       arabicFont.value = m['arabicFont'] as bool? ?? true;
       lowFx.value = m['lowFx'] as bool? ?? false;
+      linkPreviews.value = m['linkPreviews'] as bool? ?? true;
       final r = (m['reactions'] as List?)?.map((e) => '$e').toList();
       if (r != null && r.length >= 3 && r.length <= 6) reactions.value = r;
     } catch (_) {}
@@ -40,6 +42,7 @@ class _Prefs {
         'lockAfterSec': lockAfterSec.value,
         'arabicFont': arabicFont.value,
         'lowFx': lowFx.value,
+        'linkPreviews': linkPreviews.value,
         'reactions': reactions.value,
       }));
     } catch (_) {}
@@ -110,6 +113,17 @@ class _PrefsCardState extends State<_PrefsCard> {
             value: _Prefs.lowFx.value,
             onChanged: (x) {
               setState(() => _Prefs.lowFx.value = x);
+              unawaited(_Prefs.save());
+            },
+          ),
+          SwitchListTile(
+            secondary: const Icon(Icons.link_rounded),
+            title: const Text('معاينة الروابط'),
+            subtitle: const Text('يجيب عنوان وصورة الرابط من موقعه'),
+            value: _Prefs.linkPreviews.value,
+            onChanged: (x) {
+              setState(() => _Prefs.linkPreviews.value = x);
+              _linkCache.clear();
               unawaited(_Prefs.save());
             },
           ),

@@ -121,6 +121,10 @@ extension _ChatUi on _ChatState {
   Widget _messages() => StreamBuilder<List<Map<String, dynamic>>>(
         stream: _stream,
         builder: (context, snap) {
+          final cached = _cachedRows;
+          if (!snap.hasData && cached != null && cached.isNotEmpty) {
+            return _messageList(cached, live: false);
+          }
           if (snap.hasError) {
             return const Center(
               child: Padding(
@@ -138,16 +142,24 @@ extension _ChatUi on _ChatState {
           _hasMore = rows.length >= _limit;
           _checkUnread(rows);
           _fxCheck(rows);
+          _saveMsgCache(rows);
+          return _messageList(rows, live: true);
+        },
+      );
+
+  Widget _messageList(List<Map<String, dynamic>> rows, {required bool live}) {
           final msgs = rows
               .map((r) => Msg.fromRow(r, _uid))
               .where((m) => !_hidden.contains(m.id) && !_hiddenMine.contains(m.id))
               .toList();
-          _trackNew(msgs);
-          if (msgs.isEmpty) return _emptyChat();
+          if (live) _trackNew(msgs);
+          if (msgs.isEmpty && _outbox.isEmpty) return _emptyChat();
           final entries = _withDayHeaders(msgs);
           _addUnreadMarker(entries);
           // أول شي بالمحادثة (أقدم شي): عداد الأيام، يظهر لما نكون وصلنا لأول الرسائل
-          if (!_hasMore && _linkedAt != null) entries.add(_SinceMarker(_linkedAt!));
+          if (live && !_hasMore && _linkedAt != null) {
+            entries.add(_SinceMarker(_linkedAt!));
+          }
           // تذكير: الرسالة الأخيرة من الطرف الثاني، وما رديت عليها من مدة
           final newest = msgs.isEmpty ? null : msgs.first;
           if (newest != null &&
@@ -159,6 +171,7 @@ extension _ChatUi on _ChatState {
                   Duration(hours: _Prefs.remindHours.value)) {
             entries.insert(0, _RemindMarker(newest.id, newest.at!));
           }
+          _addPending(entries);
           return ListView.builder(
             controller: _scroll,
             reverse: true,
@@ -169,6 +182,13 @@ extension _ChatUi on _ChatState {
               if (e is DateTime) return _DayPill(day: e);
               if (e is _SinceMarker) return _SincePill(since: e.at);
               if (e is _UnreadMarker) return const _UnreadPill();
+              if (e is _PendingNote) return e;
+              if (e is _Pending) {
+                return _PendingBubble(
+                    p: e,
+                    onRetry: () => unawaited(_flushOutbox()),
+                    onDrop: () => _dropPending(e));
+              }
               if (e is _RemindMarker) {
                 return _RemindBanner(
                   since: e.since,
@@ -201,8 +221,7 @@ extension _ChatUi on _ChatState {
               ));
             },
           );
-        },
-      );
+  }
 
   Widget _inputBar(bool typing) => Padding(
         padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),

@@ -99,8 +99,14 @@ class _Bubble extends StatelessWidget {
     }
     final k = _Prefs.fontScale.value;
     if (_emojiOnly) return Text(m.text, style: TextStyle(fontSize: 44 * k));
-    return Text(m.text,
+    final txt = Text(m.text,
         style: TextStyle(fontSize: 16 * k, color: m.mine ? Colors.white : t.text));
+    final url = _firstUrl(m.text);
+    if (url == null) return txt;
+    return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [txt, const SizedBox(height: 6), _LinkPreview(url: url, mine: m.mine)]);
   }
 
   BorderRadiusDirectional _corners() {

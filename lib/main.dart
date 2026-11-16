@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'dart:convert' show jsonDecode, jsonEncode;
+import 'dart:convert' show jsonDecode, jsonEncode, utf8;
 import 'dart:io' show File, HttpClient;
 import 'dart:math' show Random;
 import 'dart:math' as math;
@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show RenderRepaintBoundary;
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart' show GoogleFonts;
+import 'package:url_launcher/url_launcher.dart' show launchUrl, LaunchMode;
 import 'package:image_picker/image_picker.dart'
     show ImagePicker, ImageSource, XFile;
 import 'package:path_provider/path_provider.dart'
@@ -97,6 +98,7 @@ part 'extras.dart';
 part 'fun.dart';
 part 'prefs.dart';
 part 'chat_more.dart';
+part 'net_more.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -114,6 +116,7 @@ Future<void> main() async {
     await _initCallNotifier();
   } catch (_) {}
   runApp(const App());
+  unawaited(Future.delayed(const Duration(seconds: 8), _checkForUpdate));
 }
 
 final bool _configured = !supabaseUrl.startsWith('PASTE');
@@ -137,6 +140,7 @@ class App extends StatelessWidget {
   Widget _app(BuildContext context, bool arabic) => MaterialApp(
         title: appName,
         debugShowCheckedModeBanner: false,
+        scaffoldMessengerKey: _messengerKey,
         theme: ThemeData(
           useMaterial3: true,
           brightness: Brightness.dark,
@@ -194,8 +198,18 @@ class App extends StatelessWidget {
             ),
           ),
         ),
-        builder: (c, child) => Directionality(
-            textDirection: TextDirection.rtl, child: _LockGate(child: child!)),
+        builder: (c, child) {
+          // تكبير خط الجوال مسموح لحد معيّن، حتى ما يخرب التصميم
+          final mq = MediaQuery.of(c);
+          return MediaQuery(
+            data: mq.copyWith(
+                textScaler:
+                    mq.textScaler.clamp(minScaleFactor: 0.85, maxScaleFactor: 1.3)),
+            child: Directionality(
+                textDirection: TextDirection.rtl,
+                child: _LockGate(child: child!)),
+          );
+        },
         home: const Boot(),
       );
 }

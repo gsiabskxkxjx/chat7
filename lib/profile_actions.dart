@@ -124,6 +124,7 @@ extension _ProfileActions on _ProfileState {
     if (ok != true || !mounted) return;
     setState(() => _busy = true);
     await Push.remove();
+    await _MsgCache.clearAll();
     try {
       await _db.auth.signOut();
     } catch (_) {}
@@ -191,6 +192,7 @@ extension _ProfileActions on _ProfileState {
       await Push.remove();
       if (widget.chat != null) await _wipeChatBg(widget.chat!.id);
       await _db.rpc('delete_my_account');
+      await _MsgCache.clearAll();
       try {
         await _db.auth.signOut();
       } catch (_) {}
@@ -256,6 +258,7 @@ extension _ProfileActions on _ProfileState {
       } catch (_) {}
       await _wipeChatBg(widget.chat!.id);
       await _db.rpc('unlink_chat');
+      await _MsgCache.clearAll();
       if (!mounted) return;
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (_) => PairScreen(me: p.username)),
@@ -394,6 +397,7 @@ extension _ProfileClear on _ProfileState {
           await _db.storage.from('chat-media').remove(paths.sublist(i, end));
         } catch (_) {}
       }
+      await _MsgCache.clear(chat.id);
       if (mounted) _toast(context, 'تم مسح سجل المحادثة');
     } catch (_) {
       if (mounted) _toast(context, 'تعذر المسح، جرّب مرة ثانية.');

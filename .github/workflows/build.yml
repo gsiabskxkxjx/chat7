@@ -47,6 +47,12 @@ jobs:
               <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30"/>
               <uses-feature android:name="android.hardware.camera" android:required="false"/>
               <uses-feature android:name="android.hardware.camera.autofocus" android:required="false"/>
+              <queries>
+                  <intent>
+                      <action android:name="android.intent.action.VIEW"/>
+                      <data android:scheme="https"/>
+                  </intent>
+              </queries>
           '''
           if '<application' not in s:
               raise SystemExit('ERROR: no <application> tag in AndroidManifest.xml')
@@ -294,11 +300,11 @@ jobs:
       - name: Analyze (errors only, does not stop the build)
         run: flutter analyze --no-fatal-infos --no-fatal-warnings lib 2>&1 | grep -E "(error|warning) •" || echo "no analyzer errors or warnings in lib"
 
-      - run: flutter build apk --release --build-number=${{ github.run_number }}
+      - run: flutter build apk --release --build-number=${{ github.run_number }} --dart-define=BUILD_NO=${{ github.run_number }} --dart-define=SIDELOAD=true
 
       - name: Build App Bundle (for Google Play)
         continue-on-error: true
-        run: flutter build appbundle --release --build-number=${{ github.run_number }}
+        run: flutter build appbundle --release --build-number=${{ github.run_number }} --dart-define=BUILD_NO=${{ github.run_number }}
 
       - name: Show package, target SDK and signing certificate
         continue-on-error: true

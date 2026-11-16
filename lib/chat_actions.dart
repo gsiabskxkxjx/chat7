@@ -177,6 +177,14 @@ extension _ChatActions on _ChatState {
   Future<void> _call(bool video) async {
     if (_hub.current != null) return;
     if (_blockedByTrust()) return;
+    final okExplain = await _explainOnce(context,
+        key: video ? 'camera_call' : 'mic_call',
+        icon: video ? Icons.videocam_rounded : Icons.mic_rounded,
+        title: video ? 'الكاميرا والمايك' : 'المايك',
+        text: video
+            ? 'نحتاج الكاميرا والمايك حتى يشوفك ويسمعك الطرف الثاني. المكالمة بينكم بس وما تنحفظ.'
+            : 'نحتاج المايك حتى يسمعك الطرف الثاني. المكالمة بينكم بس وما تنحفظ.');
+    if (!okExplain || !mounted) return;
     if (!_hub.ready) {
       _toast(context, 'الاتصال بالسيرفر غير جاهز، جرّب بعد ثواني.');
       return;
@@ -219,11 +227,14 @@ extension _ChatActions on _ChatState {
         row.remove('effect');
         await _db.from('messages').insert(row);
       }
-    } catch (_) {
+    } on PostgrestException {
       if (!mounted) return;
       _c.text = t;
       setState(() => _replyTo = reply);
       _toast(context, 'تعذر الإرسال، حاول مرة ثانية.');
+    } catch (_) {
+      // غالباً انقطع الإنترنت: تنحط بالصندوق وتنعاد لحالها
+      if (mounted) _queueOutbox(row);
     }
   }
 
@@ -268,6 +279,14 @@ extension _ChatActions on _ChatState {
       await Navigator.of(context).push(MaterialPageRoute(
           builder: (_) => DrawScreen(chatId: widget.chat.id)));
       return;
+    }
+    if (act.endsWith('camera')) {
+      final okExplain = await _explainOnce(context,
+          key: 'camera',
+          icon: Icons.photo_camera_rounded,
+          title: 'الكاميرا',
+          text: 'نحتاج الكاميرا حتى تصوّر وترسل للطرف الثاني مباشرة.');
+      if (!okExplain || !mounted) return;
     }
     setState(() => _uploading = true);
     try {
@@ -317,6 +336,12 @@ extension _ChatActions on _ChatState {
   Future<void> _startRec() async {
     if (_recording || _uploading) return;
     if (_blockedByTrust()) return;
+    final okExplain = await _explainOnce(context,
+        key: 'mic_voice',
+        icon: Icons.mic_rounded,
+        title: 'رسالة صوتية',
+        text: 'نحتاج المايك حتى تسجل رسالة صوتية. التسجيل يبدأ لما تضغط ويوقف لما تضغط إرسال.');
+    if (!okExplain || !mounted) return;
     try {
       final ok = await _rec.start();
       if (!ok) {

@@ -307,11 +307,21 @@ class _LoginState extends State<LoginScreen> {
     super.dispose();
   }
 
+  // محاولات خاطئة متتالية: بعد 3 ننتظر 5 ثواني، وكل مرة الضعف (لين 5 دقايق)
+  static int _fails = 0;
+  static DateTime? _waitUntil;
+
   Future<void> _submit() async {
     if (_busy) return;
     final u = _u.text.trim().toLowerCase();
     if (u.isEmpty || _p.text.isEmpty) {
       setState(() => _err = 'اكتب اسم المستخدم وكلمة السر.');
+      return;
+    }
+    final until = _waitUntil;
+    if (until != null && DateTime.now().isBefore(until)) {
+      final s = until.difference(DateTime.now()).inSeconds + 1;
+      setState(() => _err = 'محاولات كثيرة. انتظر $s ثانية وجرّب.');
       return;
     }
     setState(() {
@@ -321,9 +331,18 @@ class _LoginState extends State<LoginScreen> {
     try {
       await _db.auth
           .signInWithPassword(email: _authEmail(u), password: _p.text);
+      _fails = 0;
+      _waitUntil = null;
       if (!mounted) return;
       _toBoot(context);
     } catch (e) {
+      if (e is AuthException) {
+        _fails++;
+        if (_fails >= 3) {
+          final secs = math.min(300, 5 * (1 << math.min(_fails - 3, 6)));
+          _waitUntil = DateTime.now().add(Duration(seconds: secs));
+        }
+      }
       if (!mounted) return;
       setState(() {
         _err = _authError(e);

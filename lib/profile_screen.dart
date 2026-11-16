@@ -395,13 +395,7 @@ class _ProfileState extends State<ProfileScreen> {
                             leading: const Icon(Icons.info_rounded),
                             title: const Text('حول بيناتنا'),
                             subtitle: const Text('الإصدار وسياسة الخصوصية'),
-                            onTap: () => showAboutDialog(
-                              context: context,
-                              applicationName: appName,
-                              applicationVersion: '0.12',
-                              applicationLegalese:
-                                  'محادثة خاصة لشخصين.\nسياسة الخصوصية وحذف الحساب:\nhttps://gsiabskxkxjx.github.io/bainatna/',
-                            ),
+                            onTap: () => _showAbout(context),
                           ),
                         ),
                       ]),
@@ -422,4 +416,48 @@ Widget _secTitle(String t) => Padding(
               fontSize: 13,
               fontWeight: FontWeight.w700,
               color: Color(0xB3FFFFFF))),
+    );
+
+const _privacyUrl = 'https://gsiabskxkxjx.github.io/bainatna/';
+
+/// صفحة "حول": الإصدار، سياسة الخصوصية، حذف الحساب، الدعم
+Future<void> _showAbout(BuildContext context) => showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        icon: const _Rings(),
+        title: const Text(appName, textAlign: TextAlign.center),
+        content: Column(mainAxisSize: MainAxisSize.min, children: [
+          Text(
+              _buildNo == 0
+                  ? 'الإصدار 0.12'
+                  : 'الإصدار 0.12 (بناء $_buildNo)',
+              style: const TextStyle(color: Color(0xB3FFFFFF))),
+          const SizedBox(height: 6),
+          const Text('محادثة خاصة لشخصين.', textAlign: TextAlign.center),
+          const SizedBox(height: 12),
+          ListTile(
+            leading: const Icon(Icons.privacy_tip_rounded),
+            title: const Text('سياسة الخصوصية'),
+            onTap: () => _openUrl(ctx, _privacyUrl),
+          ),
+          ListTile(
+            leading: const Icon(Icons.person_remove_rounded),
+            title: const Text('طريقة حذف الحساب'),
+            onTap: () => _openUrl(ctx, _privacyUrl),
+          ),
+          ListTile(
+            leading: const Icon(Icons.support_agent_rounded),
+            title: const Text('الدعم والملاحظات'),
+            onTap: () {
+              Navigator.pop(ctx);
+              Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => const FeedbackScreen()));
+            },
+          ),
+        ]),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text('إغلاق')),
+        ],
+      ),
     );

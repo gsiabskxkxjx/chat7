@@ -169,6 +169,7 @@ class _ChatState extends State<ChatScreen> {
     _typeCh = _db.channel('typing-${widget.chat.id}')
       ..onBroadcast(event: 'typing', callback: _onTypingEvent)
       ..onBroadcast(event: 'nudge', callback: _onNudge)
+      ..onBroadcast(event: 'listen', callback: _onListen)
       ..subscribe();
     _statusTimer = Timer.periodic(const Duration(seconds: 4), (_) {
       if (!mounted) return;

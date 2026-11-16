@@ -282,6 +282,11 @@ extension _ChatActions on _ChatState {
               onTap: () => Navigator.pop(ctx, 'pulse'),
             ),
             ListTile(
+              leading: const Icon(Icons.emoji_emotions_rounded),
+              title: const Text('ملصقات بيناتنا'),
+              onTap: () => Navigator.pop(ctx, 'sticker'),
+            ),
+            ListTile(
               leading: const Icon(Icons.style_rounded),
               title: const Text('بطاقة ملوّنة'),
               subtitle: const Text('رسالة مهمة كبيرة وملوّنة'),
@@ -312,6 +317,11 @@ extension _ChatActions on _ChatState {
     }
     if (act == 'poll') {
       await _sendPoll();
+      return;
+    }
+    if (act == 'sticker') {
+      if (_blockedByTrust()) return;
+      await _showStickers(context, widget.chat.id);
       return;
     }
     if (_blockedByTrust()) return;
@@ -494,6 +504,13 @@ extension _ChatActions on _ChatState {
               title: const Text('نسخ'),
               onTap: () => Navigator.pop(ctx, 'copy'),
             ),
+          if (m.kind == 'text' && _isMusicLink(m.text))
+            ListTile(
+              leading: const Icon(Icons.headphones_rounded),
+              title: const Text('نسمعها سوا'),
+              subtitle: const Text('تنفتح عندكم الاثنين بنفس اللحظة'),
+              onTap: () => Navigator.pop(ctx, 'listen'),
+            ),
           ListTile(
             leading: Icon(
                 _stars.contains(m.id) ? Icons.star_rounded : Icons.star_border_rounded,
@@ -532,6 +549,8 @@ extension _ChatActions on _ChatState {
       if (mounted) _toast(context, 'تم النسخ');
     } else if (act == 'del') {
       await _deleteMsgs([m], m.mine);
+    } else if (act == 'listen') {
+      await _listenTogether(m);
     } else if (act == 'select') {
       setState(() => _selected = {m.id});
     } else if (act == 'star') {

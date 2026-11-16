@@ -57,6 +57,19 @@ jobs:
           if '<application' not in s:
               raise SystemExit('ERROR: no <application> tag in AndroidManifest.xml')
           s = s.replace('<application', perms + '    <application android:requestLegacyExternalStorage="true"', 1)
+          # روابط الدعوة bainatna://join?c=XXXXXX (وإطفاء روابط فلاتر الافتراضية حتى ما تتعارض)
+          deep = '''
+                      <meta-data android:name="flutter_deeplinking_enabled" android:value="false" />
+                      <intent-filter>
+                          <action android:name="android.intent.action.VIEW"/>
+                          <category android:name="android.intent.category.DEFAULT"/>
+                          <category android:name="android.intent.category.BROWSABLE"/>
+                          <data android:scheme="bainatna" android:host="join"/>
+                      </intent-filter>
+                  </activity>'''
+          if '</activity>' not in s:
+              raise SystemExit('ERROR: no </activity> in AndroidManifest.xml')
+          s = s.replace('</activity>', deep, 1)
           open(p, 'w', encoding='utf-8').write(s)
           PY
           if [ -f android/app/build.gradle.kts ]; then

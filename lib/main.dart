@@ -14,6 +14,8 @@ import 'package:url_launcher/url_launcher.dart' show launchUrl, LaunchMode;
 import 'package:image_picker/image_picker.dart'
     show CameraDevice, ImagePicker, ImageSource, XFile;
 import 'package:file_selector/file_selector.dart' show openFile;
+import 'package:qr_flutter/qr_flutter.dart' show QrImageView;
+import 'package:app_links/app_links.dart' show AppLinks;
 import 'package:path_provider/path_provider.dart'
     show getTemporaryDirectory, getApplicationSupportDirectory;
 import 'package:local_auth/local_auth.dart'
@@ -108,6 +110,7 @@ part 'games2.dart';
 part 'media_more.dart';
 part 'extras2.dart';
 part 'games3.dart';
+part 'invite_more.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -121,6 +124,7 @@ Future<void> main() async {
     _db.auth.onAuthStateChange.listen((_) => _startAppLook());
   }
   runApp(const App());
+  _listenInvites();
   // الإشعارات تبدأ بعد أول شاشة، حتى يفتح التطبيق أسرع
   unawaited(() async {
     try {

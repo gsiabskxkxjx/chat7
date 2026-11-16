@@ -28,10 +28,23 @@ class _PairState extends State<PairScreen> {
     });
     _newCode();
     _timer = Timer.periodic(const Duration(seconds: 3), (_) => _tick());
+    _pendingInvite.addListener(_fromLink);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _fromLink());
+  }
+
+  /// فتح التطبيق من رابط دعوة: نعبّي الرمز ونربط
+  void _fromLink() {
+    final c = _pendingInvite.value;
+    if (c == null || !mounted) return;
+    _pendingInvite.value = null;
+    if (c == _code) return;
+    _c.text = c;
+    unawaited(_link());
   }
 
   @override
   void dispose() {
+    _pendingInvite.removeListener(_fromLink);
     _timer?.cancel();
     _c.dispose();
     super.dispose();
@@ -189,13 +202,20 @@ class _PairState extends State<PairScreen> {
                                   },
                           ),
                           IconButton(
+                            tooltip: 'رمز QR',
+                            icon: const Icon(Icons.qr_code_2_rounded),
+                            onPressed: _code == null
+                                ? null
+                                : () => _showInviteQr(context, _code!),
+                          ),
+                          IconButton(
                             tooltip: 'مشاركة',
                             icon: const Icon(Icons.share_rounded),
                             onPressed: _code == null
                                 ? null
                                 : () => SharePlus.instance.share(ShareParams(
                                       text:
-                                          'انضم لي في بيناتنا! رمز الدعوة: ${_code!}\nالرمز صالح لمدة 15 دقيقة، وتدخله بخانة "رمز الشخص الآخر".',
+                                          'انضم لي في بيناتنا! رمز الدعوة: ${_code!}\nافتح الرابط وينربط حسابك لحاله: ${_joinLink(_code!)}\nالرمز صالح لمدة 15 دقيقة.',
                                     )),
                           ),
                         ]),

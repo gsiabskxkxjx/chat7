@@ -298,6 +298,47 @@ void showGamesMenu(BuildContext context, String chatId) {
             showQuickReplies(context, chatId);
           },
         ),
+        const Padding(
+          padding: EdgeInsetsDirectional.fromSTEB(16, 8, 16, 0),
+          child: Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: Text('ألعاب جديدة',
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xB3FFFFFF))),
+          ),
+        ),
+        for (final g in <(IconData, String, String, Widget Function())>[
+          (Icons.people_alt_rounded, 'مين فينا؟', 'أنا ولا هو؟ وشوفوا كم اتفقتوا',
+              () => WhoOfUsScreen(chatId: chatId)),
+          (Icons.fact_check_rounded, 'صح أو غلط عني', '3 جمل عنك، وهو يخمّن',
+              () => TrueFalseScreen(chatId: chatId)),
+          (Icons.grid_view_rounded, 'لعبة الذاكرة', 'اقلبوا البطاقات بالدور',
+              () => MemoryGameScreen(chatId: chatId)),
+          (Icons.psychology_alt_rounded, '20 سؤال', 'فكّر بشي وهو يخمّن',
+              () => TwentyQScreen(chatId: chatId)),
+          (Icons.emoji_emotions_rounded, 'خمّن من الإيموجي', 'أفلام وأماكن وأمثال',
+              () => EmojiGuessScreen(chatId: chatId)),
+          (Icons.leaderboard_rounded, 'نتائجنا وشاراتنا', 'النقاط والإنجازات',
+              () => ScoresScreen(chatId: chatId)),
+        ])
+          ListTile(
+            leading: Icon(g.$1),
+            title: Text(g.$2),
+            subtitle: Text(g.$3),
+            onTap: () {
+              Navigator.pop(ctx);
+              Navigator.of(context).push(MaterialPageRoute(builder: (_) => g.$4()));
+            },
+          ),
+        ListTile(
+          leading: const Icon(Icons.draw_rounded),
+          title: const Text('ارسم وخمّن'),
+          subtitle: const Text('ترسم كلمة سرية وهو يخمّن بالمحادثة'),
+          onTap: () {
+            Navigator.pop(ctx);
+            unawaited(_drawAndGuess(context, chatId));
+          },
+        ),
+        const Divider(height: 20),
         ListTile(
           leading: const Icon(Icons.push_pin_rounded, color: Color(0xFFFFD60A)),
           title: const Text('جدار الحب'),

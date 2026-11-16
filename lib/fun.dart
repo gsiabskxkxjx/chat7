@@ -12,8 +12,11 @@ class _Stroke {
 }
 
 class DrawScreen extends StatefulWidget {
-  const DrawScreen({super.key, required this.chatId});
+  const DrawScreen({super.key, required this.chatId, this.prompt});
   final String chatId;
+
+  /// كلمة "ارسم وخمّن" (تظهر لك بس)
+  final String? prompt;
 
   @override
   State<DrawScreen> createState() => _DrawState();
@@ -43,6 +46,9 @@ class _DrawState extends State<DrawScreen> {
       await f.writeAsBytes(data!.buffer.asUint8List());
       await _sendMedia(
           chatId: widget.chatId, file: f, kind: 'image', ext: 'png', mime: 'image/png');
+      if (widget.prompt != null) {
+        unawaited(_sendText(widget.chatId, '🎨 ارسم وخمّن: شنو رسمت؟ اكتب جوابك!'));
+      }
       if (mounted) Navigator.pop(context);
     } on PostgrestException catch (e) {
       if (!mounted) return;
@@ -62,7 +68,7 @@ class _DrawState extends State<DrawScreen> {
   @override
   Widget build(BuildContext context) => Scaffold(
         appBar: AppBar(
-          title: const Text('ارسم'),
+          title: Text(widget.prompt == null ? 'ارسم' : 'ارسم: ${widget.prompt}'),
           backgroundColor: Colors.transparent,
           actions: [
             IconButton(

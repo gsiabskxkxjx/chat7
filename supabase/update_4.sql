@@ -1,5 +1,5 @@
 -- بيناتنا تحديث 4: جدار ملاحظات الحب، تقويم مشترك، تحدي الصورة اليومي،
--- أسبوع التعارف «نكمل؟»، رسالة وداع، تواريخ لبنود القوائم
+-- أسبوع التعارف «نكمل؟»، رسالة وداع، تواريخ لبنود القوائم، ألعاب جديدة
 -- شغّله بعد update_1 و update_2 و update_3. آمن لو انعاد.
 
 -- دالة مساعدة: هل أنا طرف بهذي المحادثة؟
@@ -157,6 +157,11 @@ begin
 end $$;
 revoke execute on function public.say_farewell(text), public.farewell_take() from public, anon;
 grant execute on function public.say_farewell(text), public.farewell_take() to authenticated;
+
+-- ===== 7) ألعاب جديدة: مين فينا، صح أو غلط، الذاكرة، 20 سؤال، خمّن من الإيموجي، داما =====
+alter table public.chat_games drop constraint if exists chat_games_kind_check;
+alter table public.chat_games add constraint chat_games_kind_check check (kind in
+  ('tictactoe', 'rps', 'quiz', 'whoof', 'truefalse', 'memory', 'guess20', 'emoji', 'checkers', 'chess'));
 
 -- فحص: لازم يطلع 4
 select

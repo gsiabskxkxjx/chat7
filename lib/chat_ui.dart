@@ -359,7 +359,8 @@ extension _ChatLook on _ChatState {
       _bgKind = (r['bg_kind'] as String?) ?? 'gradient';
       _bgStrength = (r['bg_strength'] as num?)?.toInt() ?? 10;
       _bgPath = path;
-      _linkedAt = DateTime.tryParse((r['created_at'] as String?) ?? '')?.toLocal();
+      _linkedAt = DateTime.tryParse((r['started_on'] as String?) ?? '') ??
+          DateTime.tryParse((r['created_at'] as String?) ?? '')?.toLocal();
       final iAmA = r['user_a'] == _uid;
       _matched = r['matched'] == true;
       _trustMine = (iAmA ? r['trust_a'] : r['trust_b']) == true;

@@ -300,6 +300,12 @@ class _ProfileState extends State<ProfileScreen> {
                               onTap: _busy ? null : _changeUsername,
                             ),
                             ListTile(
+                              leading: const Icon(Icons.interests_rounded),
+                              title: const Text('اهتماماتي'),
+                              subtitle: const Text('تظهر لما تبحث عن شريك'),
+                              onTap: () => _editInterests(context),
+                            ),
+                            ListTile(
                               leading: const Icon(Icons.key_rounded),
                               title: const Text('تغيير كلمة السر'),
                               onTap: () => Navigator.of(context).push(

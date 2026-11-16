@@ -748,3 +748,108 @@ extension _ChatExtras on _ChatState {
     return out;
   }
 }
+
+// ========== الاهتمامات (لين 3) ==========
+
+const _allInterests = [
+  'سفر', 'رياضة', 'قراءة', 'أفلام', 'موسيقى', 'طبخ', 'ألعاب', 'تصوير',
+  'فن', 'تقنية', 'طبيعة', 'قهوة', 'أزياء', 'لغات', 'حيوانات', 'كتابة',
+];
+
+class _InterestsPicker extends StatelessWidget {
+  const _InterestsPicker({required this.selected, required this.onChanged});
+  final List<String> selected;
+  final ValueChanged<List<String>> onChanged;
+
+  @override
+  Widget build(BuildContext context) => Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: [
+          for (final i in _allInterests)
+            FilterChip(
+              label: Text(i),
+              selected: selected.contains(i),
+              showCheckmark: false,
+              selectedColor: const Color(0x66FF5FA2),
+              backgroundColor: const Color(0x1AFFFFFF),
+              side: BorderSide(
+                  color: selected.contains(i)
+                      ? const Color(0xFFFF7EB6)
+                      : const Color(0x33FFFFFF)),
+              shape: const StadiumBorder(),
+              onSelected: (on) {
+                final next = [...selected];
+                if (on) {
+                  if (next.length >= 3) {
+                    _toast(context, 'تقدر تختار 3 بس.');
+                    return;
+                  }
+                  next.add(i);
+                } else {
+                  next.remove(i);
+                }
+                onChanged(next);
+              },
+            ),
+        ],
+      );
+}
+
+/// نافذة تعديل الاهتمامات (من الملف الشخصي)
+Future<void> _editInterests(BuildContext context) async {
+  final uid = _db.auth.currentUser?.id;
+  if (uid == null) return;
+  var cur = <String>[];
+  try {
+    final r = await _db.from('profiles').select('interests').eq('id', uid).maybeSingle();
+    cur = ((r?['interests'] as List?) ?? const []).map((e) => '$e').toList();
+  } catch (_) {
+    if (context.mounted) _toast(context, 'الاهتمامات غير متوفرة بالسيرفر بعد.');
+    return;
+  }
+  if (!context.mounted) return;
+  final res = await showDialog<List<String>>(
+    context: context,
+    builder: (ctx) => StatefulBuilder(
+      builder: (ctx, set) => AlertDialog(
+        title: const Text('اهتماماتي (لين 3)'),
+        content: SingleChildScrollView(
+          child: _InterestsPicker(
+              selected: cur, onChanged: (v) => set(() => cur = v)),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, cur), child: const Text('حفظ')),
+        ],
+      ),
+    ),
+  );
+  if (res == null) return;
+  try {
+    await _db.from('profiles').update({'interests': res}).eq('id', uid);
+    if (context.mounted) _toast(context, 'انحفظت اهتماماتك.');
+  } catch (_) {
+    if (context.mounted) _toast(context, 'تعذر الحفظ.');
+  }
+}
+
+/// تاريخ بداية العلاقة (لعدّاد الأيام والاحتفالات)
+Future<void> _setStartDate(BuildContext context, String chatId) async {
+  final now = DateTime.now();
+  final d = await showDatePicker(
+    context: context,
+    initialDate: now,
+    firstDate: DateTime(1950),
+    lastDate: now,
+    helpText: 'من متى بدأت قصتكم؟',
+  );
+  if (d == null) return;
+  try {
+    await _db.from('chats').update({'started_on': _dayStr(d)}).eq('id', chatId);
+    if (context.mounted) _toast(context, 'انحفظ تاريخ البداية.');
+  } catch (_) {
+    if (context.mounted) _toast(context, 'تاريخ البداية غير متوفر بالسيرفر بعد.');
+  }
+}

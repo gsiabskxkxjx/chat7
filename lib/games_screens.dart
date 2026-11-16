@@ -298,6 +298,15 @@ void showGamesMenu(BuildContext context, String chatId) {
           },
         ),
         ListTile(
+          leading: const Icon(Icons.favorite_rounded, color: Color(0xFFFF5FA2)),
+          title: const Text('تاريخ بدايتنا'),
+          subtitle: const Text('لعدّاد الأيام والاحتفالات'),
+          onTap: () {
+            Navigator.pop(ctx);
+            unawaited(_setStartDate(context, chatId));
+          },
+        ),
+        ListTile(
           leading: const Icon(Icons.hourglass_top_rounded),
           title: const Text('عدّ تنازلي لموعد'),
           onTap: () {

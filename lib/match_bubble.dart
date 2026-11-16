@@ -352,6 +352,29 @@ class _OfferDialogState extends State<_OfferDialog> {
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                       fontSize: 20, fontWeight: FontWeight.w600)),
+              if (((c?['interests'] as List?) ?? const []).isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Wrap(
+                  alignment: WrapAlignment.center,
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    for (final i in (c!['interests'] as List))
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          color: ((c['common'] as List?) ?? const []).contains(i)
+                              ? const Color(0x66FF5FA2)
+                              : const Color(0x1FFFFFFF),
+                          border: Border.all(color: const Color(0x40FFFFFF)),
+                        ),
+                        child: Text('$i', style: const TextStyle(fontSize: 13)),
+                      ),
+                  ],
+                ),
+              ],
               const SizedBox(height: 6),
               Text(
                 theyOk && !mineOk

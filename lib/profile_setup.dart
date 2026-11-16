@@ -42,6 +42,7 @@ class _ProfileSetupState extends State<ProfileSetupScreen> {
   late final _name = TextEditingController(text: widget.name ?? '');
   final _picker = ImagePicker();
   XFile? _photo;
+  List<String> _interests = [];
   late DateTime? _birth = widget.birthDate;
   bool _busy = false;
   String? _nameErr;
@@ -121,6 +122,13 @@ class _ProfileSetupState extends State<ProfileSetupScreen> {
         upd['avatar_path'] = path;
       }
       await _db.from('profiles').update(upd).eq('id', _uid);
+      if (_interests.isNotEmpty) {
+        try {
+          await _db
+              .from('profiles')
+              .update({'interests': _interests}).eq('id', _uid);
+        } catch (_) {} // السيرفر قديم: نتخطى الاهتمامات
+      }
       if (!mounted) return;
       Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (_) => const Boot()), (_) => false);
@@ -284,6 +292,13 @@ class _ProfileSetupState extends State<ProfileSetupScreen> {
                     const Text(
                         'تاريخ الميلاد ما يظهر لأحد، وما يتغير بعد الحفظ. البحث عن شريك للي عمرهم 18 وفوق.',
                         style: TextStyle(fontSize: 12, color: Color(0x99FFFFFF))),
+                    const SizedBox(height: 16),
+                    const Text('اهتماماتك (اختياري، لين 3)',
+                        style: TextStyle(fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 8),
+                    _InterestsPicker(
+                        selected: _interests,
+                        onChanged: (v) => setState(() => _interests = v)),
                     const SizedBox(height: 20),
                     _Btn(label: 'متابعة', onTap: _save, busy: _busy),
                   ],

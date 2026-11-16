@@ -109,6 +109,12 @@ class _ChatState extends State<ChatScreen> {
   Map<String, dynamic>? _memory; // مثل هذا اليوم
   bool _memoryDismissed = false;
   bool _pushDismissed = false; // شريط "الإشعارات مطفية"
+  bool _iAmA = false;
+  DateTime? _matchedOn; // متى صارت المطابقة (لأسبوع التعارف)
+  bool? _contMine; // جوابي على «نكمل؟»
+  bool? _contTheirs;
+  List<String> _todayNotes = const []; // مواعيد اليوم والبنود المستحقة
+  bool _todayDismissed = false;
   bool _offline = false; // ما نقدر نوصل للسيرفر (يظهر شريط)
   String? _myGender; // جنسي (نقراه من السيرفر، عشان يتحدث إذا غيّرته)
   int? _dismissedRemindId; // آخر تذكير أغلقته (رقم آخر رسالة وقتها)
@@ -135,6 +141,7 @@ class _ChatState extends State<ChatScreen> {
     unawaited(_loadMemory());
     unawaited(_loadHiddenMine());
     unawaited(_loadMsgCache());
+    unawaited(_loadToday());
     if (_outbox.isNotEmpty) unawaited(_flushOutbox());
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
@@ -334,6 +341,7 @@ class _ChatState extends State<ChatScreen> {
                 if (_selected.isEmpty) _header() else _selectionBar(),
                 if (_mediaLocked) _trustBar(),
                 if (_showDailyBar) _dailyBar(),
+                if (_askContinue) _continueBar(),
                 ..._extraBars(),
                 Expanded(
                   child: Stack(children: [

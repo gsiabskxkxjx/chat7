@@ -101,6 +101,7 @@ part 'prefs.dart';
 part 'chat_more.dart';
 part 'net_more.dart';
 part 'story.dart';
+part 'together.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

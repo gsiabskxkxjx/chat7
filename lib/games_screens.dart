@@ -299,6 +299,36 @@ void showGamesMenu(BuildContext context, String chatId) {
           },
         ),
         ListTile(
+          leading: const Icon(Icons.push_pin_rounded, color: Color(0xFFFFD60A)),
+          title: const Text('جدار الحب'),
+          subtitle: const Text('ملاحظات قصيرة تبقى لبعض'),
+          onTap: () {
+            Navigator.pop(ctx);
+            Navigator.of(context).push(MaterialPageRoute(
+                builder: (_) => LoveNotesScreen(chatId: chatId)));
+          },
+        ),
+        ListTile(
+          leading: const Icon(Icons.photo_camera_front_rounded),
+          title: const Text('تحدي الصورة اليومي'),
+          subtitle: const Text('الصورتين تنكشف لما الاثنين يصوّرون'),
+          onTap: () {
+            Navigator.pop(ctx);
+            Navigator.of(context).push(MaterialPageRoute(
+                builder: (_) => PhotoChallengeScreen(chatId: chatId)));
+          },
+        ),
+        ListTile(
+          leading: const Icon(Icons.calendar_month_rounded),
+          title: const Text('تقويمنا'),
+          subtitle: const Text('المواعيد المهمة لكم الاثنين'),
+          onTap: () {
+            Navigator.pop(ctx);
+            Navigator.of(context).push(MaterialPageRoute(
+                builder: (_) => CalendarScreen(chatId: chatId)));
+          },
+        ),
+        ListTile(
           leading: const Icon(Icons.timeline_rounded),
           title: const Text('قصتنا'),
           subtitle: const Text('أول رسالة، أول صورة، أول مكالمة...'),

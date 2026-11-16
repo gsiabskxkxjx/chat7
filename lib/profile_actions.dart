@@ -246,6 +246,9 @@ extension _ProfileActions on _ProfileState {
     );
     if (ok != true || !mounted) return;
     if (!await _confirmPassword(context, p.username) || !mounted) return;
+    final bye = await _askFarewell(context);
+    if (bye == null || !mounted) return;
+    await _sendFarewell(bye);
     setState(() => _busy = true);
     try {
       // نمسح ملفات الصور من التخزين (ما يهم لو فشل)

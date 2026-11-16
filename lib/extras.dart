@@ -661,6 +661,10 @@ extension _ChatExtras on _ChatState {
             () => setState(() => _bdayDismissed = true)));
       }
     }
+    if (_todayNotes.isNotEmpty && !_todayDismissed) {
+      out.add(bar('📅', _todayNotes.join(' · '),
+          () => setState(() => _todayDismissed = true)));
+    }
     if (!_pushDismissed && Push.status.startsWith('مرفوضة')) {
       out.add(bar('🔕', 'الإشعارات مطفية، ما راح تعرف لما يرسل لك. فعّلها من إعدادات الجوال ثم التطبيقات ثم بيناتنا.',
           () => setState(() => _pushDismissed = true)));

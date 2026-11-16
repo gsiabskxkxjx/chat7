@@ -23,6 +23,9 @@ class _PairState extends State<PairScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) unawaited(_checkFarewell(context));
+    });
     _newCode();
     _timer = Timer.periodic(const Duration(seconds: 3), (_) => _tick());
   }

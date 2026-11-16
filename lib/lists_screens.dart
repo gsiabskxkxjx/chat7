@@ -2,7 +2,14 @@ part of 'main.dart';
 
 // ---------- قوايم مشتركة: كل عناصرها تطلع عند الطرفين ----------
 
-const _suggestedLists = ['مشتريات', 'أماكن', 'أفلام'];
+const _suggestedLists = [
+  'مشتريات',
+  'أماكن نبي نزورها',
+  'أفلام ومسلسلات',
+  'أمنيات الهدايا',
+  'أهدافنا',
+  'أفكار للطلعات',
+];
 
 class SharedListsScreen extends StatefulWidget {
   const SharedListsScreen({super.key, required this.chatId});
@@ -53,6 +60,29 @@ class _ListsState extends State<SharedListsScreen> {
         'done_by': nowDone ? _me : null,
       }).eq('id', it['id']);
     } catch (_) {}
+  }
+
+  /// تاريخ للبند (يطلع تذكير بالمحادثة يوم الموعد)
+  Future<void> _setDue(Map<String, dynamic> it) async {
+    final now = DateTime.now();
+    final cur = DateTime.tryParse('${it['due_on']}');
+    final d = await showDatePicker(
+      context: context,
+      initialDate: cur ?? now,
+      firstDate: DateTime(now.year - 1),
+      lastDate: DateTime(now.year + 5),
+      helpText: 'متى؟ (نذكركم بالمحادثة)',
+      cancelText: cur == null ? 'إلغاء' : 'بدون تاريخ',
+    );
+    if (!mounted) return;
+    if (d == null && cur == null) return;
+    try {
+      await _db
+          .from('shared_items')
+          .update({'due_on': d == null ? null : _dayStr(d)}).eq('id', it['id']);
+    } catch (_) {
+      if (mounted) _toast(context, 'التواريخ تحتاج تحديث السيرفر (update_4).');
+    }
   }
 
   Future<void> _delete(Map<String, dynamic> it) async {
@@ -114,7 +144,20 @@ class _ListsState extends State<SharedListsScreen> {
                       names.add(r['list_name'] as String);
                     }
                     final items =
-                        rows.where((r) => r['list_name'] == _list).toList();
+                        rows.where((r) => r['list_name'] == _list).toList()
+                          ..sort((a, b) {
+                            // اللي ما خلص أول، وبعدين حسب التاريخ
+                            final da = a['done'] == true ? 1 : 0;
+                            final db = b['done'] == true ? 1 : 0;
+                            if (da != db) return da - db;
+                            final xa = '${a['due_on'] ?? '9999'}';
+                            final xb = '${b['due_on'] ?? '9999'}';
+                            final c = xa.compareTo(xb);
+                            return c != 0
+                                ? c
+                                : (a['id'] as num).compareTo(b['id'] as num);
+                          });
+                    final doneN = items.where((r) => r['done'] == true).length;
 
                     return Column(children: [
                       SizedBox(
@@ -142,10 +185,33 @@ class _ListsState extends State<SharedListsScreen> {
                           ],
                         ),
                       ),
+                      if (items.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+                          child: Row(children: [
+                            Expanded(
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(6),
+                                child: LinearProgressIndicator(
+                                  value: doneN / items.length,
+                                  minHeight: 8,
+                                  backgroundColor: const Color(0x26FFFFFF),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                                doneN == items.length
+                                    ? 'خلّصتوها كلها 🎉'
+                                    : '$doneN من ${items.length}',
+                                style: const TextStyle(fontSize: 12)),
+                          ]),
+                        ),
                       Expanded(
                         child: items.isEmpty
                             ? Center(
-                                child: Text('ما في عناصر بقائمة $_list بعد',
+                                child: Text('ما في عناصر بقائمة $_list بعد\nاضغط مطوّل على أي بند تحط له تاريخ',
+                                    textAlign: TextAlign.center,
                                     style: const TextStyle(
                                         color: Color(0xAAFFFFFF))))
                             : ListView.builder(
@@ -154,8 +220,22 @@ class _ListsState extends State<SharedListsScreen> {
                                 itemBuilder: (_, i) {
                                   final it = items[i];
                                   final done = it['done'] as bool;
+                                  final due = DateTime.tryParse('${it['due_on']}');
+                                  final late = due != null &&
+                                      !done &&
+                                      due.isBefore(_today().add(const Duration(days: 1)));
                                   return ListTile(
                                     onTap: () => _toggle(it),
+                                    onLongPress: () => _setDue(it),
+                                    subtitle: due == null
+                                        ? null
+                                        : Text(
+                                            '📅 ${due.day} ${_months[due.month - 1]}',
+                                            style: TextStyle(
+                                                fontSize: 12,
+                                                color: late
+                                                    ? const Color(0xFFFF9F0A)
+                                                    : const Color(0xB3FFFFFF))),
                                     leading: Checkbox(
                                         value: done,
                                         onChanged: (_) => _toggle(it)),
@@ -197,7 +277,7 @@ class _ListsState extends State<SharedListsScreen> {
                               ),
                             ),
                             IconButton(
-                              tooltip: 'إرفاق',
+                              tooltip: 'إضافة',
                               onPressed: _add,
                               icon: const Icon(Icons.add_circle_outline_rounded),
                             ),

@@ -398,6 +398,10 @@ extension _ChatLook on _ChatState {
       _linkedAt = DateTime.tryParse((r['started_on'] as String?) ?? '') ??
           DateTime.tryParse((r['created_at'] as String?) ?? '')?.toLocal();
       final iAmA = r['user_a'] == _uid;
+      _iAmA = iAmA;
+      _matchedOn = DateTime.tryParse((r['created_at'] as String?) ?? '')?.toLocal();
+      _contMine = iAmA ? r['continue_a'] as bool? : r['continue_b'] as bool?;
+      _contTheirs = iAmA ? r['continue_b'] as bool? : r['continue_a'] as bool?;
       _matched = r['matched'] == true;
       _trustMine = (iAmA ? r['trust_a'] : r['trust_b']) == true;
       _trustTheirs = (iAmA ? r['trust_b'] : r['trust_a']) == true;

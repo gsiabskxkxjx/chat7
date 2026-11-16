@@ -373,6 +373,23 @@ class _ProfileState extends State<ProfileScreen> {
                             ),
                           ),
                         ],
+                        const SizedBox(height: 16),
+                        Glass(
+                          radius: 28,
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: ListTile(
+                            leading: const Icon(Icons.info_rounded),
+                            title: const Text('حول بيناتنا'),
+                            subtitle: const Text('الإصدار وسياسة الخصوصية'),
+                            onTap: () => showAboutDialog(
+                              context: context,
+                              applicationName: appName,
+                              applicationVersion: '0.11',
+                              applicationLegalese:
+                                  'محادثة خاصة لشخصين.\nسياسة الخصوصية وحذف الحساب:\nhttps://gsiabskxkxjx.github.io/bainatna/',
+                            ),
+                          ),
+                        ),
                       ]),
                     ),
             ),

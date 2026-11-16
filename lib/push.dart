@@ -35,7 +35,17 @@ class Push {
       status = 'مفعّلة';
     } catch (e) {
       final m = e.toString();
-      status = 'غير مفعّلة: ${m.length > 140 ? m.substring(0, 140) : m}';
+      if (m.contains('FCM Registration') ||
+          m.contains('IOException') ||
+          m.contains('SERVICE_NOT_AVAILABLE')) {
+        status =
+            'تعذر تسجيل الجهاز للإشعارات. تأكد إن خدمات Google Play محدّثة، وأطفِ الـ VPN لحظة، واضغط تحديث.';
+      } else if (m.contains('MISSING_INSTANCEID_SERVICE') ||
+          m.contains('PHONE_REGISTRATION_ERROR')) {
+        status = 'جهازك ما يدعم إشعارات Google. الرسائل توصلك لما تفتح التطبيق.';
+      } else {
+        status = 'غير مفعّلة. اضغط تحديث وجرّب مرة ثانية.';
+      }
     }
     _busy = false;
   }

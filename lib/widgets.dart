@@ -243,15 +243,6 @@ class Backdrop extends StatelessWidget {
   const Backdrop({super.key, required this.child});
   final Widget child;
 
-  Widget _blob(double s, Color c) => ImageFiltered(
-        imageFilter: ImageFilter.blur(sigmaX: 50, sigmaY: 50),
-        child: Container(
-          width: s,
-          height: s,
-          decoration: BoxDecoration(shape: BoxShape.circle, color: c),
-        ),
-      );
-
   @override
   Widget build(BuildContext context) => ValueListenableBuilder<AppLook?>(
         valueListenable: _appLook,
@@ -321,18 +312,79 @@ class Backdrop extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            Positioned(
-                top: -60, left: -40, child: _blob(240, const Color(0xAA0A84FF))),
-            Positioned(
-                bottom: 90,
-                right: -70,
-                child: _blob(260, const Color(0x99BF5AF2))),
-            Positioned(
-                bottom: -80,
-                left: 40,
-                child: _blob(200, const Color(0x8830D5C8))),
+            const _DriftBlobs(),
             child,
           ],
+        ),
+      );
+}
+
+/// خلفية حيّة: بقع ألوان ناعمة تتحرك ببطء شديد (تتوقف إذا الجوال طالب تقليل الحركة)
+class _DriftBlobs extends StatefulWidget {
+  const _DriftBlobs();
+
+  @override
+  State<_DriftBlobs> createState() => _DriftBlobsState();
+}
+
+class _DriftBlobsState extends State<_DriftBlobs>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(
+      vsync: this, duration: const Duration(seconds: 24));
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final still = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    if (still) {
+      _c.stop();
+    } else if (!_c.isAnimating) {
+      unawaited(_c.repeat());
+    }
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  Widget _blob(double size, Color c) => Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: RadialGradient(colors: [c, c.withValues(alpha: 0)]),
+        ),
+      );
+
+  @override
+  Widget build(BuildContext context) => RepaintBoundary(
+        child: LayoutBuilder(
+          builder: (_, box) => AnimatedBuilder(
+            animation: _c,
+            builder: (_, __) {
+              final a = _c.value * 2 * math.pi;
+              final w = box.maxWidth, h = box.maxHeight;
+              return Stack(children: [
+                Positioned(
+                  left: -120 + math.sin(a) * 40,
+                  top: -110 + math.cos(a) * 30,
+                  child: _blob(380, const Color(0xAA0A84FF)),
+                ),
+                Positioned(
+                  left: w - 260 + math.cos(a) * 45,
+                  top: h * 0.45 + math.sin(a * 2) * 35,
+                  child: _blob(400, const Color(0x99BF5AF2)),
+                ),
+                Positioned(
+                  left: 20 + math.sin(a + 2) * 50,
+                  top: h - 220 + math.cos(a + 1) * 30,
+                  child: _blob(320, const Color(0x8830D5C8)),
+                ),
+              ]);
+            },
+          ),
         ),
       );
 }

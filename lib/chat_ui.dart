@@ -12,7 +12,37 @@ extension _ChatUi on _ChatState {
               child: InkWell(
                 onTap: _partnerInfo,
                 child: Row(children: [
-                  _Avatar(path: _pAvatar, radius: 20, gender: _pGender),
+                  Stack(clipBehavior: Clip.none, children: [
+                    Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [_t.accent, const Color(0xFFFF7EB6)],
+                        ),
+                      ),
+                      child: _Avatar(path: _pAvatar, radius: 19, gender: _pGender),
+                    ),
+                    if (_online)
+                      PositionedDirectional(
+                        bottom: 0,
+                        end: 0,
+                        child: Container(
+                          width: 12,
+                          height: 12,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: const Color(0xFF34C759),
+                            border: Border.all(color: Colors.white, width: 2),
+                            boxShadow: const [
+                              BoxShadow(color: Color(0x9934C759), blurRadius: 8),
+                            ],
+                          ),
+                        ),
+                      ),
+                  ]),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
@@ -42,7 +72,15 @@ extension _ChatUi on _ChatState {
                             ),
                           ],
                         ]),
-                        if (_status().isNotEmpty)
+                        if (_isTyping)
+                          Row(mainAxisSize: MainAxisSize.min, children: [
+                            const Text('يكتب',
+                                style: TextStyle(
+                                    fontSize: 12, color: Color(0xFF5BE584))),
+                            const SizedBox(width: 4),
+                            const _TypingDots(),
+                          ])
+                        else if (_status().isNotEmpty)
                           Text(_status(),
                               style: TextStyle(
                                   fontSize: 12,
@@ -104,16 +142,7 @@ extension _ChatUi on _ChatState {
               .map((r) => Msg.fromRow(r, _uid))
               .where((m) => !_hidden.contains(m.id))
               .toList();
-          if (msgs.isEmpty) {
-            return const Center(
-              child: Padding(
-                padding: EdgeInsets.all(32),
-                child: Text('ما في رسائل بعد. ابدأ المحادثة!',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: Color(0xAAFFFFFF))),
-              ),
-            );
-          }
+          if (msgs.isEmpty) return _emptyChat();
           final entries = _withDayHeaders(msgs);
           // أول شي بالمحادثة (أقدم شي): عداد الأيام، يظهر لما نكون وصلنا لأول الرسائل
           if (!_hasMore && _linkedAt != null) entries.add(_SinceMarker(_linkedAt!));
@@ -249,9 +278,13 @@ extension _ChatUi on _ChatState {
             icon: Icon(Icons.sports_esports_rounded, color: _t.accent),
           ),
         if (!typing)
-          IconButton(
-            onPressed: _thinkOfYou,
-            icon: Icon(Icons.favorite_border_rounded, color: _t.accent),
+          GestureDetector(
+            onLongPress: _sendNudge,
+            child: IconButton(
+              tooltip: 'أفكر فيك (ضغطة مطوّلة: هزّة)',
+              onPressed: _thinkOfYou,
+              icon: Icon(Icons.favorite_border_rounded, color: _t.accent),
+            ),
           ),
         // زر الإرسال: يتحول من المايك للسهم بحركة دوران
         Semantics(
@@ -717,5 +750,145 @@ extension _ChatTrust on _ChatState {
     _toast(context, 'الصور والمكالمات تنفتح لما الطرفين يضغطون «أثق فيه».');
     return true;
   }
+}
+
+// ---------- محادثة فاضية: اقتراحات بدل مساحة فاضية ----------
+
+extension _ChatEmpty on _ChatState {
+  Widget _emptyChat() {
+    Widget chip(String label, VoidCallback onTap) => _Press(
+          onTap: onTap,
+          scale: 0.95,
+          child: Glass(
+            radius: 18,
+            shadow: false,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+            child: Text(label, style: const TextStyle(fontSize: 15)),
+          ),
+        );
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(28),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          const Text('🌱', style: TextStyle(fontSize: 46)),
+          const SizedBox(height: 10),
+          const Text('بداية حلوة',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
+          const SizedBox(height: 6),
+          Text('اختر شي تبدأ فيه',
+              style: TextStyle(color: _t.text.withValues(alpha: 0.7))),
+          const SizedBox(height: 18),
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 10,
+            runSpacing: 10,
+            children: [
+              chip('قل مرحبا 👋', () {
+                _c.text = 'مرحبا 👋';
+                unawaited(_send());
+              }),
+              chip('أفكر فيك ❤️', () => unawaited(_thinkOfYou())),
+              chip('سؤال اليوم 💬', () => unawaited(_openDaily())),
+              chip('العبوا لعبة 🎮', () => showGamesMenu(context, widget.chat.id)),
+            ],
+          ),
+        ]),
+      ),
+    );
+  }
+}
+
+// ---------- "يكتب" بنقاط متموجة ----------
+
+class _TypingDots extends StatefulWidget {
+  const _TypingDots();
+
+  @override
+  State<_TypingDots> createState() => _TypingDotsState();
+}
+
+class _TypingDotsState extends State<_TypingDots>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(
+      vsync: this, duration: const Duration(milliseconds: 900))
+    ..repeat();
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AnimatedBuilder(
+        animation: _c,
+        builder: (_, __) => Row(mainAxisSize: MainAxisSize.min, children: [
+          for (var i = 0; i < 3; i++)
+            Transform.translate(
+              offset: Offset(
+                  0, -3 * math.max(0, math.sin((_c.value - i * 0.18) * 2 * math.pi))),
+              child: Container(
+                width: 5,
+                height: 5,
+                margin: const EdgeInsets.symmetric(horizontal: 1.5),
+                decoration: const BoxDecoration(
+                    shape: BoxShape.circle, color: Color(0xFF5BE584)),
+              ),
+            ),
+        ]),
+      );
+}
+
+// ---------- هزّة: تهزّ جوال الطرف الثاني ----------
+
+DateTime _lastNudge = DateTime.fromMillisecondsSinceEpoch(0);
+
+extension _ChatNudge on _ChatState {
+  bool get _isTyping =>
+      DateTime.now().difference(_typingSeen) < const Duration(seconds: 4);
+
+  Future<void> _sendNudge() async {
+    final now = DateTime.now();
+    if (now.difference(_lastNudge) < const Duration(seconds: 5)) {
+      _toast(context, 'استنى شوي قبل الهزّة الثانية.');
+      return;
+    }
+    _lastNudge = now;
+    unawaited(HapticFeedback.heavyImpact());
+    final ch = _typeCh;
+    if (ch == null) return;
+    try {
+      await ch.sendBroadcastMessage(event: 'nudge', payload: {'uid': _uid});
+      if (mounted) _toast(context, 'أرسلت هزّة 👋');
+    } catch (_) {
+      if (mounted) _toast(context, 'تعذر الإرسال.');
+    }
+  }
+
+  void _onNudge(Map<String, dynamic> payload) {
+    final inner = payload['payload'];
+    final uid = inner is Map ? inner['uid'] : payload['uid'];
+    if (uid == _uid || !mounted) return;
+    setState(() => _nudgeN++);
+    unawaited(() async {
+      for (var i = 0; i < 3; i++) {
+        await HapticFeedback.heavyImpact();
+        await Future<void>.delayed(const Duration(milliseconds: 140));
+      }
+    }());
+    _toast(context, 'الطرف الثاني هزّك 👋');
+  }
+
+  /// يهزّ الشاشة لما توصل هزّة
+  Widget _shake(Widget child) => TweenAnimationBuilder<double>(
+        key: ValueKey<int>(_nudgeN),
+        tween: Tween<double>(begin: _nudgeN == 0 ? 1 : 0, end: 1),
+        duration: const Duration(milliseconds: 650),
+        builder: (_, v, c) => Transform.translate(
+          offset: Offset(math.sin(v * math.pi * 8) * 12 * (1 - v), 0),
+          child: c,
+        ),
+        child: child,
+      );
 }
 

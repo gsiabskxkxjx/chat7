@@ -83,6 +83,7 @@ class _Bubble extends StatelessWidget {
             key: ValueKey('voice-${m.id}'), path: path, ms: m.durationMs);
       }
     }
+    if (_emojiOnly) return Text(m.text, style: const TextStyle(fontSize: 44));
     return Text(m.text, style: TextStyle(fontSize: 16, color: m.mine ? Colors.white : t.text));
   }
 
@@ -102,10 +103,19 @@ class _Bubble extends StatelessWidget {
             bottomStart: big);
   }
 
+  /// رسالة كلها إيموجي (لين 6): تطلع كبيرة بدون فقاعة
+  bool get _emojiOnly {
+    if (m.kind != 'text' || m.replyToId != null) return false;
+    final s = m.text.trim();
+    if (s.isEmpty || s.runes.length > 12) return false;
+    return !RegExp(r'[\p{L}\p{N}]', unicode: true).hasMatch(s);
+  }
+
   @override
   Widget build(BuildContext context) {
     final big = m.mediaPath != null && m.kind != 'audio';
     final base = m.mine ? t.mine : t.theirs;
+    final emoji = _emojiOnly;
     // رسالة وصلت توها: تدخل بانزلاق وتلاشي
     final fresh =
         m.at != null && DateTime.now().difference(m.at!).inSeconds.abs() < 8;
@@ -132,7 +142,9 @@ class _Bubble extends StatelessWidget {
               ? const EdgeInsets.all(4)
               : const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           // زجاج خفيف بدون تمويه حقيقي، حتى يبقى التمرير ناعم
-          decoration: BoxDecoration(
+          decoration: emoji
+              ? null
+              : BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,

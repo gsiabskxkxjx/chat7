@@ -89,6 +89,7 @@ part 'app_look.dart';
 part 'profile_setup.dart';
 part 'match_bubble.dart';
 part 'effects.dart';
+part 'onboarding.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

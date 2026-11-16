@@ -26,7 +26,9 @@ class _BootState extends State<Boot> {
     try {
       final user = _db.auth.currentUser;
       if (_db.auth.currentSession == null || user == null) {
-        _go(const WelcomeScreen());
+        final seen = await _onboardSeen();
+        if (!mounted) return;
+        _go(seen ? const WelcomeScreen() : const OnboardingScreen());
         return;
       }
       final uid = user.id;
@@ -113,16 +115,7 @@ class _BootState extends State<Boot> {
       body: Backdrop(
         child: Center(
           child: err == null
-              ? const Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(appName,
-                        style: TextStyle(
-                            fontSize: 38, fontWeight: FontWeight.w800)),
-                    SizedBox(height: 24),
-                    CircularProgressIndicator(),
-                  ],
-                )
+              ? const _SplashRings()
               : Padding(
                   padding: const EdgeInsets.all(24),
                   child: Glass(

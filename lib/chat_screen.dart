@@ -86,6 +86,7 @@ class _ChatState extends State<ChatScreen> {
   String? _dailyTheirs;
   bool _dailyTheirDone = false;
   bool _dailySeenReveal = false;
+  int _nudgeN = 0; // عدد الهزّات الواصلة (يشغّل حركة الهز)
   bool _offline = false; // ما نقدر نوصل للسيرفر (يظهر شريط)
   String? _myGender; // جنسي (نقراه من السيرفر، عشان يتحدث إذا غيّرته)
   int? _dismissedRemindId; // آخر تذكير أغلقته (رقم آخر رسالة وقتها)
@@ -117,6 +118,7 @@ class _ChatState extends State<ChatScreen> {
     });
     _typeCh = _db.channel('typing-${widget.chat.id}')
       ..onBroadcast(event: 'typing', callback: _onTypingEvent)
+      ..onBroadcast(event: 'nudge', callback: _onNudge)
       ..subscribe();
     _statusTimer = Timer.periodic(const Duration(seconds: 4), (_) {
       if (!mounted) return;
@@ -273,7 +275,7 @@ class _ChatState extends State<ChatScreen> {
     return Scaffold(
       body: Stack(fit: StackFit.expand, children: [
         _chatBackground(),
-        SafeArea(
+        _shake(SafeArea(
           child: IconTheme(
             data: IconThemeData(color: _t.text),
             child: DefaultTextStyle.merge(
@@ -288,7 +290,7 @@ class _ChatState extends State<ChatScreen> {
               ]),
             ),
           ),
-        ),
+        )),
       ]),
     );
   }

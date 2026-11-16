@@ -212,6 +212,26 @@ class _PairState extends State<PairScreen> {
                           textAlign: TextAlign.center,
                           style: TextStyle(
                               fontSize: 12, color: Color(0x99FFFFFF))),
+                      const SizedBox(height: 22),
+                      const Row(children: [
+                        Expanded(child: Divider(color: Color(0x40FFFFFF))),
+                        Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 12),
+                          child: Text('ما عندك أحد؟',
+                              style: TextStyle(color: Color(0xB3FFFFFF))),
+                        ),
+                        Expanded(child: Divider(color: Color(0x40FFFFFF))),
+                      ]),
+                      const SizedBox(height: 14),
+                      _MatchBubble(onMatched: () async {
+                        await _open();
+                      }),
+                      const SizedBox(height: 6),
+                      const Text(
+                          'نبحث لك عن شخص يبي يرتبط بعد. بعد المطابقة تبدأ المحادثة بالنص، والصور والمكالمات تنفتح لما الطرفين يضغطون «أثق فيه».',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                              fontSize: 12, color: Color(0x99FFFFFF))),
                     ],
                   ),
                 ),

@@ -72,6 +72,20 @@ class _ChatState extends State<ChatScreen> {
   Timer? _typingTimer;
   DateTime? _linkedAt; // تاريخ ارتباطكم (لعداد الأيام)
   Msg? _replyTo; // الرسالة اللي تبي ترد عليها
+  // مطابقة جديدة من البحث: الصور والمكالمات مقفلة لين الطرفين يضغطون "أثق فيه"
+  bool _matched = false;
+  bool _trustMine = false;
+  bool _trustTheirs = false;
+  bool get _mediaLocked => _matched && !(_trustMine && _trustTheirs);
+  // التأثيرات والسلسلة وسؤال اليوم والمناسبات
+  int _fxSeen = -1;
+  int _streak = 0;
+  bool _milestoneChecked = false;
+  bool _dailyReady = false;
+  String? _dailyMine;
+  String? _dailyTheirs;
+  bool _dailyTheirDone = false;
+  bool _dailySeenReveal = false;
   bool _offline = false; // ما نقدر نوصل للسيرفر (يظهر شريط)
   String? _myGender; // جنسي (نقراه من السيرفر، عشان يتحدث إذا غيّرته)
   int? _dismissedRemindId; // آخر تذكير أغلقته (رقم آخر رسالة وقتها)
@@ -85,6 +99,8 @@ class _ChatState extends State<ChatScreen> {
     unawaited(Push.start());
     _scroll.addListener(_onScroll);
     _watchLook();
+    unawaited(_loadStreak());
+    unawaited(_loadDaily());
     _myGender = widget.chat.myGender;
     unawaited(_reloadMyGender());
     _reactSub = _db
@@ -265,6 +281,8 @@ class _ChatState extends State<ChatScreen> {
               child: Column(children: [
                 if (_offline) _offlineBar(),
                 _header(),
+                if (_mediaLocked) _trustBar(),
+                if (_showDailyBar) _dailyBar(),
                 Expanded(child: _messages()),
                 _inputBar(typing),
               ]),

@@ -39,8 +39,23 @@ class Msg {
 }
 
 class _Bubble extends StatelessWidget {
-  const _Bubble({super.key, required this.m, required this.onLongPress, required this.t, this.quote, this.reactions});
+  const _Bubble({
+    super.key,
+    required this.m,
+    required this.onLongPress,
+    required this.t,
+    this.quote,
+    this.reactions,
+    this.joinPrev = false,
+    this.joinNext = false,
+  });
   final ChatTheme t;
+
+  /// رسالة قبلها (فوقها) من نفس الشخص خلال دقايق: نلصقهم بزوايا متصلة
+  final bool joinPrev;
+
+  /// رسالة بعدها (تحتها) من نفس الشخص
+  final bool joinNext;
   final String? quote; // نص الرسالة الأصلية (إذا هذي رد)
   final List<String>? reactions; // التفاعلات مثل: 👍 2
   final Msg m;
@@ -71,25 +86,70 @@ class _Bubble extends StatelessWidget {
     return Text(m.text, style: TextStyle(fontSize: 16, color: m.mine ? Colors.white : t.text));
   }
 
+  BorderRadiusDirectional _corners() {
+    const big = Radius.circular(20);
+    const small = Radius.circular(6);
+    return m.mine
+        ? BorderRadiusDirectional.only(
+            topStart: joinPrev ? small : big,
+            bottomStart: joinNext ? small : big,
+            topEnd: big,
+            bottomEnd: big)
+        : BorderRadiusDirectional.only(
+            topEnd: joinPrev ? small : big,
+            bottomEnd: joinNext ? small : big,
+            topStart: big,
+            bottomStart: big);
+  }
+
   @override
   Widget build(BuildContext context) {
     final big = m.mediaPath != null && m.kind != 'audio';
-    return Align(
+    final base = m.mine ? t.mine : t.theirs;
+    // رسالة وصلت توها: تدخل بانزلاق وتلاشي
+    final fresh =
+        m.at != null && DateTime.now().difference(m.at!).inSeconds.abs() < 8;
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: fresh ? 0 : 1, end: 1),
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOutCubic,
+      builder: (_, v, child) => Opacity(
+        opacity: v,
+        child: Transform.translate(offset: Offset(0, 14 * (1 - v)), child: child),
+      ),
+      child: Align(
       alignment: m.mine
           ? AlignmentDirectional.centerStart
           : AlignmentDirectional.centerEnd,
       child: GestureDetector(
         onLongPress: onLongPress,
         child: Container(
-          margin: const EdgeInsets.symmetric(vertical: 4),
+          margin: EdgeInsets.only(
+              top: joinPrev ? 1.5 : 4, bottom: joinNext ? 1.5 : 4),
           constraints: BoxConstraints(
               maxWidth: MediaQuery.of(context).size.width * 0.75),
           padding: big
               ? const EdgeInsets.all(4)
               : const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          // زجاج خفيف بدون تمويه حقيقي، حتى يبقى التمرير ناعم
           decoration: BoxDecoration(
-              color: m.mine ? t.mine : t.theirs,
-              borderRadius: BorderRadius.circular(20)),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color.lerp(base, Colors.white, m.mine ? 0.18 : 0.10)!, base],
+            ),
+            borderRadius: _corners(),
+            border: Border.all(
+                color: Color(m.mine ? 0x40FFFFFF : 0x2EFFFFFF), width: 0.8),
+            boxShadow: m.mine
+                ? [
+                    BoxShadow(
+                        color: base.withValues(alpha: 0.25),
+                        blurRadius: 10,
+                        offset: const Offset(0, 3)),
+                  ]
+                : null,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.end,
@@ -117,14 +177,24 @@ class _Bubble extends StatelessWidget {
                   padding: const EdgeInsets.only(top: 4),
                   child: Wrap(spacing: 4, runSpacing: 4, children: [
                     for (final r in reactions!)
-                      Container(
-                        padding:
-                            const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: const Color(0x55000000),
-                          borderRadius: BorderRadius.circular(10),
+                      // التفاعل ينبض لما ينضاف أو يتغير عدده
+                      TweenAnimationBuilder<double>(
+                        key: ValueKey<String>(r),
+                        tween: Tween<double>(begin: 0.4, end: 1),
+                        duration: const Duration(milliseconds: 550),
+                        curve: Curves.elasticOut,
+                        builder: (_, v, child) =>
+                            Transform.scale(scale: v, child: child),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: const Color(0x55000000),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: const Color(0x33FFFFFF)),
+                          ),
+                          child: Text(r, style: const TextStyle(fontSize: 13)),
                         ),
-                        child: Text(r, style: const TextStyle(fontSize: 13)),
                       ),
                   ]),
                 ),
@@ -149,6 +219,7 @@ class _Bubble extends StatelessWidget {
             ],
           ),
         ),
+      ),
       ),
     );
   }

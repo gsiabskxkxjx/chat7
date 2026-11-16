@@ -176,6 +176,7 @@ extension _ChatActions on _ChatState {
 
   Future<void> _call(bool video) async {
     if (_hub.current != null) return;
+    if (_blockedByTrust()) return;
     if (!_hub.ready) {
       _toast(context, 'الاتصال بالسيرفر غير جاهز، جرّب بعد ثواني.');
       return;
@@ -197,18 +198,27 @@ extension _ChatActions on _ChatState {
         builder: (_) => CallScreen(session: s, partner: widget.chat.partner)));
   }
 
-  Future<void> _send() async {
+  Future<void> _send({String? effect}) async {
     final t = _c.text.trim();
     if (t.isEmpty) return;
     final reply = _replyTo;
     _c.clear();
     setState(() => _replyTo = null);
+    final row = <String, dynamic>{
+      'chat_id': widget.chat.id,
+      'body': t,
+      if (reply != null) 'reply_to_id': reply.id,
+      if (effect != null) 'effect': effect,
+    };
     try {
-      await _db.from('messages').insert({
-        'chat_id': widget.chat.id,
-        'body': t,
-        if (reply != null) 'reply_to_id': reply.id,
-      });
+      try {
+        await _db.from('messages').insert(row);
+      } on PostgrestException catch (e) {
+        // السيرفر قديم وما فيه عمود التأثير: نرسلها بدونه
+        if (effect == null || !e.message.contains('effect')) rethrow;
+        row.remove('effect');
+        await _db.from('messages').insert(row);
+      }
     } catch (_) {
       if (!mounted) return;
       _c.text = t;
@@ -246,6 +256,7 @@ extension _ChatActions on _ChatState {
       );
 
   Future<void> _attach() async {
+    if (_blockedByTrust()) return;
     final act = await _attachSheet();
     if (!mounted || act == null) return;
     setState(() => _uploading = true);
@@ -288,6 +299,7 @@ extension _ChatActions on _ChatState {
 
   Future<void> _startRec() async {
     if (_recording || _uploading) return;
+    if (_blockedByTrust()) return;
     try {
       final ok = await _rec.start();
       if (!ok) {

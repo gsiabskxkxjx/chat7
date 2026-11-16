@@ -18,11 +18,30 @@ extension _ChatUi on _ChatState {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(_title(),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                                fontSize: 17, fontWeight: FontWeight.w600)),
+                        Row(children: [
+                          Flexible(
+                            child: Text(_title(),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                    fontSize: 17, fontWeight: FontWeight.w600)),
+                          ),
+                          if (_streak >= 2) ...[
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 7, vertical: 1),
+                              decoration: BoxDecoration(
+                                color: const Color(0x33FF9F0A),
+                                borderRadius: BorderRadius.circular(10),
+                                border:
+                                    Border.all(color: const Color(0x66FF9F0A)),
+                              ),
+                              child: Text('🔥 $_streak',
+                                  style: const TextStyle(fontSize: 12)),
+                            ),
+                          ],
+                        ]),
                         if (_status().isNotEmpty)
                           Text(_status(),
                               style: TextStyle(
@@ -80,6 +99,7 @@ extension _ChatUi on _ChatState {
           final rows = snap.data!;
           _hasMore = rows.length >= _limit;
           _checkUnread(rows);
+          _fxCheck(rows);
           final msgs = rows
               .map((r) => Msg.fromRow(r, _uid))
               .where((m) => !_hidden.contains(m.id))
@@ -123,8 +143,17 @@ extension _ChatUi on _ChatState {
               }
               final m = e as Msg;
               if (m.kind == 'call') return _CallPill(text: m.text);
+              bool same(Object? o) =>
+                  o is Msg &&
+                  o.kind != 'call' &&
+                  o.mine == m.mine &&
+                  o.at != null &&
+                  m.at != null &&
+                  o.at!.difference(m.at!).inMinutes.abs() < 3;
               return _Bubble(
                 key: ValueKey(m.id),
+                joinPrev: i + 1 < entries.length && same(entries[i + 1]),
+                joinNext: i > 0 && same(entries[i - 1]),
                 m: m,
                 onLongPress: () => _msgMenu(m),
                 t: _t,
@@ -230,6 +259,7 @@ extension _ChatUi on _ChatState {
           label: typing ? 'إرسال' : 'تسجيل صوتي',
           child: _Press(
             onTap: typing ? _send : _startRec,
+            onLongPress: typing ? _sendWithEffect : null,
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 220),
               curve: Curves.easeOut,
@@ -290,9 +320,14 @@ extension _ChatLook on _ChatState {
       _bgStrength = (r['bg_strength'] as num?)?.toInt() ?? 10;
       _bgPath = path;
       _linkedAt = DateTime.tryParse((r['created_at'] as String?) ?? '')?.toLocal();
+      final iAmA = r['user_a'] == _uid;
+      _matched = r['matched'] == true;
+      _trustMine = (iAmA ? r['trust_a'] : r['trust_b']) == true;
+      _trustTheirs = (iAmA ? r['trust_b'] : r['trust_a']) == true;
       if (pathChanged) _bgUrl = null;
     });
     if (pathChanged && path != null) unawaited(_loadBgUrl(path));
+    if (_linkedAt != null) unawaited(_checkMilestone());
   }
 
   Future<void> _loadBgUrl(String path) async {
@@ -599,3 +634,88 @@ class _RemindBanner extends StatelessWidget {
     );
   }
 }
+
+// ---------- مطابقة جديدة: شريط "أثق فيه" ----------
+
+extension _ChatTrust on _ChatState {
+  Widget _trustBar() => Padding(
+        padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+        child: Glass(
+          radius: 20,
+          padding: const EdgeInsets.fromLTRB(14, 10, 10, 10),
+          tint: _t.accent,
+          child: Row(children: [
+            const Icon(Icons.shield_rounded, size: 22),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                _trustMine
+                    ? 'بانتظار الطرف الثاني يضغط «أثق فيه» حتى تنفتح الصور والمكالمات.'
+                    : 'مطابقة جديدة: الصور والمكالمات تنفتح لما الطرفين يضغطون «أثق فيه».',
+                style: const TextStyle(fontSize: 13),
+              ),
+            ),
+            if (!_trustMine) ...[
+              const SizedBox(width: 8),
+              _Press(
+                onTap: _trust,
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                  decoration: BoxDecoration(
+                    color: _t.accent,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0x66FFFFFF)),
+                  ),
+                  child: const Text('أثق فيه',
+                      style: TextStyle(
+                          color: Colors.white, fontWeight: FontWeight.w600)),
+                ),
+              ),
+            ],
+          ]),
+        ),
+      );
+
+  Future<void> _trust() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('تثق بهذا الشخص؟'),
+        content: const Text(
+            'لما الطرفين يوافقون، تقدرون ترسلون صور وفيديو ورسائل صوتية وتتصلون. ما تقدر تلغي الموافقة، بس تقدر تحظره بأي وقت من الإعدادات.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('مو الحين')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('أثق فيه')),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    try {
+      final rows = await _db
+          .from('chats')
+          .select('user_a')
+          .eq('id', widget.chat.id)
+          .limit(1);
+      final iAmA = rows.isNotEmpty && rows.first['user_a'] == _uid;
+      await _db
+          .from('chats')
+          .update({iAmA ? 'trust_a' : 'trust_b': true}).eq('id', widget.chat.id);
+      if (mounted) setState(() => _trustMine = true);
+    } catch (_) {
+      if (mounted) _toast(context, 'تعذر الحفظ، جرّب مرة ثانية.');
+    }
+  }
+
+  /// يرجع true إذا الوسائط مقفلة (ويعرض السبب)
+  bool _blockedByTrust() {
+    if (!_mediaLocked) return false;
+    _toast(context, 'الصور والمكالمات تنفتح لما الطرفين يضغطون «أثق فيه».');
+    return true;
+  }
+}
+

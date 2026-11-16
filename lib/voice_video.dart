@@ -228,11 +228,15 @@ class _VoiceState extends State<_VoiceBubble> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              LinearProgressIndicator(
-                value: frac,
-                minHeight: 4,
-                borderRadius: BorderRadius.circular(4),
-                backgroundColor: const Color(0x33FFFFFF),
+              SizedBox(
+                height: 26,
+                width: double.infinity,
+                child: CustomPaint(
+                  painter: _WavePainter(
+                      seed: widget.path.hashCode,
+                      frac: frac,
+                      rtl: Directionality.of(context) == TextDirection.rtl),
+                ),
               ),
               const SizedBox(height: 4),
               Text(_mmss(shown),
@@ -372,4 +376,38 @@ class _VideoScreenState extends State<VideoScreen> {
       ),
     );
   }
+}
+
+/// موجة صوت للرسائل الصوتية: الجزء المسموع أبيض، والباقي باهت
+class _WavePainter extends CustomPainter {
+  const _WavePainter(
+      {required this.seed, required this.frac, this.rtl = false});
+  final int seed;
+  final double frac;
+  final bool rtl;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    const bars = 28;
+    final gap = size.width / bars;
+    final w = gap * 0.55;
+    final rnd = Random(seed);
+    final on = Paint()..color = Colors.white;
+    final off = Paint()..color = const Color(0x59FFFFFF);
+    for (var i = 0; i < bars; i++) {
+      // شكل ثابت لكل رسالة، أعلى بالنص
+      final mid = 1 - ((i - bars / 2).abs() / (bars / 2)) * 0.5;
+      final h = size.height * (0.25 + 0.75 * rnd.nextDouble() * mid);
+      final x = i * gap + (gap - w) / 2;
+      final r = RRect.fromRectAndRadius(
+          Rect.fromLTWH(x, (size.height - h) / 2, w, h),
+          Radius.circular(w / 2));
+      final pos = rtl ? (bars - i - 0.5) / bars : (i + 0.5) / bars;
+      canvas.drawRRect(r, pos <= frac ? on : off);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_WavePainter old) =>
+      old.frac != frac || old.seed != seed || old.rtl != rtl;
 }

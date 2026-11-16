@@ -137,6 +137,7 @@ class CallSession {
     if (_done) return;
     switch (s) {
       case RTCPeerConnectionState.RTCPeerConnectionStateConnected:
+        _timer?.cancel();
         connectedAt ??= DateTime.now();
         phase.value = CallPhase.connected;
         if (video && _remoteStream != null) {
@@ -189,6 +190,13 @@ class CallSession {
     _accepted = true;
     _timer?.cancel();
     phase.value = CallPhase.connecting;
+    _timer = Timer(const Duration(seconds: 30), () {
+      if (phase.value != CallPhase.connected) {
+        unawaited(end(
+            'تعذر توصيل المكالمة. إذا عندك VPN، استثنِ بيناتنا منه وجرّب مرة ثانية.',
+            send: 'hangup'));
+      }
+    });
     try {
       await _prepare();
       final pc = _pc!;
@@ -219,6 +227,13 @@ class CallSession {
           if (!outgoing || pc == null || _remoteSet) return;
           _timer?.cancel();
           phase.value = CallPhase.connecting;
+          _timer = Timer(const Duration(seconds: 30), () {
+            if (phase.value != CallPhase.connected) {
+              unawaited(end(
+                  'تعذر توصيل المكالمة. إذا عندك VPN، استثنِ بيناتنا منه وجرّب مرة ثانية.',
+                  send: 'hangup'));
+            }
+          });
           await pc.setRemoteDescription(RTCSessionDescription(
               d['sdp'] as String?, d['type'] as String?));
           _remoteSet = true;

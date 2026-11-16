@@ -47,6 +47,10 @@ extension _ProfileActions on _ProfileState {
     final p = _p;
     if (p == null || _busy) return;
     final n = _name.text.trim();
+    if (n.length < 2) {
+      _toast(context, 'الاسم لازم يكون حرفين على الأقل.');
+      return;
+    }
     setState(() => _busy = true);
     try {
       await _db
@@ -203,6 +207,10 @@ extension _ProfileActions on _ProfileState {
   Future<void> _setGender(String g) async {
     final p = _p;
     if (p == null || p.gender == g) return;
+    if (p.gender != null) {
+      _toast(context, 'الجنس يتثبت بعد اختياره وما يتغير.');
+      return;
+    }
     setState(() => _p = p.copyWith(gender: g));
     try {
       await _db.from('profiles').update({'gender': g}).eq('id', _uid);

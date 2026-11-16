@@ -19,18 +19,51 @@ class _CallBtn extends StatelessWidget {
   final String? label;
 
   @override
-  Widget build(BuildContext context) => Column(
+  Widget build(BuildContext context) {
+    // ثلاث حالات: زجاج عادي، زر مفعّل (أبيض صلب)، أو زجاج ملوّن متوهّج (إنهاء/رد)
+    final plain = bg.a < 0.5;
+    final solidWhite = bg == Colors.white;
+    final glow = !plain && !solidWhite;
+    return Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Material(
-            color: bg,
-            shape: const CircleBorder(),
-            child: InkWell(
-              customBorder: const CircleBorder(),
+          Semantics(
+            button: true,
+            label: label,
+            child: _Press(
               onTap: onTap,
-              child: Padding(
-                padding: const EdgeInsets.all(18),
-                child: Icon(icon, color: fg, size: 28),
+              scale: 0.9,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                width: 72,
+                height: 72,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: solidWhite
+                      ? null
+                      : LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: plain
+                              ? const [Color(0x40FFFFFF), Color(0x14FFFFFF)]
+                              : [
+                                  Color.lerp(bg, Colors.white, 0.25)!,
+                                  bg,
+                                ],
+                        ),
+                  color: solidWhite ? Colors.white : null,
+                  border: Border.all(
+                      color: const Color(0x66FFFFFF), width: plain ? 1 : 0.8),
+                  boxShadow: glow
+                      ? [
+                          BoxShadow(
+                              color: bg.withValues(alpha: 0.55),
+                              blurRadius: 26,
+                              spreadRadius: 1),
+                        ]
+                      : null,
+                ),
+                child: Icon(icon, color: fg, size: 30),
               ),
             ),
           ),
@@ -42,6 +75,7 @@ class _CallBtn extends StatelessWidget {
           ],
         ],
       );
+  }
 }
 
 class _Who extends StatelessWidget {

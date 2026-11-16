@@ -68,6 +68,17 @@ class _BootState extends State<Boot> {
         }));
         return;
       }
+      // الاسم إجباري وتاريخ الميلاد مطلوب (للبحث عن شريك 18+)
+      final extra = await _profileExtra(uid);
+      if (!mounted) return;
+      if (extra != null && (extra.name == null || extra.birth == null)) {
+        _go(ProfileSetupScreen(
+          name: extra.name,
+          birthDate: extra.birth,
+          gender: p['gender'] as String?,
+        ));
+        return;
+      }
       final chat = await _loadChat();
       if (!mounted) return;
       _go(chat == null ? PairScreen(me: me) : ChatScreen(chat: chat));

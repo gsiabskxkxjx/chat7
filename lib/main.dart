@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io' show File, HttpClient;
 import 'dart:math' show Random;
+import 'dart:math' as math;
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -85,6 +86,9 @@ part 'lists_screens.dart';
 part 'search_screens.dart';
 part 'quick_replies.dart';
 part 'app_look.dart';
+part 'profile_setup.dart';
+part 'match_bubble.dart';
+part 'effects.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

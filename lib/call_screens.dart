@@ -286,7 +286,23 @@ class _CallState extends State<CallScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => ValueListenableBuilder<bool>(
+        valueListenable: _inPip,
+        builder: (_, pip, __) {
+          final r = s.remote;
+          // بالنافذة العائمة: صورة الطرف الثاني بس
+          if (pip && s.video && r != null) {
+            return ColoredBox(
+              color: Colors.black,
+              child: RTCVideoView(r,
+                  objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover),
+            );
+          }
+          return _full(context);
+        },
+      );
+
+  Widget _full(BuildContext context) {
     final ended = s.phase.value == CallPhase.ended;
     final r = s.remote;
     final l = s.local;

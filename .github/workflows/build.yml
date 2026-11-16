@@ -71,6 +71,9 @@ jobs:
           if '</activity>' not in s:
               raise SystemExit('ERROR: no </activity> in AndroidManifest.xml')
           s = s.replace('</activity>', deep, 1)
+          # نافذة عائمة لمكالمة الفيديو
+          if 'android:name=".MainActivity"' in s and 'supportsPictureInPicture' not in s:
+              s = s.replace('android:name=".MainActivity"', 'android:name=".MainActivity"\n            android:supportsPictureInPicture="true"', 1)
           open(p, 'w', encoding='utf-8').write(s)
           PY
           if [ -f android/app/build.gradle.kts ]; then
@@ -171,18 +174,51 @@ jobs:
           import android.app.NotificationManager
           import android.media.AudioAttributes
           import android.media.RingtoneManager
+          import android.app.PictureInPictureParams
           import android.appwidget.AppWidgetManager
           import android.content.ComponentName
           import android.content.Intent
+          import android.content.res.Configuration
           import android.os.Build
           import android.os.Bundle
+          import android.util.Rational
           import io.flutter.embedding.android.FlutterFragmentActivity
           import io.flutter.embedding.engine.FlutterEngine
           import io.flutter.plugin.common.MethodChannel
 
           class MainActivity : FlutterFragmentActivity() {
+              private var pipAllowed = false
+              private var pipChannel: MethodChannel? = null
+
+              // مكالمة فيديو شغالة وطلعت من التطبيق: نصغّرها لنافذة عائمة
+              override fun onUserLeaveHint() {
+                  super.onUserLeaveHint()
+                  if (pipAllowed && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                      try {
+                          enterPictureInPictureMode(
+                              PictureInPictureParams.Builder().setAspectRatio(Rational(9, 16)).build()
+                          )
+                      } catch (e: Exception) {}
+                  }
+              }
+
+              override fun onPictureInPictureModeChanged(isInPictureInPictureMode: Boolean, newConfig: Configuration) {
+                  super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig)
+                  pipChannel?.invokeMethod("pip", isInPictureInPictureMode)
+              }
+
               override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
                   super.configureFlutterEngine(flutterEngine)
+                  val pip = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "bainatna/pip")
+                  pipChannel = pip
+                  pip.setMethodCallHandler { call, result ->
+                      if (call.method == "enable") {
+                          pipAllowed = call.arguments == true
+                          result.success(null)
+                      } else {
+                          result.notImplemented()
+                      }
+                  }
                   // تحديث ويدجت الشاشة الرئيسية لما التطبيق يكتب بيانات جديدة
                   MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "bainatna/widgets").setMethodCallHandler { call, result ->
                       if (call.method == "refresh") {

@@ -151,6 +151,7 @@ class CallSession {
         unawaited(Helper.setSpeakerphoneOn(speaker.value));
         _liveCall = this;
         unawaited(_showOngoing(this));
+        if (video) unawaited(_allowPip(true));
         _stats ??= Timer.periodic(const Duration(seconds: 3), (_) => unawaited(_readStats()));
         break;
       case RTCPeerConnectionState.RTCPeerConnectionStateFailed:
@@ -337,6 +338,7 @@ class CallSession {
     if (identical(_liveCall, this)) {
       _liveCall = null;
       unawaited(_hideOngoing());
+      unawaited(_allowPip(false));
     }
     endReason = reason;
     if (outgoing) unawaited(_logCall()); // المتصل يسجّل المكالمة بالمحادثة

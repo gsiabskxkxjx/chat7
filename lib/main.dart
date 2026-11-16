@@ -158,12 +158,12 @@ class App extends StatelessWidget {
   const App({super.key});
 
   @override
-  Widget build(BuildContext context) => ValueListenableBuilder<bool>(
-        valueListenable: _Prefs.arabicFont,
-        builder: (c, arabic, __) => _app(c, arabic),
+  Widget build(BuildContext context) => ListenableBuilder(
+        listenable: Listenable.merge([_Prefs.arabicFont, _lightUi]),
+        builder: (c, __) => _app(c, _Prefs.arabicFont.value, _lightUi.value),
       );
 
-  Widget _app(BuildContext context, bool arabic) => MaterialApp(
+  Widget _app(BuildContext context, bool arabic, bool light) => MaterialApp(
         title: appName,
         debugShowCheckedModeBanner: false,
         scaffoldMessengerKey: _messengerKey,
@@ -177,6 +177,13 @@ class App extends StatelessWidget {
               : null,
           colorScheme: ColorScheme.fromSeed(
               seedColor: _blue, brightness: Brightness.dark),
+          // الثيم النهاري: عنوان الشاشة وأيقوناتها غامقة فوق الخلفية الفاتحة
+          appBarTheme: AppBarTheme(
+            backgroundColor: Colors.transparent,
+            surfaceTintColor: Colors.transparent,
+            foregroundColor: light ? const Color(0xFF1C1B1F) : Colors.white,
+            iconTheme: IconThemeData(color: light ? const Color(0xFF1C1B1F) : Colors.white),
+          ),
           // نوافذ وتنبيهات وقوائم بشكل زجاجي بدل شكل أندرويد الافتراضي
           dialogTheme: DialogThemeData(
             backgroundColor: const Color(0xE6161C3A),

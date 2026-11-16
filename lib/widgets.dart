@@ -43,22 +43,28 @@ class Glass extends StatelessWidget {
           final low = _Prefs.lowFx.value; // بدون تمويه: ألوان أثقل حتى يبقى النص واضح
           final light = _lightLook(look);
           final br = BorderRadius.circular(radius);
-          final top = low
-              ? (tint != null
-                  ? Color.alphaBlend(
-                      tint!.withValues(alpha: 0.35), const Color(0xE6232A52))
-                  : (light ? const Color(0xE6FFFFFF) : const Color(0xE6283058)))
-              : tint?.withValues(alpha: 0.30) ??
-                  (light ? const Color(0x8CFFFFFF) : const Color(0x3DFFFFFF));
-          final bottom = low
-              ? (tint != null
-                  ? Color.alphaBlend(
-                      tint!.withValues(alpha: 0.20), const Color(0xE61A2040))
-                  : (light ? const Color(0xCCF2F4FA) : const Color(0xE61A2040)))
-              : tint?.withValues(alpha: 0.12) ??
-                  (light ? const Color(0x52FFFFFF) : const Color(0x12FFFFFF));
+          // الثيم النهاري: زجاج مدخّن (غامق شفاف) حتى يبقى النص الأبيض واضح فوق الخلفية الفاتحة
+          final Color top, bottom;
+          if (low) {
+            top = tint != null
+                ? Color.alphaBlend(tint!.withValues(alpha: 0.35), const Color(0xE6232A52))
+                : const Color(0xE6283058);
+            bottom = tint != null
+                ? Color.alphaBlend(tint!.withValues(alpha: 0.20), const Color(0xE61A2040))
+                : const Color(0xE61A2040);
+          } else if (light) {
+            top = tint != null
+                ? Color.alphaBlend(tint!.withValues(alpha: 0.40), const Color(0x7310163A))
+                : const Color(0x6B10163A);
+            bottom = tint != null
+                ? Color.alphaBlend(tint!.withValues(alpha: 0.22), const Color(0x5210163A))
+                : const Color(0x4D10163A);
+          } else {
+            top = tint?.withValues(alpha: 0.30) ?? const Color(0x3DFFFFFF);
+            bottom = tint?.withValues(alpha: 0.12) ?? const Color(0x12FFFFFF);
+          }
           final panel = CustomPaint(
-            foregroundPainter: _GlassEdge(radius, light),
+            foregroundPainter: _GlassEdge(radius, false),
             child: Container(
               padding: padding,
               decoration: BoxDecoration(
@@ -69,7 +75,14 @@ class Glass extends StatelessWidget {
                   colors: [top, bottom],
                 ),
               ),
-              child: child,
+              // داخل الزجاج النص والأيقونات بيض دايماً
+              child: light
+                  ? DefaultTextStyle.merge(
+                      style: const TextStyle(color: Colors.white),
+                      child: IconTheme.merge(
+                          data: const IconThemeData(color: Colors.white), child: child),
+                    )
+                  : child,
             ),
           );
           return DecoratedBox(

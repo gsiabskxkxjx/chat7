@@ -17,7 +17,14 @@ class AppLook {
   final String? url; // رابط الصورة الموقّع (إذا فيه صورة)
 }
 
-final ValueNotifier<AppLook?> _appLook = ValueNotifier<AppLook?>(null);
+final ValueNotifier<AppLook?> _appLook = ValueNotifier<AppLook?>(null)
+  ..addListener(() {
+    final l = _lightLook(_appLook.value);
+    if (_lightUi.value != l) _lightUi.value = l;
+  });
+
+/// الثيم الحالي فاتح؟ (يتغير بس لما يتبدل من فاتح لغامق أو العكس)
+final _lightUi = ValueNotifier<bool>(false);
 
 StreamSubscription<List<Map<String, dynamic>>>? _lookAllSub;
 String? _lookPath;

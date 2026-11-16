@@ -85,7 +85,7 @@ extension _ChatUi on _ChatState {
                                   fontSize: 12,
                                   color: _online
                                       ? const Color(0xFF5BE584)
-                                      : _t.text.withValues(alpha: 0.6))),
+                                      : const Color(0xB3FFFFFF))),
                       ],
                     ),
                   ),
@@ -306,7 +306,7 @@ extension _ChatUi on _ChatState {
         Expanded(
           child: TextField(
             controller: _c,
-            style: TextStyle(color: _t.text),
+            style: const TextStyle(color: Colors.white),
             onChanged: (_) {
               setState(() {});
               _notifyTyping();

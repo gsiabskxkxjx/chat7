@@ -67,14 +67,16 @@ Future<void> _showMessage(Map<String, dynamic> data) async {
   if (chat.length < 7) return;
   await _Prefs.load(); // ممكن نكون بالخلفية: نقرا الإعدادات من الملف
   final quiet = _Prefs.inQuiet();
+  final n = await _bumpUnread();
   final buzz = _Prefs.buzz.value && !quiet;
   await _callNotifier.show(
     _msgNotifId(chat),
     (data['title'] ?? 'بيناتنا').toString(),
-    (data['body'] ?? 'رسالة جديدة').toString(),
+    n > 1 ? '$n رسائل جديدة' : (data['body'] ?? 'رسالة جديدة').toString(),
     NotificationDetails(
       android: AndroidNotificationDetails(
         buzz ? 'messages_buzz' : 'messages',
+        number: n,
         buzz ? 'رسائله (اهتزاز مميز)' : 'الرسائل',
         channelDescription: 'إشعارات الرسائل الجديدة',
         importance: Importance.high,

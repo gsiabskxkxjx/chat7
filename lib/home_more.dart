@@ -164,3 +164,52 @@ String _qualityLabel(double rtt, double loss) {
   if (rtt < 0.6 && loss < 0.08) return '📶 متوسط';
   return '📶 ضعيف';
 }
+
+// ===== نافذة عائمة لمكالمة الفيديو (Picture in Picture) =====
+
+final _inPip = ValueNotifier<bool>(false);
+const _pipCh = MethodChannel('bainatna/pip');
+bool _pipListening = false;
+
+/// يسمح للتطبيق يصغر لنافذة عائمة لما تطلع منه وقت مكالمة فيديو
+Future<void> _allowPip(bool on) async {
+  if (!_pipListening) {
+    _pipListening = true;
+    _pipCh.setMethodCallHandler((call) async {
+      if (call.method == 'pip') _inPip.value = call.arguments == true;
+    });
+  }
+  try {
+    await _pipCh.invokeMethod<void>('enable', on);
+  } catch (_) {}
+  if (!on) _inPip.value = false;
+}
+
+// ===== عدد الرسائل غير المقروءة على الإشعار =====
+
+Future<File> _unreadFile() async =>
+    File('${(await getApplicationSupportDirectory()).path}/unread_count');
+
+Future<int> _bumpUnread() async {
+  try {
+    final f = await _unreadFile();
+    var n = 0;
+    if (await f.exists()) n = int.tryParse(await f.readAsString()) ?? 0;
+    n++;
+    await f.writeAsString('$n');
+    return n;
+  } catch (_) {
+    return 1;
+  }
+}
+
+/// لما تفتح المحادثة: نصفّر العداد ونشيل إشعارات الرسائل
+Future<void> _clearUnread(String chatId) async {
+  try {
+    final f = await _unreadFile();
+    if (await f.exists()) await f.delete();
+  } catch (_) {}
+  try {
+    if (chatId.length >= 7) await _callNotifier.cancel(_msgNotifId(chatId));
+  } catch (_) {}
+}

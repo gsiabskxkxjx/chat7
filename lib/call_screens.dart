@@ -278,6 +278,7 @@ class _CallState extends State<CallScreen> {
                   ? '$t\nبانتظار ظهور صورة الطرف الثاني...'
                   : '$t\nالطرف الثاني ما يرسل فيديو (تأكد من إذن الكاميرا عنده)');
         }
+        if (s.reconnecting.value) return '$t\nانقطع الإنترنت، نرجّع المكالمة...';
         final q = s.quality.value;
         return q == null ? t : '$t   $q';
       case CallPhase.ended:

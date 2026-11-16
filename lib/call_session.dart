@@ -38,6 +38,12 @@ class CallSession {
   final quality = ValueNotifier<String?>(null);
   Timer? _stats;
 
+  /// انقطع الإنترنت وقت المكالمة ونحاول نرجّعها (مثلاً تبدّل من واي فاي لبيانات)
+  final reconnecting = ValueNotifier<bool>(false);
+  int _restarts = 0;
+  Timer? _restartTimer;
+  bool _restarting = false;
+
   /// ظهرت فعلاً صورة الطرف الثاني؟
   bool get remoteVideoReady => (remote?.videoWidth ?? 0) > 0;
 
@@ -142,6 +148,9 @@ class CallSession {
     switch (s) {
       case RTCPeerConnectionState.RTCPeerConnectionStateConnected:
         _timer?.cancel();
+        _restartTimer?.cancel();
+        _restarting = false;
+        reconnecting.value = false;
         connectedAt ??= DateTime.now();
         phase.value = CallPhase.connected;
         if (video && _remoteStream != null) {
@@ -154,11 +163,59 @@ class CallSession {
         if (video) unawaited(_allowPip(true));
         _stats ??= Timer.periodic(const Duration(seconds: 3), (_) => unawaited(_readStats()));
         break;
+      case RTCPeerConnectionState.RTCPeerConnectionStateDisconnected:
+        // ممكن يرجع لحاله خلال ثواني، وإذا ما رجع نعيد الاتصال
+        if (connectedAt != null) {
+          reconnecting.value = true;
+          _restartTimer?.cancel();
+          _restartTimer = Timer(const Duration(seconds: 3), () => unawaited(_iceRestart()));
+        }
+        break;
       case RTCPeerConnectionState.RTCPeerConnectionStateFailed:
-        unawaited(end('انقطع الاتصال.', send: 'hangup'));
+        if (connectedAt != null && _restarts < 3) {
+          reconnecting.value = true;
+          unawaited(_iceRestart());
+        } else {
+          unawaited(end('انقطع الاتصال.', send: 'hangup'));
+        }
         break;
       default:
         break;
+    }
+  }
+
+  /// إعادة الاتصال بدون ما تنقطع المكالمة: المتصل يرسل عرض جديد بعناوين جديدة
+  Future<void> _iceRestart() async {
+    final pc = _pc;
+    if (pc == null || _done || _restarting) return;
+    if (pc.connectionState == RTCPeerConnectionState.RTCPeerConnectionStateConnected) {
+      reconnecting.value = false;
+      return;
+    }
+    if (_restarts >= 3) {
+      await end('انقطع الاتصال.', send: 'hangup');
+      return;
+    }
+    _restarts++;
+    // لو ما رجعت خلال 20 ثانية ننهيها
+    _restartTimer?.cancel();
+    _restartTimer = Timer(const Duration(seconds: 20), () {
+      if (!_done &&
+          _pc?.connectionState != RTCPeerConnectionState.RTCPeerConnectionStateConnected) {
+        _restarting = false;
+        unawaited(_iceRestart());
+      }
+    });
+    if (!outgoing) return; // المستقبل ينتظر العرض الجديد من المتصل
+    _restarting = true;
+    try {
+      await pc.restartIce();
+      final offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      await hub.send('candidate', callId,
+          {'restart': 'offer', 'sdp': offer.sdp, 'type': offer.type});
+    } catch (_) {
+      _restarting = false;
     }
   }
 
@@ -248,6 +305,25 @@ class CallSession {
           await _flush();
           break;
         case 'candidate':
+          final restart = d['restart'];
+          if (restart != null) {
+            final pc = _pc;
+            if (pc == null) return;
+            if (restart == 'offer' && !outgoing) {
+              reconnecting.value = true;
+              await pc.setRemoteDescription(
+                  RTCSessionDescription(d['sdp'] as String?, d['type'] as String?));
+              final answer = await pc.createAnswer();
+              await pc.setLocalDescription(answer);
+              await hub.send('candidate', callId,
+                  {'restart': 'answer', 'sdp': answer.sdp, 'type': answer.type});
+            } else if (restart == 'answer' && outgoing) {
+              await pc.setRemoteDescription(
+                  RTCSessionDescription(d['sdp'] as String?, d['type'] as String?));
+              _restarting = false;
+            }
+            return;
+          }
           final c = RTCIceCandidate(
             d['candidate'] as String?,
             d['sdpMid'] as String?,
@@ -335,6 +411,7 @@ class CallSession {
     if (_done) return;
     _done = true;
     _stats?.cancel();
+    _restartTimer?.cancel();
     if (identical(_liveCall, this)) {
       _liveCall = null;
       unawaited(_hideOngoing());

@@ -140,8 +140,8 @@ class _ImageEditState extends State<_ImageEditScreen> {
                         clipBehavior: Clip.antiAlias,
                         child: _preview(i, size: 58),
                       ),
-                      const SizedBox(height: 4),
-                      Text(_filterNames[i], style: const TextStyle(fontSize: 11)),
+                      const SizedBox(height: _Sp.xs),
+                      Text(_filterNames[i], style: const TextStyle(fontSize: _Fs.caption)),
                     ]),
                   ),
                 ),
@@ -202,7 +202,7 @@ class _CardMsg extends StatelessWidget {
       child: Text(text,
           textAlign: TextAlign.center,
           style: TextStyle(
-              fontSize: 20 * _Prefs.fontScale.value,
+              fontSize: _Fs.display * _Prefs.fontScale.value,
               height: 1.5,
               fontWeight: FontWeight.w800,
               color: Colors.white,
@@ -325,11 +325,11 @@ class _VideoNoteState extends State<_VideoNote> {
           PositionedDirectional(
             bottom: 14,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              padding: const EdgeInsets.symmetric(horizontal: _Sp.sm, vertical: 2),
               decoration: BoxDecoration(
                   color: const Color(0x88000000), borderRadius: BorderRadius.circular(10)),
               child: Text('0:${_two(secs.clamp(0, 59))}',
-                  style: const TextStyle(fontSize: 12, color: Colors.white)),
+                  style: const TextStyle(fontSize: _Fs.small, color: Colors.white)),
             ),
           ),
         ]),
@@ -421,7 +421,7 @@ class _FileTileState extends State<_FileTile> {
           child: Row(mainAxisSize: MainAxisSize.min, children: [
             _busy
                 ? const SizedBox(
-                    width: 36, height: 36, child: Padding(padding: EdgeInsets.all(8), child: CircularProgressIndicator(strokeWidth: 2)))
+                    width: 36, height: 36, child: Padding(padding: EdgeInsets.all(_Sp.sm), child: CircularProgressIndicator(strokeWidth: 2)))
                 : Icon(_fileIcon(widget.name), size: 36, color: Colors.white),
             const SizedBox(width: 10),
             Flexible(
@@ -431,7 +431,7 @@ class _FileTileState extends State<_FileTile> {
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.white)),
                 Text('${_sizeLabel(widget.size)} · اضغط تفتحه',
-                    style: const TextStyle(fontSize: 11, color: Color(0xB3FFFFFF))),
+                    style: const TextStyle(fontSize: _Fs.caption, color: Color(0xB3FFFFFF))),
               ]),
             ),
           ]),
@@ -524,8 +524,13 @@ extension _ChatMedia on _ChatState {
       return;
     }
     if (x == null || !mounted) return;
-    final file = File(x.path);
+    final original = File(x.path);
+    if (await original.length() > 6 * 1024 * 1024 && mounted) {
+      _toast(context, 'نضغط الفيديو قبل الإرسال...');
+    }
+    final file = await _compressVideo(original);
     if (await file.length() > 25 * 1024 * 1024) {
+      await _dropTemp(file, original);
       if (mounted) _toast(context, 'الفيديو كبير، الحد 25 ميجا.');
       return;
     }
@@ -543,8 +548,8 @@ extension _ChatMedia on _ChatState {
           chatId: widget.chat.id,
           file: file,
           kind: 'vnote',
-          ext: _extOf(x.path),
-          mime: _mimeForVideo(x.path),
+          ext: _extOf(file.path),
+          mime: _mimeForVideo(file.path),
           durationMs: ms);
     } on PostgrestException catch (e) {
       if (mounted) {
@@ -559,6 +564,7 @@ extension _ChatMedia on _ChatState {
     } catch (_) {
       if (mounted) _toast(context, 'تعذر الإرسال، تأكد من الإنترنت.');
     }
+    await _dropTemp(file, original);
     if (mounted) setState(() => _uploading = false);
   }
 

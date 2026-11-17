@@ -158,8 +158,8 @@ class _CheckersState extends State<CheckersScreen> {
             padding: const EdgeInsets.all(14),
             child: Column(children: [
               Text('$msg · قطعك $mine · قطعه $theirs',
-                  style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
-              const SizedBox(height: 12),
+                  style: const TextStyle(fontSize: _Fs.titleL, fontWeight: FontWeight.w700)),
+              const SizedBox(height: _Sp.md),
               AspectRatio(
                 aspectRatio: 1,
                 child: Container(
@@ -215,7 +215,7 @@ class _CheckersState extends State<CheckersScreen> {
                                         ),
                                         alignment: Alignment.center,
                                         child: p == 'R' || p == 'B'
-                                            ? const Text('👑', style: TextStyle(fontSize: 14))
+                                            ? const Text('👑', style: TextStyle(fontSize: _Fs.body))
                                             : null,
                                       ),
                                     )
@@ -533,9 +533,9 @@ class _ChessState extends State<ChessScreen> {
             _ => '${myTurn ? 'دورك' : 'دوره'}${st['check'] == true ? ' · كش!' : ''}',
           };
           return Padding(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(_Sp.md),
             child: Column(children: [
-              Text(msg, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+              Text(msg, style: const TextStyle(fontSize: _Fs.heading, fontWeight: FontWeight.w700)),
               const SizedBox(height: 10),
               AspectRatio(
                 aspectRatio: 1,
@@ -614,7 +614,7 @@ class _ChessState extends State<ChessScreen> {
               const SizedBox(height: 10),
               Text(side == 'w' ? 'أنت الأبيض' : 'أنت الأسود',
                   style: const TextStyle(color: Color(0xB3FFFFFF))),
-              const SizedBox(height: 8),
+              const SizedBox(height: _Sp.sm),
               if (status == 'playing')
                 TextButton(onPressed: () => _resign(row), child: const Text('استسلام'))
               else

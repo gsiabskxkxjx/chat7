@@ -26,7 +26,7 @@ Future<void> _showInviteQr(BuildContext context, String code) => showDialog<void
         title: const Text('امسح الرمز', textAlign: TextAlign.center),
         content: Column(mainAxisSize: MainAxisSize.min, children: [
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(_Sp.md),
             decoration: BoxDecoration(
                 color: Colors.white, borderRadius: BorderRadius.circular(20)),
             child: SizedBox(
@@ -35,14 +35,14 @@ Future<void> _showInviteQr(BuildContext context, String code) => showDialog<void
               child: QrImageView(data: _joinLink(code), size: 220, backgroundColor: Colors.white),
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: _Sp.md),
           Text(code,
               textDirection: TextDirection.ltr,
               style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w800, letterSpacing: 6)),
           const SizedBox(height: 6),
           const Text('خلّه يمسحه بكاميرا جواله، ويفتح بيناتنا وينربطون لحالهم.',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13, color: Color(0xCCFFFFFF))),
+              style: TextStyle(fontSize: _Fs.meta, color: Color(0xCCFFFFFF))),
         ]),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إغلاق')),
@@ -157,7 +157,7 @@ class _Sticker extends StatelessWidget {
         Text(s.$1, style: const TextStyle(fontSize: 64)),
         Text(s.$2,
             style: const TextStyle(
-                fontSize: 20,
+                fontSize: _Fs.display,
                 fontWeight: FontWeight.w900,
                 color: Colors.white,
                 shadows: [Shadow(color: Color(0x88000000), blurRadius: 4)])),
@@ -176,7 +176,7 @@ Future<void> _showStickers(BuildContext context, String chatId) async {
         height: MediaQuery.sizeOf(ctx).height * 0.6,
         child: GridView.count(
           crossAxisCount: 3,
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(_Sp.md),
           mainAxisSpacing: 10,
           crossAxisSpacing: 10,
           children: [

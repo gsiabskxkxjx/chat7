@@ -119,7 +119,7 @@ class _Bubble extends StatelessWidget {
     final k = _Prefs.fontScale.value;
     if (_emojiOnly) return Text(m.text, style: TextStyle(fontSize: 44 * k));
     final txt = Text(m.text,
-        style: TextStyle(fontSize: 16 * k, color: m.mine ? Colors.white : t.text));
+        style: TextStyle(fontSize: _Fs.title * k, color: m.mine ? Colors.white : t.text));
     final url = _firstUrl(m.text);
     if (url == null) return txt;
     return Column(
@@ -187,8 +187,8 @@ class _Bubble extends StatelessWidget {
           constraints: BoxConstraints(
               maxWidth: MediaQuery.of(context).size.width * 0.75),
           padding: big
-              ? const EdgeInsets.all(4)
-              : const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              ? const EdgeInsets.all(_Sp.xs)
+              : const EdgeInsets.symmetric(horizontal: 14, vertical: _Sp.sm),
           // زجاج خفيف بدون تمويه حقيقي، حتى يبقى التمرير ناعم
           decoration: emoji
               ? null
@@ -229,7 +229,7 @@ class _Bubble extends StatelessWidget {
                   child: Text(quote ?? 'رسالة',
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 12, color: Colors.white70)),
+                      style: const TextStyle(fontSize: _Fs.small, color: Colors.white70)),
                 ),
               _content(context),
               if (reactions != null && reactions!.isNotEmpty)
@@ -253,7 +253,7 @@ class _Bubble extends StatelessWidget {
                             borderRadius: BorderRadius.circular(10),
                             border: Border.all(color: const Color(0x33FFFFFF)),
                           ),
-                          child: Text(r, style: const TextStyle(fontSize: 13)),
+                          child: Text(r, style: const TextStyle(fontSize: _Fs.meta)),
                         ),
                       ),
                   ]),
@@ -261,7 +261,7 @@ class _Bubble extends StatelessWidget {
               const SizedBox(height: 2),
               Padding(
                 padding: big
-                    ? const EdgeInsets.symmetric(horizontal: 8, vertical: 2)
+                    ? const EdgeInsets.symmetric(horizontal: _Sp.sm, vertical: 2)
                     : EdgeInsets.zero,
                 child: Row(mainAxisSize: MainAxisSize.min, children: [
                   if (starred) ...[
@@ -272,14 +272,14 @@ class _Bubble extends StatelessWidget {
                   if (m.edited)
                     Text('معدّلة · ',
                         style: TextStyle(
-                            fontSize: 11,
+                            fontSize: _Fs.caption,
                             color: m.mine
                                 ? const Color(0xB3FFFFFF)
                                 : t.text.withValues(alpha: 0.7))),
                   Text(_hhmm(m.at),
-                      style: TextStyle(fontSize: 11, color: m.mine ? const Color(0xB3FFFFFF) : t.text.withValues(alpha: 0.7))),
+                      style: TextStyle(fontSize: _Fs.caption, color: m.mine ? const Color(0xB3FFFFFF) : t.text.withValues(alpha: 0.7))),
                   if (m.mine) ...[
-                    const SizedBox(width: 4),
+                    const SizedBox(width: _Sp.xs),
                     Icon(m.read ? Icons.done_all_rounded : Icons.done_rounded,
                         size: 15,
                         color: m.read

@@ -121,7 +121,7 @@ class _ProfileState extends State<ProfileScreen> {
                     icon: const Icon(Icons.arrow_back_rounded)),
                 const Text('ملفي الشخصي',
                     style:
-                        TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
+                        TextStyle(fontSize: _Fs.display, fontWeight: FontWeight.w700)),
               ]),
             ),
             Expanded(
@@ -131,7 +131,7 @@ class _ProfileState extends State<ProfileScreen> {
                           ? const CircularProgressIndicator()
                           : Text(_err!))
                   : SingleChildScrollView(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(_Sp.lg),
                       child: Column(children: [
                         Glass(
                           radius: 28,
@@ -159,12 +159,12 @@ class _ProfileState extends State<ProfileScreen> {
                                 ),
                               ]),
                             ),
-                            const SizedBox(height: 16),
+                            const SizedBox(height: _Sp.lg),
                             Text('@${p.username}',
                                 textDirection: TextDirection.ltr,
                                 style: const TextStyle(
-                                    fontSize: 16, color: Color(0xCCFFFFFF))),
-                            const SizedBox(height: 16),
+                                    fontSize: _Fs.title, color: Color(0xCCFFFFFF))),
+                            const SizedBox(height: _Sp.lg),
                             TextField(
                               controller: _name,
                               inputFormatters: [
@@ -182,7 +182,7 @@ class _ProfileState extends State<ProfileScreen> {
                                 ),
                               ),
                             ),
-                            const SizedBox(height: 12),
+                            const SizedBox(height: _Sp.md),
                             SizedBox(
                               width: double.infinity,
                               child: _Btn(
@@ -192,23 +192,23 @@ class _ProfileState extends State<ProfileScreen> {
                             ),
                           ]),
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: _Sp.lg),
                         Glass(
                           radius: 28,
                           padding: const EdgeInsets.symmetric(
                               horizontal: 16, vertical: 14),
                           child: Row(children: [
                             const Icon(Icons.wc_rounded),
-                            const SizedBox(width: 12),
+                            const SizedBox(width: _Sp.md),
                             const Text('الجنس',
-                                style: TextStyle(fontSize: 16)),
+                                style: TextStyle(fontSize: _Fs.title)),
                             const Spacer(),
                             ChoiceChip(
                               label: const Text('ذكر'),
                               selected: p.gender == 'male',
                               onSelected: (_) => _setGender('male'),
                             ),
-                            const SizedBox(width: 8),
+                            const SizedBox(width: _Sp.sm),
                             ChoiceChip(
                               label: const Text('أنثى'),
                               selected: p.gender == 'female',
@@ -216,11 +216,11 @@ class _ProfileState extends State<ProfileScreen> {
                             ),
                           ]),
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: _Sp.lg),
                         _secTitle('الخصوصية والأمان'),
                         Glass(
                           radius: 28,
-                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          padding: const EdgeInsets.symmetric(vertical: _Sp.xs),
                           child: ValueListenableBuilder<bool>(
                             valueListenable: _lockNotifier,
                             builder: (_, on, __) => SwitchListTile(
@@ -232,10 +232,10 @@ class _ProfileState extends State<ProfileScreen> {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: _Sp.lg),
                         Glass(
                           radius: 28,
-                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          padding: const EdgeInsets.symmetric(vertical: _Sp.xs),
                           child: Column(children: [
                             SwitchListTile(
                               value: p.showOnline,
@@ -268,11 +268,11 @@ class _ProfileState extends State<ProfileScreen> {
                             const _OnlineAlertTile(),
                           ]),
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: _Sp.lg),
                         _secTitle('الإشعارات'),
                         Glass(
                           radius: 28,
-                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          padding: const EdgeInsets.symmetric(vertical: _Sp.xs),
                           child: ListTile(
                             leading: const Icon(Icons.notifications_rounded),
                             title: const Text('الإشعارات'),
@@ -284,11 +284,11 @@ class _ProfileState extends State<ProfileScreen> {
                             },
                           ),
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: _Sp.lg),
                         _secTitle('الحساب'),
                         Glass(
                           radius: 28,
-                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          padding: const EdgeInsets.symmetric(vertical: _Sp.xs),
                           child: Column(children: [
                             ListTile(
                               leading: const Icon(Icons.feedback_rounded),
@@ -340,11 +340,11 @@ class _ProfileState extends State<ProfileScreen> {
                           ]),
                         ),
                         if (widget.chat != null) ...[
-                          const SizedBox(height: 16),
+                          const SizedBox(height: _Sp.lg),
                           _secTitle('المحادثة'),
                           Glass(
                             radius: 28,
-                            padding: const EdgeInsets.symmetric(vertical: 4),
+                            padding: const EdgeInsets.symmetric(vertical: _Sp.xs),
                             child: ListTile(
                               leading: const Icon(Icons.delete_sweep_rounded,
                                   color: Color(0xFFFF6B60)),
@@ -355,10 +355,10 @@ class _ProfileState extends State<ProfileScreen> {
                               onTap: _busy ? null : _clearHistory,
                             ),
                           ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: _Sp.lg),
                           Glass(
                             radius: 28,
-                            padding: const EdgeInsets.symmetric(vertical: 4),
+                            padding: const EdgeInsets.symmetric(vertical: _Sp.xs),
                             child: ListTile(
                               leading: const Icon(Icons.palette_rounded),
                               title: const Text('مظهر التطبيق'),
@@ -370,10 +370,10 @@ class _ProfileState extends State<ProfileScreen> {
                                           chatId: widget.chat!.id))),
                             ),
                           ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: _Sp.lg),
                           Glass(
                             radius: 28,
-                            padding: const EdgeInsets.symmetric(vertical: 4),
+                            padding: const EdgeInsets.symmetric(vertical: _Sp.xs),
                             child: ListTile(
                               leading: const Icon(Icons.link_off_rounded,
                                   color: Color(0xFFFF6B60)),
@@ -385,14 +385,14 @@ class _ProfileState extends State<ProfileScreen> {
                             ),
                           ),
                         ],
-                        const SizedBox(height: 16),
+                        const SizedBox(height: _Sp.lg),
                         _secTitle('تخصيص'),
                         const _PrefsCard(),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: _Sp.lg),
                         _secTitle('عن التطبيق'),
                         Glass(
                           radius: 28,
-                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          padding: const EdgeInsets.symmetric(vertical: _Sp.xs),
                           child: ListTile(
                             leading: const Icon(Icons.info_rounded),
                             title: const Text('حول بيناتنا'),
@@ -415,7 +415,7 @@ Widget _secTitle(String t) => Padding(
       padding: const EdgeInsetsDirectional.fromSTEB(14, 4, 14, 8),
       child: Text(t,
           style: const TextStyle(
-              fontSize: 13,
+              fontSize: _Fs.meta,
               fontWeight: FontWeight.w700,
               color: Color(0xB3FFFFFF))),
     );
@@ -436,7 +436,7 @@ Future<void> _showAbout(BuildContext context) => showDialog<void>(
               style: const TextStyle(color: Color(0xB3FFFFFF))),
           const SizedBox(height: 6),
           const Text('محادثة خاصة لشخصين.', textAlign: TextAlign.center),
-          const SizedBox(height: 12),
+          const SizedBox(height: _Sp.md),
           ListTile(
             leading: const Icon(Icons.privacy_tip_rounded),
             title: const Text('سياسة الخصوصية'),

@@ -123,7 +123,7 @@ class _PrefsCardState extends State<_PrefsCard> {
   @override
   Widget build(BuildContext context) => Glass(
         radius: 28,
-        padding: const EdgeInsets.symmetric(vertical: 4),
+        padding: const EdgeInsets.symmetric(vertical: _Sp.xs),
         child: Column(children: [
           _choice<double>('حجم خط المحادثة', Icons.format_size_rounded,
               _Prefs.fontScale, const [
@@ -144,7 +144,7 @@ class _PrefsCardState extends State<_PrefsCard> {
             subtitle: const Text('يتغير عندك بس'),
             trailing: Row(mainAxisSize: MainAxisSize.min, children: [
               _dot(_Prefs.myBubble.value),
-              const SizedBox(width: 4),
+              const SizedBox(width: _Sp.xs),
               _dot(_Prefs.theirBubble.value),
             ]),
             onTap: () async {
@@ -261,7 +261,7 @@ class _PrefsCardState extends State<_PrefsCard> {
             leading: const Icon(Icons.add_reaction_rounded),
             title: const Text('التفاعلات السريعة'),
             subtitle: Text(_Prefs.reactions.value.join('  '),
-                style: const TextStyle(fontSize: 18)),
+                style: const TextStyle(fontSize: _Fs.heading)),
             onTap: () async {
               await _pickReactions(context);
               if (mounted) setState(() {});
@@ -287,6 +287,7 @@ class _PrefsCardState extends State<_PrefsCard> {
               unawaited(_Prefs.save());
             },
           ),
+          const _AppIconTile(),
         ]),
       );
 }
@@ -309,7 +310,7 @@ Future<void> _pickReactions(BuildContext context) async {
           child: Column(mainAxisSize: MainAxisSize.min, children: [
             Text('اختر من 3 إلى 6 (${cur.length}/6)',
                 style: const TextStyle(color: Color(0xAAFFFFFF))),
-            const SizedBox(height: 12),
+            const SizedBox(height: _Sp.md),
             Wrap(spacing: 6, runSpacing: 6, children: [
               for (final e in _reactionPool)
                 _Press(
@@ -335,7 +336,7 @@ Future<void> _pickReactions(BuildContext context) async {
                               ? const Color(0xFF7CC0FF)
                               : const Color(0x33FFFFFF)),
                     ),
-                    child: Text(e, style: const TextStyle(fontSize: 24)),
+                    child: Text(e, style: const TextStyle(fontSize: _Fs.big)),
                   ),
                 ),
             ]),
@@ -381,7 +382,7 @@ Future<void> _pickBubbleColors(BuildContext context) => showDialog<void>(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: _Sp.sm),
                   Wrap(spacing: 8, runSpacing: 8, children: [
                     for (var i = -1; i < _bubblePalette.length; i++)
                       GestureDetector(
@@ -407,7 +408,7 @@ Future<void> _pickBubbleColors(BuildContext context) => showDialog<void>(
             title: const Text('ألوان الفقاعات'),
             content: Column(mainAxisSize: MainAxisSize.min, children: [
               row('فقاعاتي (أول دائرة = لون الثيم)', _Prefs.myBubble),
-              const SizedBox(height: 16),
+              const SizedBox(height: _Sp.lg),
               row('فقاعاته', _Prefs.theirBubble),
             ]),
             actions: [

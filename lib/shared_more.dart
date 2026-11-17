@@ -60,7 +60,7 @@ Future<void> _addToAlbum(BuildContext context, String chatId, int messageId) asy
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           const Padding(
             padding: EdgeInsets.fromLTRB(16, 0, 16, 6),
-            child: Text('أضف لألبوم', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
+            child: Text('أضف لألبوم', style: TextStyle(fontSize: _Fs.titleL, fontWeight: FontWeight.w600)),
           ),
           for (final a in albums)
             ListTile(
@@ -164,7 +164,7 @@ class _AlbumsState extends State<AlbumsScreen> {
                       child: Glass(
                         radius: 22,
                         shadow: false,
-                        padding: const EdgeInsets.all(8),
+                        padding: const EdgeInsets.all(_Sp.sm),
                         child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
                           Expanded(
                             child: ClipRRect(
@@ -179,13 +179,13 @@ class _AlbumsState extends State<AlbumsScreen> {
                                       child: _NetImage(path: cover)),
                             ),
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: _Sp.sm),
                           Text('${a['title']}',
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(fontWeight: FontWeight.w700)),
                           Text('${items.length} عنصر',
-                              style: const TextStyle(fontSize: 12, color: Color(0xB3FFFFFF))),
+                              style: const TextStyle(fontSize: _Fs.small, color: Color(0xB3FFFFFF))),
                         ]),
                       ),
                     );
@@ -276,7 +276,7 @@ class _AlbumState extends State<AlbumScreen> {
                   return const Center(child: Text('الألبوم فاضي. ضيف صور من معرض الذكريات.'));
                 }
                 return GridView.builder(
-                  padding: const EdgeInsets.all(8),
+                  padding: const EdgeInsets.all(_Sp.sm),
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 3, mainAxisSpacing: 6, crossAxisSpacing: 6),
                   itemCount: items.length,
@@ -389,31 +389,31 @@ class _BudgetState extends State<BudgetScreen> {
                 return ListView(padding: const EdgeInsets.fromLTRB(16, 16, 16, 90), children: [
                   Glass(
                     radius: 24,
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(_Sp.lg),
                     child: Column(children: [
                       const Text('المجموع', style: TextStyle(color: Color(0xB3FFFFFF))),
                       Text(_fmt(total), style: const TextStyle(fontSize: 34, fontWeight: FontWeight.w800)),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: _Sp.sm),
                       Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [
                         Text('دفعت ${_fmt(mine)}'),
                         Text('دفع ${_fmt(theirs)}'),
                       ]),
                       if (total > 0) ...[
-                        const SizedBox(height: 8),
+                        const SizedBox(height: _Sp.sm),
                         Text(
                             diff.abs() < 0.01
                                 ? 'متعادلين 👌'
                                 : diff > 0
                                     ? 'لو تقسمونها نص نص: هو عليه لك ${_fmt(diff)}'
                                     : 'لو تقسمونها نص نص: أنت عليك له ${_fmt(-diff)}',
-                            style: const TextStyle(fontSize: 13, color: Color(0xDDFFFFFF))),
+                            style: const TextStyle(fontSize: _Fs.meta, color: Color(0xDDFFFFFF))),
                       ],
                     ]),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: _Sp.md),
                   if (rows.isEmpty)
                     const Padding(
-                      padding: EdgeInsets.all(24),
+                      padding: EdgeInsets.all(_Sp.xl),
                       child: Text('سجّلوا مصاريفكم المشتركة هنا.', textAlign: TextAlign.center),
                     ),
                   for (final r in rows)
@@ -444,7 +444,7 @@ class _BudgetState extends State<BudgetScreen> {
                           shadow: false,
                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                           child: Row(children: [
-                            Text(r['paid_by'] == _meId ? '🙋' : '💌', style: const TextStyle(fontSize: 20)),
+                            Text(r['paid_by'] == _meId ? '🙋' : '💌', style: const TextStyle(fontSize: _Fs.display)),
                             const SizedBox(width: 10),
                             Expanded(child: Text('${r['title']}')),
                             Text(_fmt((r['amount'] as num?) ?? num.tryParse('${r['amount']}') ?? 0),
@@ -583,13 +583,13 @@ class _DiaryState extends State<DiaryScreen> {
                             Row(children: [
                               Text(_moods[((r['mood'] as num?)?.toInt() ?? 0) % _moods.length],
                                   style: const TextStyle(fontSize: 22)),
-                              const SizedBox(width: 8),
+                              const SizedBox(width: _Sp.sm),
                               Text(mine ? 'أنت' : 'هو', style: const TextStyle(fontWeight: FontWeight.w700)),
                               const Spacer(),
                               Text(d == null ? '' : _dayLabel(d),
-                                  style: const TextStyle(fontSize: 12, color: Color(0xB3FFFFFF))),
+                                  style: const TextStyle(fontSize: _Fs.small, color: Color(0xB3FFFFFF))),
                             ]),
-                            const SizedBox(height: 8),
+                            const SizedBox(height: _Sp.sm),
                             Text('${r['body']}', style: const TextStyle(height: 1.6)),
                           ]),
                         ),

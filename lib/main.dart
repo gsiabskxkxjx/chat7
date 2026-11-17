@@ -117,6 +117,8 @@ part 'invite_more.dart';
 part 'shared_more.dart';
 part 'home_more.dart';
 part 'whats_new.dart';
+part 'tokens.dart';
+part 'native_more.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

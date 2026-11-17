@@ -142,11 +142,11 @@ class _LockGateState extends State<_LockGate> with WidgetsBindingObserver {
                   child: Column(mainAxisSize: MainAxisSize.min, children: [
                     const Icon(Icons.lock_outline_rounded,
                         size: 64, color: Colors.white),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: _Sp.lg),
                     const Text('بيناتنا مقفول',
                         style: TextStyle(
                             fontSize: 22, fontWeight: FontWeight.w700)),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: _Sp.xl),
                     _Btn(
                         label: 'افتح بالبصمة أو الوجه',
                         onTap: _unlock,

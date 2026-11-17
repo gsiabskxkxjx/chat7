@@ -132,7 +132,7 @@ class _ListsState extends State<SharedListsScreen> {
                       icon: const Icon(Icons.arrow_back_rounded)),
                   const Text('قوايم مشتركة',
                       style:
-                          TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
+                          TextStyle(fontSize: _Fs.display, fontWeight: FontWeight.w700)),
                 ]),
               ),
               Expanded(
@@ -165,7 +165,7 @@ class _ListsState extends State<SharedListsScreen> {
                         height: 48,
                         child: ListView(
                           scrollDirection: Axis.horizontal,
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          padding: const EdgeInsets.symmetric(horizontal: _Sp.md),
                           children: [
                             for (final n in names)
                               Padding(
@@ -205,7 +205,7 @@ class _ListsState extends State<SharedListsScreen> {
                                 doneN == items.length
                                     ? 'خلّصتوها كلها 🎉'
                                     : '$doneN من ${items.length}',
-                                style: const TextStyle(fontSize: 12)),
+                                style: const TextStyle(fontSize: _Fs.small)),
                           ]),
                         ),
                       Expanded(
@@ -216,7 +216,7 @@ class _ListsState extends State<SharedListsScreen> {
                                     style: const TextStyle(
                                         color: Color(0xAAFFFFFF))))
                             : ListView.builder(
-                                padding: const EdgeInsets.all(12),
+                                padding: const EdgeInsets.all(_Sp.md),
                                 itemCount: items.length,
                                 itemBuilder: (_, i) {
                                   final it = items[i];
@@ -233,7 +233,7 @@ class _ListsState extends State<SharedListsScreen> {
                                         : Text(
                                             '📅 ${due.day} ${_months[due.month - 1]}',
                                             style: TextStyle(
-                                                fontSize: 12,
+                                                fontSize: _Fs.small,
                                                 color: late
                                                     ? const Color(0xFFFF9F0A)
                                                     : const Color(0xB3FFFFFF))),

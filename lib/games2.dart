@@ -106,7 +106,7 @@ class _GameFrameState extends State<_GameFrame> {
                         if (widget.intro != null) ...[
                           Text(widget.intro!,
                               textAlign: TextAlign.center,
-                              style: const TextStyle(fontSize: 16, height: 1.6)),
+                              style: const TextStyle(fontSize: _Fs.title, height: 1.6)),
                           const SizedBox(height: 20),
                         ],
                         _Btn(label: 'ابدأ', onTap: widget.start),
@@ -132,7 +132,7 @@ Widget _bigChoice(String label, VoidCallback? onTap, {Color? color}) => Expanded
           padding: const EdgeInsets.symmetric(vertical: 18),
           child: Text(label,
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+              style: const TextStyle(fontSize: _Fs.heading, fontWeight: FontWeight.w700)),
         ),
       ),
     );
@@ -182,7 +182,7 @@ class WhoOfUsScreen extends StatelessWidget {
                   return {...s, 'ans': a};
                 });
             return Padding(
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.all(_Sp.xl),
               child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
                 Text('${mine.length + 1} / ${qs.length}',
                     style: const TextStyle(color: Color(0xB3FFFFFF))),
@@ -201,7 +201,7 @@ class WhoOfUsScreen extends StatelessWidget {
           }
           if (theirs.length < qs.length) {
             return const Center(
-                child: Text('خلّصت! ننتظره يخلّص ⏳', style: TextStyle(fontSize: 18)));
+                child: Text('خلّصت! ننتظره يخلّص ⏳', style: TextStyle(fontSize: _Fs.heading)));
           }
           var agree = 0;
           final lines = <Widget>[];
@@ -216,31 +216,31 @@ class WhoOfUsScreen extends StatelessWidget {
               child: Glass(
                 radius: 18,
                 shadow: false,
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(_Sp.md),
                 child: Row(children: [
-                  Text(ok ? '✅' : '🤔', style: const TextStyle(fontSize: 20)),
+                  Text(ok ? '✅' : '🤔', style: const TextStyle(fontSize: _Fs.display)),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       Text(_whoQs[qs[i] % _whoQs.length],
                           style: const TextStyle(fontWeight: FontWeight.w600)),
                       Text('أنت قلت: $who · هو قال: $whoThem',
-                          style: const TextStyle(fontSize: 12, color: Color(0xB3FFFFFF))),
+                          style: const TextStyle(fontSize: _Fs.small, color: Color(0xB3FFFFFF))),
                     ]),
                   ),
                 ]),
               ),
             ));
           }
-          return ListView(padding: const EdgeInsets.all(16), children: [
+          return ListView(padding: const EdgeInsets.all(_Sp.lg), children: [
             Text('اتفقتوا $agree من ${qs.length}',
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
+                style: const TextStyle(fontSize: _Fs.big, fontWeight: FontWeight.w800)),
             Text(agree >= qs.length - 1 ? 'تعرفون بعض زين 💞' : 'في أشياء تحتاج نقاش 😄',
                 textAlign: TextAlign.center),
-            const SizedBox(height: 16),
+            const SizedBox(height: _Sp.lg),
             ...lines,
-            const SizedBox(height: 8),
+            const SizedBox(height: _Sp.sm),
             _Btn(label: 'جولة جديدة', onTap: () => _start(context)),
           ]);
         },
@@ -264,7 +264,7 @@ class TrueFalseScreen extends StatelessWidget {
           content: SingleChildScrollView(
             child: Column(mainAxisSize: MainAxisSize.min, children: [
               const Text('اكتب 3 جمل، وحدد الصح منها والغلط. هو لازم يخمّن.',
-                  style: TextStyle(fontSize: 13, color: Color(0xB3FFFFFF))),
+                  style: TextStyle(fontSize: _Fs.meta, color: Color(0xB3FFFFFF))),
               for (var i = 0; i < 3; i++)
                 Row(children: [
                   Expanded(
@@ -316,9 +316,9 @@ class TrueFalseScreen extends StatelessWidget {
           if (!done && iAmAuthor) {
             return const Center(
                 child: Padding(
-              padding: EdgeInsets.all(24),
+              padding: EdgeInsets.all(_Sp.xl),
               child: Text('أرسلت جملك. ننتظره يخمّن ⏳',
-                  textAlign: TextAlign.center, style: TextStyle(fontSize: 18)),
+                  textAlign: TextAlign.center, style: TextStyle(fontSize: _Fs.heading)),
             ));
           }
           if (!done) {
@@ -334,14 +334,14 @@ class TrueFalseScreen extends StatelessWidget {
                   };
                 });
             return Padding(
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.all(_Sp.xl),
               child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
                 Text('${guesses.length + 1} / ${items.length}',
                     style: const TextStyle(color: Color(0xB3FFFFFF))),
                 const SizedBox(height: 14),
                 Text('«${it['t']}»',
                     textAlign: TextAlign.center,
-                    style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
+                    style: const TextStyle(fontSize: _Fs.big, fontWeight: FontWeight.w800)),
                 const SizedBox(height: 30),
                 Row(children: [
                   _bigChoice('✅ صح', () => guess(true), color: const Color(0xFF34C759)),
@@ -355,21 +355,21 @@ class TrueFalseScreen extends StatelessWidget {
           for (var i = 0; i < items.length; i++) {
             if (guesses[i] == (items[i]['v'] == true)) right++;
           }
-          return ListView(padding: const EdgeInsets.all(16), children: [
+          return ListView(padding: const EdgeInsets.all(_Sp.lg), children: [
             Text(iAmAuthor ? 'خمّن $right من ${items.length} صح' : 'خمّنت $right من ${items.length} صح',
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
-            const SizedBox(height: 16),
+                style: const TextStyle(fontSize: _Fs.big, fontWeight: FontWeight.w800)),
+            const SizedBox(height: _Sp.lg),
             for (var i = 0; i < items.length; i++)
               Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: Glass(
                   radius: 18,
                   shadow: false,
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(_Sp.md),
                   child: Row(children: [
                     Text(guesses[i] == (items[i]['v'] == true) ? '🎯' : '😅',
-                        style: const TextStyle(fontSize: 20)),
+                        style: const TextStyle(fontSize: _Fs.display)),
                     const SizedBox(width: 10),
                     Expanded(child: Text('${items[i]['t']}')),
                     Text(items[i]['v'] == true ? 'صح' : 'غلط',
@@ -377,7 +377,7 @@ class TrueFalseScreen extends StatelessWidget {
                   ]),
                 ),
               ),
-            const SizedBox(height: 8),
+            const SizedBox(height: _Sp.sm),
             _Btn(label: 'دورك تكتب جمل', onTap: () => unawaited(_start(context))),
           ]);
         },
@@ -512,14 +512,14 @@ class _MemoryState extends State<MemoryGameScreen> {
               DateTime.now().toUtc().difference(updated.toUtc()) > const Duration(seconds: 5);
           final done = st['status'] == 'done';
           return Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(_Sp.lg),
             child: Column(children: [
               Text(
                   done
                       ? (me == ot ? 'تعادل! $me - $ot' : (me > ot ? 'فزت! $me - $ot 🎉' : 'فاز هو $ot - $me'))
                       : (myTurn ? 'دورك · أنت $me · هو $ot' : 'دوره · أنت $me · هو $ot'),
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
-              const SizedBox(height: 12),
+                  style: const TextStyle(fontSize: _Fs.heading, fontWeight: FontWeight.w700)),
+              const SizedBox(height: _Sp.md),
               Expanded(
                 child: GridView.count(
                   crossAxisCount: 4,
@@ -712,7 +712,7 @@ class _TwentyQBodyState extends State<_TwentyQBody> {
                         ? (thinker ? 'خمّنها! 🎉' : 'خمّنتها! 🎉')
                         : (thinker ? 'ما خمّنها، فزت 😎' : 'خلصت الأسئلة 😅'))
                     : (thinker ? 'أنت المفكّر' : 'سؤال ${qa.length + (waitingAnswer ? 0 : 1)} من 20'),
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+                style: const TextStyle(fontSize: _Fs.heading, fontWeight: FontWeight.w800)),
             if (thinker || over)
               Text('الجواب: ${st['secret']}', style: const TextStyle(color: Color(0xCCFFFFFF))),
           ]),
@@ -743,9 +743,9 @@ class _TwentyQBodyState extends State<_TwentyQBody> {
           padding: const EdgeInsets.all(14),
           child: Row(children: [
             _bigChoice('إي', () => _answer('yes'), color: const Color(0xFF34C759)),
-            const SizedBox(width: 8),
+            const SizedBox(width: _Sp.sm),
             _bigChoice('يمكن', () => _answer('maybe')),
-            const SizedBox(width: 8),
+            const SizedBox(width: _Sp.sm),
             _bigChoice('لا', () => _answer('no'), color: const Color(0xFFFF453A)),
           ]),
         )
@@ -764,7 +764,7 @@ class _TwentyQBodyState extends State<_TwentyQBody> {
           padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
           child: Glass(
             radius: 24,
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            padding: const EdgeInsets.symmetric(horizontal: _Sp.sm, vertical: 2),
             child: Row(children: [
               Expanded(
                 child: TextField(
@@ -918,7 +918,7 @@ class _EmojiBodyState extends State<_EmojiBody> {
     if (mine.length < ps.length) {
       final p = _emojiPuzzles[ps[mine.length] % _emojiPuzzles.length];
       return Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(_Sp.xl),
         child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
           Text('${mine.length + 1} / ${ps.length}', style: const TextStyle(color: Color(0xB3FFFFFF))),
           const SizedBox(height: 10),
@@ -942,7 +942,7 @@ class _EmojiBodyState extends State<_EmojiBody> {
           const SizedBox(height: 14),
           Row(children: [
             _bigChoice('تخطّي', () => _submit(ps, skip: true)),
-            const SizedBox(width: 12),
+            const SizedBox(width: _Sp.md),
             _bigChoice('جاوب', () => _submit(ps), color: const Color(0xFF0A84FF)),
           ]),
         ]),
@@ -952,16 +952,16 @@ class _EmojiBodyState extends State<_EmojiBody> {
     if (theirs.length < ps.length) {
       return Center(
           child: Text('جبت $myScore من ${ps.length}. ننتظره يخلّص ⏳',
-              style: const TextStyle(fontSize: 18)));
+              style: const TextStyle(fontSize: _Fs.heading)));
     }
     final theirScore = _score(ps, theirs);
-    return ListView(padding: const EdgeInsets.all(16), children: [
+    return ListView(padding: const EdgeInsets.all(_Sp.lg), children: [
       Text(
           myScore == theirScore
               ? 'تعادل $myScore - $theirScore'
               : (myScore > theirScore ? 'فزت $myScore - $theirScore 🎉' : 'فاز هو $theirScore - $myScore'),
           textAlign: TextAlign.center,
-          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
+          style: const TextStyle(fontSize: _Fs.big, fontWeight: FontWeight.w800)),
       const SizedBox(height: 14),
       for (var i = 0; i < ps.length; i++)
         Padding(
@@ -969,17 +969,17 @@ class _EmojiBodyState extends State<_EmojiBody> {
           child: Glass(
             radius: 18,
             shadow: false,
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(_Sp.md),
             child: Row(children: [
               Text(_emojiPuzzles[ps[i] % _emojiPuzzles.length].$1, style: const TextStyle(fontSize: 26)),
-              const SizedBox(width: 12),
+              const SizedBox(width: _Sp.md),
               Expanded(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text(_emojiPuzzles[ps[i] % _emojiPuzzles.length].$3.first,
                       style: const TextStyle(fontWeight: FontWeight.w700)),
                   Text(
                       'أنت: ${mine[i].isEmpty ? '—' : mine[i]} · هو: ${theirs[i].isEmpty ? '—' : theirs[i]}',
-                      style: const TextStyle(fontSize: 12, color: Color(0xB3FFFFFF))),
+                      style: const TextStyle(fontSize: _Fs.small, color: Color(0xB3FFFFFF))),
                 ]),
               ),
             ]),
@@ -1090,10 +1090,10 @@ class ScoresScreen extends StatelessWidget {
                   ('☄️', 'سلسلة 30 يوم', d.streak >= 30),
                 ];
                 final got = badges.where((b) => b.$3).length;
-                return ListView(padding: const EdgeInsets.all(16), children: [
+                return ListView(padding: const EdgeInsets.all(_Sp.lg), children: [
                   Glass(
                     radius: 24,
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(_Sp.lg),
                     child: Column(children: [
                       const Text('النقاط', style: TextStyle(color: Color(0xB3FFFFFF))),
                       const SizedBox(height: 6),
@@ -1122,13 +1122,13 @@ class ScoresScreen extends StatelessWidget {
                           ListTile(
                             title: Text(_gameNames[e.key] ?? e.key),
                             trailing: Text('${e.value.$1} - ${e.value.$2}',
-                                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                                style: const TextStyle(fontSize: _Fs.title, fontWeight: FontWeight.w700)),
                           ),
                       ]),
                     ),
                   const SizedBox(height: 18),
                   Text('الشارات ($got من ${badges.length})',
-                      style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
+                      style: const TextStyle(fontSize: _Fs.titleL, fontWeight: FontWeight.w700)),
                   const SizedBox(height: 10),
                   GridView.count(
                     crossAxisCount: 3,
@@ -1144,13 +1144,13 @@ class ScoresScreen extends StatelessWidget {
                           child: Glass(
                             radius: 20,
                             shadow: false,
-                            padding: const EdgeInsets.all(8),
+                            padding: const EdgeInsets.all(_Sp.sm),
                             child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
                               Text(b.$3 ? b.$1 : '🔒', style: const TextStyle(fontSize: 30)),
                               const SizedBox(height: 6),
                               Text(b.$2,
                                   textAlign: TextAlign.center,
-                                  style: const TextStyle(fontSize: 12)),
+                                  style: const TextStyle(fontSize: _Fs.small)),
                             ]),
                           ),
                         ),

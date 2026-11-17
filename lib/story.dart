@@ -145,7 +145,7 @@ class _StoryState extends State<StoryScreen> {
                                           ),
                                           child: Text(it.emoji,
                                               style:
-                                                  const TextStyle(fontSize: 20)),
+                                                  const TextStyle(fontSize: _Fs.display)),
                                         ),
                                         if (i < items.length - 1)
                                           Expanded(
@@ -155,7 +155,7 @@ class _StoryState extends State<StoryScreen> {
                                           ),
                                       ]),
                                     ),
-                                    const SizedBox(width: 12),
+                                    const SizedBox(width: _Sp.md),
                                     Expanded(
                                       child: Padding(
                                         padding:
@@ -170,18 +170,18 @@ class _StoryState extends State<StoryScreen> {
                                               children: [
                                                 Text(it.title,
                                                     style: const TextStyle(
-                                                        fontSize: 17,
+                                                        fontSize: _Fs.titleL,
                                                         fontWeight:
                                                             FontWeight.w700)),
-                                                const SizedBox(height: 4),
+                                                const SizedBox(height: _Sp.xs),
                                                 Text(
                                                     '${it.at.day} ${_months[it.at.month - 1]} ${it.at.year} · ${_ago(it.at)}',
                                                     style: const TextStyle(
-                                                        fontSize: 12,
+                                                        fontSize: _Fs.small,
                                                         color:
                                                             Color(0xB3FFFFFF))),
                                                 if (it.text != null) ...[
-                                                  const SizedBox(height: 8),
+                                                  const SizedBox(height: _Sp.sm),
                                                   Text('«${it.text}»',
                                                       maxLines: 3,
                                                       overflow:
@@ -243,7 +243,7 @@ class _StarredState extends State<StarredScreen> {
       );
     } else {
       body = SelectableText('${m['body'] ?? ''}',
-          style: const TextStyle(fontSize: 16));
+          style: const TextStyle(fontSize: _Fs.title));
     }
     return Glass(
       radius: 20,
@@ -253,7 +253,7 @@ class _StarredState extends State<StarredScreen> {
         body,
         const SizedBox(height: 6),
         Text(at == null ? '' : '${at.day}/${at.month}/${at.year}',
-            style: const TextStyle(fontSize: 12, color: Color(0x99FFFFFF))),
+            style: const TextStyle(fontSize: _Fs.small, color: Color(0x99FFFFFF))),
       ]),
     );
   }
@@ -317,7 +317,7 @@ class _StarredState extends State<StarredScreen> {
                             ),
                           )
                         : ListView.separated(
-                            padding: const EdgeInsets.all(16),
+                            padding: const EdgeInsets.all(_Sp.lg),
                             itemCount: rows.length,
                             separatorBuilder: (_, __) =>
                                 const SizedBox(height: 10),

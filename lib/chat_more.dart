@@ -45,14 +45,14 @@ class _UnreadPill extends StatelessWidget {
           const Expanded(child: Divider(color: Color(0x55FFFFFF))),
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 10),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: _Sp.md, vertical: _Sp.xs),
             decoration: BoxDecoration(
               color: const Color(0x55FF5FA2),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: const Color(0x66FFFFFF)),
             ),
             child: const Text('رسائل جديدة',
-                style: TextStyle(fontSize: 12, color: Colors.white)),
+                style: TextStyle(fontSize: _Fs.small, color: Colors.white)),
           ),
           const Expanded(child: Divider(color: Color(0x55FFFFFF))),
         ]),
@@ -164,7 +164,7 @@ extension _ChatMore on _ChatState {
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
       child: Glass(
         radius: 24,
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+        padding: const EdgeInsets.symmetric(horizontal: _Sp.xs, vertical: 2),
         child: Row(children: [
           IconButton(
               tooltip: 'إلغاء التحديد',
@@ -173,7 +173,7 @@ extension _ChatMore on _ChatState {
           Expanded(
             child: Text('${_selected.length} محددة',
                 style:
-                    const TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
+                    const TextStyle(fontSize: _Fs.titleL, fontWeight: FontWeight.w600)),
           ),
           if (hasText)
             IconButton(

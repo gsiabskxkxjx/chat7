@@ -209,7 +209,7 @@ class _VoiceState extends State<_VoiceBubble> {
                 width: 40,
                 height: 40,
                 child: Padding(
-                    padding: EdgeInsets.all(8),
+                    padding: EdgeInsets.all(_Sp.sm),
                     child: CircularProgressIndicator(strokeWidth: 2)))
             : IconButton(
                 tooltip: 'تشغيل',
@@ -239,10 +239,10 @@ class _VoiceState extends State<_VoiceBubble> {
                       rtl: Directionality.of(context) == TextDirection.rtl),
                 ),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: _Sp.xs),
               Text(_mmss(shown),
                   style:
-                      const TextStyle(fontSize: 11, color: Color(0xCCFFFFFF))),
+                      const TextStyle(fontSize: _Fs.caption, color: Color(0xCCFFFFFF))),
             ],
           ),
         ),
@@ -257,7 +257,7 @@ class _VoiceState extends State<_VoiceBubble> {
             ),
             child: Text(
               _speed == 1.0 ? '1x' : (_speed == 1.5 ? '1.5x' : '2x'),
-              style: const TextStyle(fontSize: 11, color: Colors.white),
+              style: const TextStyle(fontSize: _Fs.caption, color: Colors.white),
             ),
           ),
         ),
@@ -286,7 +286,7 @@ class _VideoTile extends StatelessWidget {
               bottom: 8,
               end: 10,
               child: Text(_mmss(ms),
-                  style: const TextStyle(fontSize: 12, color: Colors.white)),
+                  style: const TextStyle(fontSize: _Fs.small, color: Colors.white)),
             ),
         ]),
       );

@@ -19,7 +19,7 @@ class Glass extends StatelessWidget {
     super.key,
     required this.child,
     this.radius = 24,
-    this.padding = const EdgeInsets.all(16),
+    this.padding = const EdgeInsets.all(_Sp.lg),
     this.blur = 24,
     this.shadow = true,
     this.tint,
@@ -560,7 +560,7 @@ class _Btn extends StatelessWidget {
                         textAlign: TextAlign.center,
                         style: const TextStyle(
                             color: Colors.white,
-                            fontSize: 16,
+                            fontSize: _Fs.title,
                             fontWeight: FontWeight.w600)),
                   ),
               ],

@@ -37,7 +37,7 @@ Future<void> _maybeWhatsNew(BuildContext context) async {
           const Text('الجديد في بيناتنا ✨',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
-          const SizedBox(height: 4),
+          const SizedBox(height: _Sp.xs),
           const Text('كلها من زر 🎮 بجنب مربع الكتابة، ومن ➕',
               textAlign: TextAlign.center, style: TextStyle(color: Color(0xB3FFFFFF))),
           const SizedBox(height: 14),
@@ -46,11 +46,11 @@ Future<void> _maybeWhatsNew(BuildContext context) async {
               padding: const EdgeInsets.only(bottom: 10),
               child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(w.$1, style: const TextStyle(fontSize: 26)),
-                const SizedBox(width: 12),
+                const SizedBox(width: _Sp.md),
                 Expanded(
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text(w.$2, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
-                    Text(w.$3, style: const TextStyle(fontSize: 13, color: Color(0xCCFFFFFF))),
+                    Text(w.$2, style: const TextStyle(fontSize: _Fs.title, fontWeight: FontWeight.w700)),
+                    Text(w.$3, style: const TextStyle(fontSize: _Fs.meta, color: Color(0xCCFFFFFF))),
                   ]),
                 ),
               ]),

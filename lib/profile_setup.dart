@@ -165,10 +165,10 @@ class _ProfileSetupState extends State<ProfileSetupScreen> {
         child: SafeArea(
           child: Center(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.all(_Sp.xl),
               child: Glass(
                 radius: 32,
-                padding: const EdgeInsets.all(24),
+                padding: const EdgeInsets.all(_Sp.xl),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -257,7 +257,7 @@ class _ProfileSetupState extends State<ProfileSetupScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: _Sp.md),
                     _Press(
                       onTap: widget.birthDate != null || _busy
                           ? null
@@ -266,7 +266,7 @@ class _ProfileSetupState extends State<ProfileSetupScreen> {
                       scale: 0.98,
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 16),
+                            horizontal: 14, vertical: _Sp.lg),
                         decoration: BoxDecoration(
                           color: const Color(0x1AFFFFFF),
                           borderRadius: BorderRadius.circular(16),
@@ -274,11 +274,11 @@ class _ProfileSetupState extends State<ProfileSetupScreen> {
                         ),
                         child: Row(children: [
                           const Icon(Icons.cake_rounded),
-                          const SizedBox(width: 12),
+                          const SizedBox(width: _Sp.md),
                           Expanded(
                             child: Text(_birthText(),
                                 style: TextStyle(
-                                    fontSize: 16,
+                                    fontSize: _Fs.title,
                                     color: _birth == null
                                         ? const Color(0x99FFFFFF)
                                         : Colors.white)),
@@ -291,11 +291,11 @@ class _ProfileSetupState extends State<ProfileSetupScreen> {
                     const SizedBox(height: 6),
                     const Text(
                         'تاريخ الميلاد ما يظهر لأحد، وما يتغير بعد الحفظ. البحث عن شريك للي عمرهم 18 وفوق.',
-                        style: TextStyle(fontSize: 12, color: Color(0x99FFFFFF))),
-                    const SizedBox(height: 16),
+                        style: TextStyle(fontSize: _Fs.small, color: Color(0x99FFFFFF))),
+                    const SizedBox(height: _Sp.lg),
                     const Text('اهتماماتك (اختياري، لين 3)',
                         style: TextStyle(fontWeight: FontWeight.w600)),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: _Sp.sm),
                     _InterestsPicker(
                         selected: _interests,
                         onChanged: (v) => setState(() => _interests = v)),

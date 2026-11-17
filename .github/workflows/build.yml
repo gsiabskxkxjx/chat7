@@ -219,6 +219,28 @@ jobs:
                           result.notImplemented()
                       }
                   }
+                  // ضغط الفيديو قبل الإرسال
+                  val compressor = VideoCompressor(this)
+                  MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "bainatna/media").setMethodCallHandler { call, result ->
+                      if (call.method == "compress") {
+                          compressor.compress(call.argument<String>("in") ?: "", call.argument<String>("out") ?: "", result)
+                      } else if (call.method == "cancel") {
+                          compressor.cancel()
+                          result.success(null)
+                      } else {
+                          result.notImplemented()
+                      }
+                  }
+                  // تبديل أيقونة التطبيق
+                  MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "bainatna/icon").setMethodCallHandler { call, result ->
+                      if (call.method == "get") {
+                          result.success(IconSwitcher.state(this))
+                      } else if (call.method == "set") {
+                          result.success(IconSwitcher.set(this, call.argument<String>("name") ?: ""))
+                      } else {
+                          result.notImplemented()
+                      }
+                  }
                   // تحديث ويدجت الشاشة الرئيسية لما التطبيق يكتب بيانات جديدة
                   MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "bainatna/widgets").setMethodCallHandler { call, result ->
                       if (call.method == "refresh") {
@@ -504,6 +526,36 @@ jobs:
               f.write('<?xml version="1.0" encoding="utf-8"?>\n<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">\n    <background android:drawable="@color/ic_launcher_background"/>\n    <foreground android:drawable="@mipmap/ic_launcher_foreground"/>\n    <monochrome android:drawable="@mipmap/ic_launcher_monochrome"/>\n</adaptive-icon>\n')
           print('icon generated from logo.png')
           PYEOF
+
+      - name: Video compression and alternate icons (Android)
+        run: |
+          F=$(find android/app/src/main -name MainActivity.kt | head -n 1)
+          if [ -z "$F" ] || ! grep -q "bainatna/media" "$F"; then
+            echo "WARNING: MainActivity.kt was not rewritten - skipping compression and alternate icons"
+            exit 0
+          fi
+          PKG=$(grep -m1 '^package ' "$F" | sed -E 's/^package +//; s/;//')
+          D=$(dirname "$F")
+          for K in VideoCompressor IconSwitcher; do
+            sed "s/^package .*/package ${PKG}/" ".github/android/$K.kt" > "$D/$K.kt"
+          done
+          G=android/app/build.gradle.kts
+          if [ -f "$G" ]; then
+            printf '\ndependencies {\n    implementation("androidx.media3:media3-transformer:1.5.1")\n    implementation("androidx.media3:media3-effect:1.5.1")\n    implementation("androidx.media3:media3-common:1.5.1")\n}\n' >> "$G"
+          else
+            G=android/app/build.gradle
+            printf '\ndependencies {\n    implementation "androidx.media3:media3-transformer:1.5.1"\n    implementation "androidx.media3:media3-effect:1.5.1"\n    implementation "androidx.media3:media3-common:1.5.1"\n}\n' >> "$G"
+          fi
+          grep -n "media3" "$G"
+          PYBIN=python3
+          if ! $PYBIN -c "import PIL" 2>/dev/null; then
+            pip install --quiet --break-system-packages pillow 2>/dev/null \
+              || pip3 install --quiet --break-system-packages pillow 2>/dev/null \
+              || { python3 -m venv /tmp/iconvenv2 && /tmp/iconvenv2/bin/pip install --quiet pillow && PYBIN=/tmp/iconvenv2/bin/python; } \
+              || true
+          fi
+          "$PYBIN" .github/scripts/alt_icons.py || echo "WARNING: alternate icons failed - the main icon is unchanged"
+          grep -c "activity-alias" android/app/src/main/AndroidManifest.xml || true
 
       - name: Preinstall Android NDK (retries a bad download)
         run: |

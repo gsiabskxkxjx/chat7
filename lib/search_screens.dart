@@ -99,7 +99,7 @@ class _SearchState extends State<SearchScreen> {
       return const Center(child: Text('ما لقينا شي'));
     }
     return ListView.builder(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(_Sp.md),
       itemCount: _results.length,
       itemBuilder: (_, i) {
         final m = _results[i];
@@ -110,7 +110,7 @@ class _SearchState extends State<SearchScreen> {
               maxLines: 2, overflow: TextOverflow.ellipsis),
           subtitle: Text(
               '${mine ? 'أنت' : 'الطرف الثاني'} · ${_fmt(m['created_at'] as String?)}',
-              style: const TextStyle(fontSize: 12, color: Color(0x99FFFFFF))),
+              style: const TextStyle(fontSize: _Fs.small, color: Color(0x99FFFFFF))),
           onTap: () => showModalBottomSheet<void>(
             context: context,
             isScrollControlled: true,
@@ -139,7 +139,7 @@ class _SearchState extends State<SearchScreen> {
                   Expanded(
                     child: Glass(
                       radius: 24,
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      padding: const EdgeInsets.symmetric(horizontal: _Sp.md),
                       child: TextField(
                         controller: _c,
                         autofocus: true,
@@ -153,7 +153,7 @@ class _SearchState extends State<SearchScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: _Sp.sm),
                 ]),
               ),
               Expanded(child: _body()),
@@ -281,7 +281,7 @@ class _SearchContextState extends State<_SearchContext> {
                           child: Container(
                             margin: const EdgeInsets.symmetric(vertical: 3),
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 8),
+                                horizontal: 12, vertical: _Sp.sm),
                             constraints: BoxConstraints(
                                 maxWidth:
                                     MediaQuery.sizeOf(context).width * 0.75),

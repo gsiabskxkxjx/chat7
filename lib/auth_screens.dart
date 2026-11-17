@@ -110,10 +110,10 @@ class _AuthShell extends StatelessWidget {
           child: SafeArea(
             child: Center(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
+                padding: const EdgeInsets.all(_Sp.xl),
                 child: Glass(
                   radius: 32,
-                  padding: const EdgeInsets.all(24),
+                  padding: const EdgeInsets.all(_Sp.xl),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -128,7 +128,7 @@ class _AuthShell extends StatelessWidget {
                       Text(title,
                           textAlign: TextAlign.center,
                           style: const TextStyle(
-                              fontSize: 17, color: Color(0xCCFFFFFF))),
+                              fontSize: _Fs.titleL, color: Color(0xCCFFFFFF))),
                       const SizedBox(height: 22),
                       ...children,
                     ],
@@ -156,12 +156,12 @@ class WelcomeScreen extends StatelessWidget {
                 builder: (_) => GenderScreen(
                     onPicked: (g) async => SignUpScreen(gender: g)))),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: _Sp.md),
           TextButton(
             onPressed: () => Navigator.of(context)
                 .push(MaterialPageRoute(builder: (_) => const LoginScreen())),
             child: const Text('عندي حساب؟ تسجيل الدخول',
-                style: TextStyle(fontSize: 16)),
+                style: TextStyle(fontSize: _Fs.title)),
           ),
         ],
       );
@@ -264,7 +264,7 @@ class _SignUpState extends State<SignUpScreen> {
               label: 'اسم المستخدم',
               icon: Icons.alternate_email_rounded,
               onSubmit: _submit),
-          const SizedBox(height: 12),
+          const SizedBox(height: _Sp.md),
           _PassField(
               controller: _p, label: 'كلمة السر', onSubmit: _submit),
           const SizedBox(height: 6),
@@ -275,11 +275,11 @@ class _SignUpState extends State<SignUpScreen> {
               label: 'تأكيد كلمة السر',
               onSubmit: _submit,
               error: _err),
-          const SizedBox(height: 8),
+          const SizedBox(height: _Sp.sm),
           const Text(
               'ملاحظة: ما في استرجاع لكلمة السر، فاحفظها.',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 12, color: Color(0x99FFFFFF))),
+              style: TextStyle(fontSize: _Fs.small, color: Color(0x99FFFFFF))),
           const SizedBox(height: 14),
           _Btn(label: 'إنشاء الحساب', onTap: _submit, busy: _busy),
         ],
@@ -361,7 +361,7 @@ class _LoginState extends State<LoginScreen> {
               label: 'اسم المستخدم',
               icon: Icons.alternate_email_rounded,
               onSubmit: _submit),
-          const SizedBox(height: 12),
+          const SizedBox(height: _Sp.md),
           _PassField(
               controller: _p,
               label: 'كلمة السر',
@@ -369,7 +369,7 @@ class _LoginState extends State<LoginScreen> {
               error: _err),
           const SizedBox(height: 18),
           _Btn(label: 'دخول', onTap: _submit, busy: _busy),
-          const SizedBox(height: 4),
+          const SizedBox(height: _Sp.xs),
           TextButton(
             onPressed: () => Navigator.of(context).push(MaterialPageRoute(
                 builder: (_) =>
@@ -445,9 +445,9 @@ class _UpgradeState extends State<UpgradeScreen> {
               'ضع كلمة سر حتى تقدر تدخل حسابك من أي جهاز، ومحادثتك تبقى كما هي.',
               textAlign: TextAlign.center,
               style: TextStyle(color: Color(0xCCFFFFFF))),
-          const SizedBox(height: 16),
+          const SizedBox(height: _Sp.lg),
           _PassField(controller: _p, label: 'كلمة السر', onSubmit: _submit),
-          const SizedBox(height: 12),
+          const SizedBox(height: _Sp.md),
           _PassField(
               controller: _p2,
               label: 'تأكيد كلمة السر',
@@ -515,7 +515,7 @@ class _ChangePassState extends State<ChangePasswordScreen> {
         children: [
           _PassField(
               controller: _p, label: 'كلمة السر الجديدة', onSubmit: _submit),
-          const SizedBox(height: 12),
+          const SizedBox(height: _Sp.md),
           _PassField(
               controller: _p2,
               label: 'تأكيد كلمة السر',
@@ -572,7 +572,7 @@ class _Strength extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 10),
-            Text(label, style: TextStyle(fontSize: 12, color: color)),
+            Text(label, style: TextStyle(fontSize: _Fs.small, color: color)),
           ]);
         },
       );

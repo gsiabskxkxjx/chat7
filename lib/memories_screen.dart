@@ -38,7 +38,7 @@ class _MemoriesState extends State<MemoriesScreen> {
                       icon: const Icon(Icons.arrow_back_rounded)),
                   const Text('معرض الذكريات',
                       style:
-                          TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
+                          TextStyle(fontSize: _Fs.display, fontWeight: FontWeight.w700)),
                   const Spacer(),
                   TextButton.icon(
                     onPressed: () => Navigator.of(context).push(MaterialPageRoute(
@@ -68,7 +68,7 @@ class _MemoriesState extends State<MemoriesScreen> {
                       );
                     }
                     return GridView.builder(
-                      padding: const EdgeInsets.all(8),
+                      padding: const EdgeInsets.all(_Sp.sm),
                       gridDelegate:
                           const SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: 3,

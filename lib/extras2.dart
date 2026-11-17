@@ -160,8 +160,8 @@ class _PollMsg extends StatelessWidget {
     return ConstrainedBox(
       constraints: const BoxConstraints(minWidth: 220, maxWidth: 280),
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, mainAxisSize: MainAxisSize.min, children: [
-        Text('📊 $q', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.white)),
-        const SizedBox(height: 8),
+        Text('📊 $q', style: const TextStyle(fontSize: _Fs.title, fontWeight: FontWeight.w800, color: Colors.white)),
+        const SizedBox(height: _Sp.sm),
         for (var i = 0; i < opts.length; i++)
           Builder(builder: (_) {
             final k = _pollKeys[i];
@@ -174,7 +174,7 @@ class _PollMsg extends StatelessWidget {
                 onTap: onVote == null ? null : () => onVote!(k),
                 scale: 0.98,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: _Sp.sm),
                   decoration: BoxDecoration(
                     color: mine ? const Color(0x55FFFFFF) : const Color(0x26000000),
                     borderRadius: BorderRadius.circular(12),
@@ -182,8 +182,8 @@ class _PollMsg extends StatelessWidget {
                   ),
                   child: Row(children: [
                     Expanded(child: Text(opts[i], style: const TextStyle(color: Colors.white))),
-                    if (mine) const Text('أنت ', style: TextStyle(fontSize: 11, color: Colors.white)),
-                    if (theirs) const Text('هو ', style: TextStyle(fontSize: 11, color: Colors.white)),
+                    if (mine) const Text('أنت ', style: TextStyle(fontSize: _Fs.caption, color: Colors.white)),
+                    if (theirs) const Text('هو ', style: TextStyle(fontSize: _Fs.caption, color: Colors.white)),
                     Text(total == 0 ? '' : '$n', style: const TextStyle(fontWeight: FontWeight.w700, color: Colors.white)),
                   ]),
                 ),
@@ -194,7 +194,7 @@ class _PollMsg extends StatelessWidget {
           Text(
               votes.values.toSet().length == 1 ? 'اتفقتوا! 🎉' : 'اختلفتوا 😄',
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 12, color: Color(0xCCFFFFFF))),
+              style: const TextStyle(fontSize: _Fs.small, color: Color(0xCCFFFFFF))),
       ]),
     );
   }
@@ -221,11 +221,11 @@ Future<void> _sendGentle(BuildContext context, String chatId) async {
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           const Padding(
             padding: EdgeInsets.fromLTRB(16, 0, 16, 6),
-            child: Text('تذكير لطيف', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
+            child: Text('تذكير لطيف', style: TextStyle(fontSize: _Fs.titleL, fontWeight: FontWeight.w600)),
           ),
           for (var k = 0; k < _gentle.length; k++)
             ListTile(
-              leading: Text(_gentle[k].$1, style: const TextStyle(fontSize: 24)),
+              leading: Text(_gentle[k].$1, style: const TextStyle(fontSize: _Fs.big)),
               title: Text(_gentle[k].$2),
               onTap: () => Navigator.pop(ctx, k),
             ),
@@ -433,7 +433,7 @@ class _SummaryState extends State<SummaryScreen> {
       extendBodyBehindAppBar: true,
       body: Backdrop(
         child: SafeArea(
-          child: ListView(padding: const EdgeInsets.all(16), children: [
+          child: ListView(padding: const EdgeInsets.all(_Sp.lg), children: [
             Center(
               child: SegmentedButton<bool>(
                 segments: const [
@@ -447,7 +447,7 @@ class _SummaryState extends State<SummaryScreen> {
                 }),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: _Sp.lg),
             FutureBuilder<Map<String, Object?>>(
               future: _f,
               builder: (_, snap) {
@@ -463,9 +463,9 @@ class _SummaryState extends State<SummaryScreen> {
                 final mine = d['mine'] as int;
                 final words = d['words'] as List;
                 Widget stat(String e, Object v, String l) => Column(children: [
-                      Text(e, style: const TextStyle(fontSize: 24)),
+                      Text(e, style: const TextStyle(fontSize: _Fs.big)),
                       Text('$v', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: Colors.white)),
-                      Text(l, style: const TextStyle(fontSize: 11, color: Color(0xDDFFFFFF))),
+                      Text(l, style: const TextStyle(fontSize: _Fs.caption, color: Color(0xDDFFFFFF))),
                     ]);
                 return Column(children: [
                   RepaintBoundary(
@@ -492,7 +492,7 @@ class _SummaryState extends State<SummaryScreen> {
                         const Text('رسالة بيناتكم', style: TextStyle(color: Colors.white)),
                         if (total > 0)
                           Text('منك ${(mine * 100 / total).round()}% ومنه ${100 - (mine * 100 / total).round()}%',
-                              style: const TextStyle(fontSize: 12, color: Color(0xDDFFFFFF))),
+                              style: const TextStyle(fontSize: _Fs.small, color: Color(0xDDFFFFFF))),
                         const SizedBox(height: 18),
                         Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [
                           stat('📷', d['photos']!, 'صورة'),
@@ -502,17 +502,17 @@ class _SummaryState extends State<SummaryScreen> {
                         ]),
                         if (words.isNotEmpty) ...[
                           const SizedBox(height: 18),
-                          const Text('أكثر كلمات قلتوها', style: TextStyle(fontSize: 12, color: Color(0xDDFFFFFF))),
-                          const SizedBox(height: 4),
+                          const Text('أكثر كلمات قلتوها', style: TextStyle(fontSize: _Fs.small, color: Color(0xDDFFFFFF))),
+                          const SizedBox(height: _Sp.xs),
                           Text(words.map((w) => '«$w»').join('  '),
-                              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white)),
+                              style: const TextStyle(fontSize: _Fs.heading, fontWeight: FontWeight.w700, color: Colors.white)),
                         ],
                         const SizedBox(height: 14),
-                        const Text(appName, style: TextStyle(fontSize: 12, color: Color(0xCCFFFFFF))),
+                        const Text(appName, style: TextStyle(fontSize: _Fs.small, color: Color(0xCCFFFFFF))),
                       ]),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: _Sp.lg),
                   Row(children: [
                     Expanded(child: _Btn(label: 'حفظ بالمعرض', onTap: () => _export(share: false))),
                     const SizedBox(width: 10),

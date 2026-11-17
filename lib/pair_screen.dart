@@ -146,10 +146,10 @@ class _PairState extends State<PairScreen> {
           child: SafeArea(
             child: Center(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
+                padding: const EdgeInsets.all(_Sp.xl),
                 child: Glass(
                   radius: 32,
-                  padding: const EdgeInsets.all(24),
+                  padding: const EdgeInsets.all(_Sp.xl),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -158,7 +158,7 @@ class _PairState extends State<PairScreen> {
                           textAlign: TextAlign.center,
                           style: TextStyle(
                               fontSize: 26, fontWeight: FontWeight.w700)),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: _Sp.sm),
                       Text(
                           'أهلاً @${widget.me}. شارك رمز الدعوة مع الشخص الآخر، أو أدخل رمزه.',
                           textAlign: TextAlign.center,
@@ -220,7 +220,7 @@ class _PairState extends State<PairScreen> {
                           ),
                         ]),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: _Sp.lg),
                       _Field(
                         controller: _c,
                         label: 'رمز الشخص الآخر',
@@ -230,13 +230,13 @@ class _PairState extends State<PairScreen> {
                         upper: true,
                         onSubmit: _link,
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: _Sp.lg),
                       _Btn(label: 'ربط', onTap: _link, busy: _busy),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: _Sp.md),
                       const Text('الرمز يصلح لمرة وحدة ولمدة 15 دقيقة.',
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                              fontSize: 12, color: Color(0x99FFFFFF))),
+                              fontSize: _Fs.small, color: Color(0x99FFFFFF))),
                       const SizedBox(height: 18),
                       _RequestsPanel(onPaired: () async {
                         await _open();
@@ -245,7 +245,7 @@ class _PairState extends State<PairScreen> {
                       const Row(children: [
                         Expanded(child: Divider(color: Color(0x40FFFFFF))),
                         Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 12),
+                          padding: EdgeInsets.symmetric(horizontal: _Sp.md),
                           child: Text('ما عندك أحد؟',
                               style: TextStyle(color: Color(0xB3FFFFFF))),
                         ),
@@ -260,7 +260,7 @@ class _PairState extends State<PairScreen> {
                           'نبحث لك عن شخص يبي يرتبط بعد. بعد المطابقة تبدأ المحادثة بالنص، والصور والمكالمات تنفتح لما الطرفين يضغطون «أثق فيه».',
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                              fontSize: 12, color: Color(0x99FFFFFF))),
+                              fontSize: _Fs.small, color: Color(0x99FFFFFF))),
                     ],
                   ),
                 ),

@@ -117,17 +117,17 @@ class _BootState extends State<Boot> {
           child: err == null
               ? const _SplashRings()
               : Padding(
-                  padding: const EdgeInsets.all(24),
+                  padding: const EdgeInsets.all(_Sp.xl),
                   child: Glass(
                     radius: 28,
-                    padding: const EdgeInsets.all(24),
+                    padding: const EdgeInsets.all(_Sp.xl),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         Text(err, textAlign: TextAlign.center),
                         if (_configured) ...[
-                          const SizedBox(height: 16),
+                          const SizedBox(height: _Sp.lg),
                           _Btn(
                             label: 'إعادة المحاولة',
                             onTap: () {

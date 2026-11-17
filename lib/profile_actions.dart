@@ -144,7 +144,7 @@ extension _ProfileActions on _ProfileState {
         content: Column(mainAxisSize: MainAxisSize.min, children: [
           const Text(
               'راح ينحذف حسابك وكل رسائلك وصورك ومحادثتك عند الطرفين، وما يمكن التراجع.'),
-          const SizedBox(height: 12),
+          const SizedBox(height: _Sp.md),
           TextField(
             controller: ctrl,
             textDirection: TextDirection.ltr,
@@ -315,7 +315,7 @@ extension _ProfileUsername on _ProfileState {
         content: Column(mainAxisSize: MainAxisSize.min, children: [
           const Text(
               'تقدر تغيّره مرة كل 30 يوم. الاسم القديم يصير متاح لغيرك.'),
-          const SizedBox(height: 12),
+          const SizedBox(height: _Sp.md),
           TextField(
             controller: ctrl,
             textDirection: TextDirection.ltr,

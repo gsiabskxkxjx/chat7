@@ -290,20 +290,20 @@ extension _ChatFx on _ChatState {
           const Padding(
             padding: EdgeInsets.fromLTRB(16, 16, 16, 4),
             child: Text('أرسل مع تأثير',
-                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
+                style: TextStyle(fontSize: _Fs.titleL, fontWeight: FontWeight.w600)),
           ),
           ListTile(
-            leading: const Text('❤️', style: TextStyle(fontSize: 24)),
+            leading: const Text('❤️', style: TextStyle(fontSize: _Fs.big)),
             title: const Text('قلوب'),
             onTap: () => Navigator.pop(ctx, 'hearts'),
           ),
           ListTile(
-            leading: const Text('🎉', style: TextStyle(fontSize: 24)),
+            leading: const Text('🎉', style: TextStyle(fontSize: _Fs.big)),
             title: const Text('احتفال'),
             onTap: () => Navigator.pop(ctx, 'confetti'),
           ),
           ListTile(
-            leading: const Text('✨', style: TextStyle(fontSize: 24)),
+            leading: const Text('✨', style: TextStyle(fontSize: _Fs.big)),
             title: const Text('نجوم'),
             onTap: () => Navigator.pop(ctx, 'stars'),
           ),
@@ -335,7 +335,7 @@ extension _ChatFx on _ChatState {
       builder: (ctx) => AlertDialog(
         title: const Text('🎉 مبروك!', textAlign: TextAlign.center),
         content: Text('صار لكم ${_milestoneLabel(m)} سوا في بيناتنا.',
-            textAlign: TextAlign.center, style: const TextStyle(fontSize: 17)),
+            textAlign: TextAlign.center, style: const TextStyle(fontSize: _Fs.titleL)),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx), child: const Text('حلو')),
@@ -377,12 +377,12 @@ extension _ChatFx on _ChatState {
           radius: 20,
           padding: const EdgeInsets.fromLTRB(14, 10, 12, 10),
           child: Row(children: [
-            const Text('💬', style: TextStyle(fontSize: 20)),
+            const Text('💬', style: TextStyle(fontSize: _Fs.display)),
             const SizedBox(width: 10),
             Expanded(
                 child: Text(text,
                     style: const TextStyle(
-                        fontSize: 14, fontWeight: FontWeight.w600))),
+                        fontSize: _Fs.body, fontWeight: FontWeight.w600))),
             const Icon(Icons.chevron_left_rounded),
           ]),
         ),
@@ -468,7 +468,7 @@ class _DailyDialogState extends State<_DailyDialog> {
   Widget _answer(String who, String text) => Container(
         width: double.infinity,
         margin: const EdgeInsets.only(top: 10),
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(_Sp.md),
         decoration: BoxDecoration(
           color: const Color(0x1FFFFFFF),
           borderRadius: BorderRadius.circular(16),
@@ -476,16 +476,16 @@ class _DailyDialogState extends State<_DailyDialog> {
         ),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(who,
-              style: const TextStyle(fontSize: 12, color: Color(0xB3FFFFFF))),
-          const SizedBox(height: 4),
-          Text(text, style: const TextStyle(fontSize: 15)),
+              style: const TextStyle(fontSize: _Fs.small, color: Color(0xB3FFFFFF))),
+          const SizedBox(height: _Sp.xs),
+          Text(text, style: const TextStyle(fontSize: _Fs.bodyL)),
         ]),
       );
 
   @override
   Widget build(BuildContext context) => Dialog(
         backgroundColor: Colors.transparent,
-        insetPadding: const EdgeInsets.all(24),
+        insetPadding: const EdgeInsets.all(_Sp.xl),
         child: Glass(
           radius: 28,
           blur: 30,
@@ -497,7 +497,7 @@ class _DailyDialogState extends State<_DailyDialog> {
               children: [
                 const Text('سؤال اليوم',
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 13, color: Color(0xB3FFFFFF))),
+                    style: TextStyle(fontSize: _Fs.meta, color: Color(0xB3FFFFFF))),
                 const SizedBox(height: 6),
                 Text(_todayQuestion(),
                     textAlign: TextAlign.center,
@@ -520,7 +520,7 @@ class _DailyDialogState extends State<_DailyDialog> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: _Sp.sm),
                   _Btn(label: 'إرسال', onTap: _submit, busy: _busy),
                 ] else ...[
                   _answer('جوابك', _mine!),

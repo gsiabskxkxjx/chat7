@@ -170,7 +170,7 @@ class _MatchBubbleState extends State<_MatchBubble>
                   ? 'جاري البحث... اضغط للإلغاء'
                   : 'ابحث لي عن شريك',
               key: ValueKey<bool>(_searching),
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              style: const TextStyle(fontSize: _Fs.title, fontWeight: FontWeight.w600),
             ),
           ),
         ],
@@ -347,13 +347,13 @@ class _OfferDialogState extends State<_OfferDialog> {
                         radius: 48,
                         gender: c['gender'] as String?),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: _Sp.md),
               Text(name,
                   textAlign: TextAlign.center,
                   style: const TextStyle(
-                      fontSize: 20, fontWeight: FontWeight.w600)),
+                      fontSize: _Fs.display, fontWeight: FontWeight.w600)),
               if (((c?['interests'] as List?) ?? const []).isNotEmpty) ...[
-                const SizedBox(height: 8),
+                const SizedBox(height: _Sp.sm),
                 Wrap(
                   alignment: WrapAlignment.center,
                   spacing: 6,
@@ -362,7 +362,7 @@ class _OfferDialogState extends State<_OfferDialog> {
                     for (final i in (c!['interests'] as List))
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 4),
+                            horizontal: 10, vertical: _Sp.xs),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(12),
                           color: ((c['common'] as List?) ?? const []).contains(i)
@@ -370,7 +370,7 @@ class _OfferDialogState extends State<_OfferDialog> {
                               : const Color(0x1FFFFFFF),
                           border: Border.all(color: const Color(0x40FFFFFF)),
                         ),
-                        child: Text('$i', style: const TextStyle(fontSize: 13)),
+                        child: Text('$i', style: const TextStyle(fontSize: _Fs.meta)),
                       ),
                   ],
                 ),
@@ -388,7 +388,7 @@ class _OfferDialogState extends State<_OfferDialog> {
               const SizedBox(height: 20),
               if (!mineOk)
                 _Btn(label: 'قبول', onTap: () => _answer(true), busy: _busy),
-              if (!mineOk) const SizedBox(height: 8),
+              if (!mineOk) const SizedBox(height: _Sp.sm),
               TextButton(
                 onPressed: _busy ? null : () => _answer(false),
                 child: Text(mineOk ? 'إلغاء' : 'تخطي',

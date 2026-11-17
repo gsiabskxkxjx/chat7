@@ -6,7 +6,7 @@ extension _ChatUi on _ChatState {
         padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
         child: Glass(
           radius: 22,
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: _Sp.md, vertical: _Sp.sm),
           child: Row(children: [
             Expanded(
               child: InkWell(
@@ -42,7 +42,7 @@ extension _ChatUi on _ChatState {
                         ),
                       ),
                   ]),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: _Sp.md),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -53,7 +53,7 @@ extension _ChatUi on _ChatState {
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
-                                    fontSize: 17, fontWeight: FontWeight.w600)),
+                                    fontSize: _Fs.titleL, fontWeight: FontWeight.w600)),
                           ),
                           if (_streak >= 2) ...[
                             const SizedBox(width: 6),
@@ -67,7 +67,7 @@ extension _ChatUi on _ChatState {
                                     Border.all(color: const Color(0x66FF9F0A)),
                               ),
                               child: Text('🔥 $_streak',
-                                  style: const TextStyle(fontSize: 12)),
+                                  style: const TextStyle(fontSize: _Fs.small)),
                             ),
                           ],
                         ]),
@@ -75,14 +75,14 @@ extension _ChatUi on _ChatState {
                           Row(mainAxisSize: MainAxisSize.min, children: [
                             const Text('يكتب',
                                 style: TextStyle(
-                                    fontSize: 12, color: Color(0xFF5BE584))),
-                            const SizedBox(width: 4),
+                                    fontSize: _Fs.small, color: Color(0xFF5BE584))),
+                            const SizedBox(width: _Sp.xs),
                             const _TypingDots(),
                           ])
                         else if (_status().isNotEmpty)
                           Text(_status(),
                               style: TextStyle(
-                                  fontSize: 12,
+                                  fontSize: _Fs.small,
                                   color: _online
                                       ? const Color(0xFF5BE584)
                                       : const Color(0xB3FFFFFF))),
@@ -92,7 +92,7 @@ extension _ChatUi on _ChatState {
                 ]),
               ),
             ),
-            const SizedBox(width: 4),
+            const SizedBox(width: _Sp.xs),
             _GlassIcon(
                 label: 'مكالمة صوتية',
                 onTap: () => _call(false),
@@ -243,8 +243,8 @@ extension _ChatUi on _ChatState {
               padding: EdgeInsets.only(bottom: 6),
               child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                 SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2)),
-                SizedBox(width: 8),
-                Text('جاري الإرسال...', style: TextStyle(fontSize: 12)),
+                SizedBox(width: _Sp.sm),
+                Text('جاري الإرسال...', style: TextStyle(fontSize: _Fs.small)),
               ]),
             ),
           if (_replyTo != null) _replyBar(),
@@ -270,7 +270,7 @@ extension _ChatUi on _ChatState {
           child: Text('رد على: ${_quoteOf([r], r.id) ?? ''}',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 13, color: Colors.white70)),
+              style: const TextStyle(fontSize: _Fs.meta, color: Colors.white70)),
         ),
         IconButton(
           tooltip: 'إغلاق',
@@ -287,12 +287,12 @@ extension _ChatUi on _ChatState {
           onPressed: () => unawaited(_finishRec(false)),
           icon: const Icon(Icons.delete_outline_rounded, color: Color(0xFFFF6B60)),
         ),
-        const SizedBox(width: 4),
+        const SizedBox(width: _Sp.xs),
         const Icon(Icons.fiber_manual_record_rounded, color: Color(0xFFFF3B30), size: 14),
-        const SizedBox(width: 8),
+        const SizedBox(width: _Sp.sm),
         Expanded(
           child: Text('جاري التسجيل... ${_mmss(_recSecs * 1000)}',
-              style: const TextStyle(fontSize: 15)),
+              style: const TextStyle(fontSize: _Fs.bodyL)),
         ),
         IconButton(
           tooltip: 'إرسال',
@@ -526,13 +526,13 @@ class _DayPill extends StatelessWidget {
   Widget build(BuildContext context) => Center(
         child: Container(
           margin: const EdgeInsets.symmetric(vertical: 10),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: _Sp.md, vertical: _Sp.xs),
           decoration: BoxDecoration(
             color: const Color(0x66000000),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Text(_dayLabel(day),
-              style: const TextStyle(fontSize: 12, color: Colors.white)),
+              style: const TextStyle(fontSize: _Fs.small, color: Colors.white)),
         ),
       );
 }
@@ -553,8 +553,8 @@ class _CallPill extends StatelessWidget {
         dimWhenOff: false,
         scale: 0.95,
         child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 8),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+        margin: const EdgeInsets.symmetric(vertical: _Sp.sm),
+        padding: const EdgeInsets.symmetric(horizontal: _Sp.md, vertical: 5),
         decoration: BoxDecoration(
           color: const Color(0x66000000),
           borderRadius: BorderRadius.circular(12),
@@ -564,11 +564,11 @@ class _CallPill extends StatelessWidget {
               size: 14,
               color: missed ? const Color(0xFFFF6B60) : Colors.white),
           const SizedBox(width: 6),
-          Text(text, style: const TextStyle(fontSize: 12, color: Colors.white)),
+          Text(text, style: const TextStyle(fontSize: _Fs.small, color: Colors.white)),
           if (onTap != null) ...[
-            const SizedBox(width: 8),
+            const SizedBox(width: _Sp.sm),
             const Text('· اتصل',
-                style: TextStyle(fontSize: 12, color: Color(0xFF7CC0FF))),
+                style: TextStyle(fontSize: _Fs.small, color: Color(0xFF7CC0FF))),
           ],
         ]),
       ),
@@ -618,7 +618,7 @@ class _SincePill extends StatelessWidget {
         : 'أنتم مرتبطين من ${_countAr(days, 'يوم', 'يومين', 'أيام', 'يوم')}';
     return Center(
       child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 12),
+        margin: const EdgeInsets.symmetric(vertical: _Sp.md),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
         decoration: BoxDecoration(
           color: const Color(0x66000000),
@@ -627,7 +627,7 @@ class _SincePill extends StatelessWidget {
         child: Row(mainAxisSize: MainAxisSize.min, children: [
           const Icon(Icons.favorite_rounded, size: 14, color: Color(0xFFFF6B9D)),
           const SizedBox(width: 6),
-          Text(text, style: const TextStyle(fontSize: 12, color: Colors.white)),
+          Text(text, style: const TextStyle(fontSize: _Fs.small, color: Colors.white)),
         ]),
       ),
     );
@@ -704,17 +704,17 @@ extension _ChatOffline on _ChatState {
   Widget _offlineBar() => Container(
         width: double.infinity,
         margin: const EdgeInsets.fromLTRB(12, 8, 12, 0),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: _Sp.md, vertical: 6),
         decoration: BoxDecoration(
           color: const Color(0xCCB45309),
           borderRadius: BorderRadius.circular(12),
         ),
         child: const Row(mainAxisSize: MainAxisSize.min, children: [
           Icon(Icons.wifi_off_rounded, size: 16, color: Colors.white),
-          SizedBox(width: 8),
+          SizedBox(width: _Sp.sm),
           Flexible(
             child: Text('لا يوجد اتصال، ننتظر الشبكة...',
-                style: TextStyle(fontSize: 13, color: Colors.white)),
+                style: TextStyle(fontSize: _Fs.meta, color: Colors.white)),
           ),
         ]),
       );
@@ -741,7 +741,7 @@ class _RemindBanner extends StatelessWidget {
         'ما رديت على الطرف الثاني من ${_countAr(h, 'ساعة', 'ساعتين', 'ساعات', 'ساعة')}';
     return Center(
       child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 8),
+        margin: const EdgeInsets.symmetric(vertical: _Sp.sm),
         padding: const EdgeInsets.fromLTRB(12, 4, 4, 4),
         decoration: BoxDecoration(
           color: const Color(0x66B45309),
@@ -750,7 +750,7 @@ class _RemindBanner extends StatelessWidget {
         child: Row(mainAxisSize: MainAxisSize.min, children: [
           const Icon(Icons.schedule_rounded, size: 14, color: Colors.white),
           const SizedBox(width: 6),
-          Text(text, style: const TextStyle(fontSize: 12, color: Colors.white)),
+          Text(text, style: const TextStyle(fontSize: _Fs.small, color: Colors.white)),
           IconButton(
             tooltip: 'إغلاق',
             visualDensity: VisualDensity.compact,
@@ -780,11 +780,11 @@ extension _ChatTrust on _ChatState {
                 _trustMine
                     ? 'بانتظار الطرف الثاني يضغط «أثق فيه» حتى تنفتح الصور والمكالمات.'
                     : 'مطابقة جديدة: الصور والمكالمات تنفتح لما الطرفين يضغطون «أثق فيه».',
-                style: const TextStyle(fontSize: 13),
+                style: const TextStyle(fontSize: _Fs.meta),
               ),
             ),
             if (!_trustMine) ...[
-              const SizedBox(width: 8),
+              const SizedBox(width: _Sp.sm),
               _Press(
                 onTap: _trust,
                 child: Container(
@@ -857,8 +857,8 @@ extension _ChatEmpty on _ChatState {
           child: Glass(
             radius: 18,
             shadow: false,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
-            child: Text(label, style: const TextStyle(fontSize: 15)),
+            padding: const EdgeInsets.symmetric(horizontal: _Sp.lg, vertical: 11),
+            child: Text(label, style: const TextStyle(fontSize: _Fs.bodyL)),
           ),
         );
     return Center(
@@ -868,7 +868,7 @@ extension _ChatEmpty on _ChatState {
           const Text('🌱', style: TextStyle(fontSize: 46)),
           const SizedBox(height: 10),
           const Text('بداية حلوة',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
+              style: TextStyle(fontSize: _Fs.display, fontWeight: FontWeight.w700)),
           const SizedBox(height: 6),
           Text(_matched ? 'تعرّفوا على بعض بسؤال خفيف' : 'اختر شي تبدأ فيه',
               style: TextStyle(color: _t.text.withValues(alpha: 0.7))),

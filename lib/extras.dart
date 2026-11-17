@@ -99,7 +99,7 @@ class _WheelState extends State<DecisionWheelScreen>
                 ]),
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: _Sp.sm),
             AnimatedSwitcher(
               duration: const Duration(milliseconds: 300),
               child: Text(
@@ -109,7 +109,7 @@ class _WheelState extends State<DecisionWheelScreen>
                 style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: _Sp.lg),
             _Btn(label: 'دوّر', onTap: _go),
             if (_result != null) ...[
               const SizedBox(height: 10),
@@ -125,10 +125,10 @@ class _WheelState extends State<DecisionWheelScreen>
                 child: const Text('أرسل النتيجة بالمحادثة'),
               ),
             ],
-            const SizedBox(height: 16),
+            const SizedBox(height: _Sp.lg),
             Glass(
               radius: 20,
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(_Sp.md),
               child: TextField(
                 controller: _c,
                 minLines: 3,
@@ -175,7 +175,7 @@ class _WheelPainter extends CustomPainter {
           text: TextSpan(
               text: opts[i].length > 12 ? '${opts[i].substring(0, 12)}…' : opts[i],
               style: const TextStyle(
-                  color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700)),
+                  color: Colors.white, fontSize: _Fs.body, fontWeight: FontWeight.w700)),
           textDirection: TextDirection.rtl,
         )..layout(maxWidth: r * 0.7);
         tp.paint(canvas, Offset(r * 0.25, -tp.height / 2));
@@ -210,9 +210,9 @@ class StatsScreen extends StatelessWidget {
           Text(emoji, style: const TextStyle(fontSize: 22)),
           const SizedBox(height: 6),
           Text('${value ?? 0}',
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w700)),
+              style: const TextStyle(fontSize: _Fs.big, fontWeight: FontWeight.w700)),
           Text(label,
-              style: const TextStyle(fontSize: 13, color: Color(0xCCFFFFFF))),
+              style: const TextStyle(fontSize: _Fs.meta, color: Color(0xCCFFFFFF))),
         ]),
       );
 
@@ -236,7 +236,7 @@ class StatsScreen extends StatelessWidget {
                 }
                 final s = Map<String, dynamic>.from(snap.data as Map);
                 return GridView.count(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(_Sp.lg),
                   crossAxisCount: 2,
                   mainAxisSpacing: 12,
                   crossAxisSpacing: 12,
@@ -277,7 +277,7 @@ Future<void> _setCountdown(BuildContext context, String chatId) async {
             maxLength: 40,
             decoration: const InputDecoration(labelText: 'على شنو؟ (مثلاً: لقاءنا)'),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: _Sp.sm),
           OutlinedButton.icon(
             onPressed: () async {
               final now = DateTime.now();
@@ -440,7 +440,7 @@ class _RequestsPanelState extends State<_RequestsPanel> {
           child: Glass(
             radius: 20,
             tint: const Color(0xFFFF5FA2),
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(_Sp.md),
             child: Row(children: [
               _Avatar(
                   path: r['avatar_path'] as String?,
@@ -486,7 +486,7 @@ class _RequestsPanelState extends State<_RequestsPanel> {
             ),
           ),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: _Sp.sm),
         _GlassIcon(
             label: 'إرسال الطلب',
             icon: Icons.send_rounded,
@@ -502,7 +502,7 @@ class _RequestsPanelState extends State<_RequestsPanel> {
             const SizedBox(width: 6),
             Expanded(
                 child: Text('بانتظار موافقة @${r['username']}',
-                    style: const TextStyle(fontSize: 13, color: Color(0xCCFFFFFF)))),
+                    style: const TextStyle(fontSize: _Fs.meta, color: Color(0xCCFFFFFF)))),
             TextButton(
                 onPressed: () => _cancel((r['id'] as num).toInt()),
                 child: const Text('إلغاء')),
@@ -628,13 +628,13 @@ extension _ChatExtras on _ChatState {
             shadow: false,
             padding: const EdgeInsets.fromLTRB(14, 8, 4, 8),
             child: Row(children: [
-              Text(emoji, style: const TextStyle(fontSize: 20)),
+              Text(emoji, style: const TextStyle(fontSize: _Fs.display)),
               const SizedBox(width: 10),
               Expanded(
                   child: Text(text,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 13))),
+                      style: const TextStyle(fontSize: _Fs.meta))),
               IconButton(
                   tooltip: 'إغلاق',
                   onPressed: onClose,

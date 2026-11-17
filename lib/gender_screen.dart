@@ -46,10 +46,10 @@ class _GenderState extends State<GenderScreen> {
           child: SafeArea(
             child: Center(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
+                padding: const EdgeInsets.all(_Sp.xl),
                 child: Glass(
                   radius: 32,
-                  padding: const EdgeInsets.all(24),
+                  padding: const EdgeInsets.all(_Sp.xl),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -60,12 +60,12 @@ class _GenderState extends State<GenderScreen> {
                           textAlign: TextAlign.center,
                           style: TextStyle(
                               fontSize: 34, fontWeight: FontWeight.w800)),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: _Sp.sm),
                       const Text('أهلاً بك! حدد جنسك للبدء',
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                              fontSize: 18, color: Color(0xCCFFFFFF))),
-                      const SizedBox(height: 24),
+                              fontSize: _Fs.heading, color: Color(0xCCFFFFFF))),
+                      const SizedBox(height: _Sp.xl),
                       Row(children: [
                         Expanded(
                           child: _GenderCard(
@@ -76,7 +76,7 @@ class _GenderState extends State<GenderScreen> {
                             onTap: () => setState(() => _g = 'male'),
                           ),
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: _Sp.md),
                         Expanded(
                           child: _GenderCard(
                             icon: Icons.female_rounded,
@@ -87,7 +87,7 @@ class _GenderState extends State<GenderScreen> {
                           ),
                         ),
                       ]),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: _Sp.xl),
                       _Btn(label: 'متابعة', onTap: _next, busy: _busy),
                     ],
                   ),
@@ -127,10 +127,10 @@ class _GenderCard extends StatelessWidget {
           ),
           child: Column(children: [
             Icon(icon, size: 44, color: selected ? color : Colors.white70),
-            const SizedBox(height: 8),
+            const SizedBox(height: _Sp.sm),
             Text(label,
                 style:
-                    const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+                    const TextStyle(fontSize: _Fs.heading, fontWeight: FontWeight.w600)),
           ]),
         ),
       );

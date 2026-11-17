@@ -71,7 +71,7 @@ class _CallBtn extends StatelessWidget {
             const SizedBox(height: 6),
             Text(label!,
                 style: const TextStyle(
-                    fontSize: 12, color: Color(0xCCFFFFFF))),
+                    fontSize: _Fs.small, color: Color(0xCCFFFFFF))),
           ],
         ],
       );
@@ -94,11 +94,11 @@ class _Who extends StatelessWidget {
         const SizedBox(height: 14),
         Text('@$name',
             textDirection: TextDirection.ltr,
-            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w700)),
+            style: const TextStyle(fontSize: _Fs.big, fontWeight: FontWeight.w700)),
         const SizedBox(height: 6),
         Text(status,
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 16, color: Color(0xCCFFFFFF))),
+            style: const TextStyle(fontSize: _Fs.title, color: Color(0xCCFFFFFF))),
       ]);
 }
 

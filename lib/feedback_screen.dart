@@ -60,12 +60,12 @@ class _FeedbackState extends State<FeedbackScreen> {
                       icon: const Icon(Icons.arrow_back_rounded)),
                   const Text('إرسال ملاحظة',
                       style:
-                          TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
+                          TextStyle(fontSize: _Fs.display, fontWeight: FontWeight.w700)),
                 ]),
               ),
               Expanded(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(_Sp.lg),
                   child: Glass(
                     radius: 28,
                     padding: const EdgeInsets.all(20),
@@ -75,7 +75,7 @@ class _FeedbackState extends State<FeedbackScreen> {
                         const Text(
                             'شنو اللي تبي توصله للمطوّر؟ كل ملاحظة تساعدنا نحسّن التطبيق.',
                             style: TextStyle(color: Color(0xCCFFFFFF))),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: _Sp.lg),
                         Wrap(spacing: 8, children: [
                           for (final e in _kinds.entries)
                             ChoiceChip(
@@ -84,7 +84,7 @@ class _FeedbackState extends State<FeedbackScreen> {
                               onSelected: (_) => setState(() => _kind = e.key),
                             ),
                         ]),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: _Sp.lg),
                         TextField(
                           controller: _c,
                           maxLines: 6,
@@ -99,7 +99,7 @@ class _FeedbackState extends State<FeedbackScreen> {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: _Sp.lg),
                         _Btn(label: 'إرسال', onTap: _send, busy: _busy),
                       ],
                     ),

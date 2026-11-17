@@ -28,7 +28,7 @@ void showQuickReplies(BuildContext context, String chatId) {
     context: context,
     builder: (ctx) => SafeArea(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(_Sp.lg),
         child: Wrap(
           spacing: 8,
           runSpacing: 8,
@@ -36,7 +36,7 @@ void showQuickReplies(BuildContext context, String chatId) {
           children: [
             for (final t in _quickTexts)
               ActionChip(
-                label: Text(t, style: const TextStyle(fontSize: 15)),
+                label: Text(t, style: const TextStyle(fontSize: _Fs.bodyL)),
                 onPressed: () {
                   Navigator.pop(ctx);
                   _sendQuick(context, chatId, t);

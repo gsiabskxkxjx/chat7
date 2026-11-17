@@ -92,7 +92,7 @@ class _DrawState extends State<DrawScreen> {
             child: Column(children: [
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(_Sp.md),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(24),
                     child: RepaintBoundary(
@@ -118,7 +118,7 @@ class _DrawState extends State<DrawScreen> {
                 height: 52,
                 child: ListView(
                   scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: _Sp.md),
                   children: [
                     for (final c in _palette)
                       GestureDetector(
@@ -140,7 +140,7 @@ class _DrawState extends State<DrawScreen> {
                 ),
               ),
               Row(children: [
-                const SizedBox(width: 16),
+                const SizedBox(width: _Sp.lg),
                 const Icon(Icons.brush_rounded, size: 18),
                 Expanded(
                   child: Slider(
@@ -219,11 +219,11 @@ Future<void> showCardsSheet(BuildContext context, String chatId) async {
           const Padding(
             padding: EdgeInsets.fromLTRB(16, 16, 16, 4),
             child: Text('بطاقات جاهزة',
-                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
+                style: TextStyle(fontSize: _Fs.titleL, fontWeight: FontWeight.w600)),
           ),
           for (var i = 0; i < _greetCards.length; i++)
             ListTile(
-              leading: Text(_greetCards[i].$1, style: const TextStyle(fontSize: 24)),
+              leading: Text(_greetCards[i].$1, style: const TextStyle(fontSize: _Fs.big)),
               title: Text(_greetCards[i].$2),
               onTap: () => Navigator.pop(ctx, i),
             ),
@@ -316,7 +316,7 @@ Future<void> showTalkCards(BuildContext context, String chatId, String kind) asy
             : kind == 'deep'
                 ? 'سؤال تعارف'
                 : 'أفكار للطلعات'),
-        content: Text(text, style: const TextStyle(fontSize: 18, height: 1.5)),
+        content: Text(text, style: const TextStyle(fontSize: _Fs.heading, height: 1.5)),
         actions: [
           TextButton(
               onPressed: () => set(() => text = make()),

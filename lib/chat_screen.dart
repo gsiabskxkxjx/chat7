@@ -409,7 +409,7 @@ class _ChatState extends State<ChatScreen> {
                                       ),
                                       child: Text(n > 99 ? '99+' : '$n',
                                           style: const TextStyle(
-                                              fontSize: 11,
+                                              fontSize: _Fs.caption,
                                               fontWeight: FontWeight.w700,
                                               color: Colors.white)),
                                     ),

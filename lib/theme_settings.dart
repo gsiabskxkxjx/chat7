@@ -117,7 +117,7 @@ class _ThemeSettingsState extends State<ThemeSettingsScreen> {
   Widget _section(String t) => Padding(
         padding: const EdgeInsets.only(bottom: 8, top: 4),
         child: Text(t,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+            style: const TextStyle(fontSize: _Fs.title, fontWeight: FontWeight.w700)),
       );
 
   Widget _themeGrid() => Wrap(
@@ -165,7 +165,7 @@ class _ThemeSettingsState extends State<ThemeSettingsScreen> {
         ? 'اخترت صورة جديدة (تغيير)'
         : (hasImage ? 'تغيير الصورة' : 'اختيار صورة من المعرض');
     final out = <Widget>[
-      const SizedBox(height: 8),
+      const SizedBox(height: _Sp.sm),
       OutlinedButton.icon(
         onPressed: _busy ? null : _pickImage,
         icon: const Icon(Icons.photo_library_rounded),
@@ -174,7 +174,7 @@ class _ThemeSettingsState extends State<ThemeSettingsScreen> {
     ];
     if (_kind == 'blur' || _kind == 'glass') {
       out.addAll([
-        const SizedBox(height: 12),
+        const SizedBox(height: _Sp.md),
         Text('القوة: $_strength'),
         Slider(
           value: _strength.toDouble(),
@@ -204,14 +204,14 @@ class _ThemeSettingsState extends State<ThemeSettingsScreen> {
                       icon: const Icon(Icons.arrow_back_rounded)),
                   const Text('مظهر المحادثة',
                       style:
-                          TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
+                          TextStyle(fontSize: _Fs.display, fontWeight: FontWeight.w700)),
                 ]),
               ),
               Expanded(
                 child: _loading
                     ? const Center(child: CircularProgressIndicator())
                     : SingleChildScrollView(
-                        padding: const EdgeInsets.all(16),
+                        padding: const EdgeInsets.all(_Sp.lg),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
@@ -220,9 +220,9 @@ class _ThemeSettingsState extends State<ThemeSettingsScreen> {
                             const SizedBox(height: 20),
                             _section('نوع الخلفية'),
                             _kindChips(),
-                            const SizedBox(height: 8),
+                            const SizedBox(height: _Sp.sm),
                             ..._bgOptions(),
-                            const SizedBox(height: 24),
+                            const SizedBox(height: _Sp.xl),
                             _Btn(label: 'حفظ', onTap: _save, busy: _busy),
                           ],
                         ),
@@ -244,7 +244,7 @@ class _ThemeCard extends StatelessWidget {
         duration: const Duration(milliseconds: 150),
         width: 150,
         height: 110,
-        padding: const EdgeInsets.all(8),
+        padding: const EdgeInsets.all(_Sp.sm),
         decoration: BoxDecoration(
           gradient: LinearGradient(
               begin: Alignment.topCenter,
@@ -266,7 +266,7 @@ class _ThemeCard extends StatelessWidget {
                 decoration: BoxDecoration(
                     color: t.mine, borderRadius: BorderRadius.circular(12)),
                 child: const Text('مرحبا',
-                    style: TextStyle(color: Colors.white, fontSize: 12)),
+                    style: TextStyle(color: Colors.white, fontSize: _Fs.small)),
               ),
             ),
             const SizedBox(height: 6),
@@ -278,14 +278,14 @@ class _ThemeCard extends StatelessWidget {
                 decoration: BoxDecoration(
                     color: t.theirs, borderRadius: BorderRadius.circular(12)),
                 child: Text('هلا',
-                    style: TextStyle(color: t.text, fontSize: 12)),
+                    style: TextStyle(color: t.text, fontSize: _Fs.small)),
               ),
             ),
             const Spacer(),
             Text('${t.id}. ${t.name}',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                    color: t.text, fontSize: 12, fontWeight: FontWeight.w600)),
+                    color: t.text, fontSize: _Fs.small, fontWeight: FontWeight.w600)),
           ],
         ),
       );

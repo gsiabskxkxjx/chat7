@@ -84,7 +84,7 @@ class _TicState extends State<TicTacToeScreen> {
   Widget _cell(String v, bool canTap, VoidCallback onTap) => GestureDetector(
         onTap: canTap ? onTap : null,
         child: Container(
-          margin: const EdgeInsets.all(4),
+          margin: const EdgeInsets.all(_Sp.xs),
           decoration: BoxDecoration(
             color: const Color(0x22FFFFFF),
             borderRadius: BorderRadius.circular(12),
@@ -118,7 +118,7 @@ class _TicState extends State<TicTacToeScreen> {
                       icon: const Icon(Icons.arrow_back_rounded)),
                   const Text('إكس أو',
                       style:
-                          TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
+                          TextStyle(fontSize: _Fs.display, fontWeight: FontWeight.w700)),
                 ]),
               ),
               Expanded(
@@ -163,8 +163,8 @@ class _TicState extends State<TicTacToeScreen> {
                       child: Column(children: [
                         Text(msg,
                             style: const TextStyle(
-                                fontSize: 18, fontWeight: FontWeight.w600)),
-                        const SizedBox(height: 16),
+                                fontSize: _Fs.heading, fontWeight: FontWeight.w600)),
+                        const SizedBox(height: _Sp.lg),
                         AspectRatio(
                           aspectRatio: 1,
                           child: GridView.count(
@@ -374,7 +374,7 @@ class _RpsState extends State<RpsScreen> {
         borderRadius: BorderRadius.circular(16),
         child: Container(
           width: 96,
-          padding: const EdgeInsets.symmetric(vertical: 16),
+          padding: const EdgeInsets.symmetric(vertical: _Sp.lg),
           decoration: BoxDecoration(
             color: const Color(0x22FFFFFF),
             borderRadius: BorderRadius.circular(16),
@@ -382,7 +382,7 @@ class _RpsState extends State<RpsScreen> {
           child: Column(mainAxisSize: MainAxisSize.min, children: [
             Text(_rpsEmoji(key), style: const TextStyle(fontSize: 34)),
             const SizedBox(height: 6),
-            Text(label, style: const TextStyle(fontSize: 13)),
+            Text(label, style: const TextStyle(fontSize: _Fs.meta)),
           ]),
         ),
       );
@@ -401,7 +401,7 @@ class _RpsState extends State<RpsScreen> {
                       icon: const Icon(Icons.arrow_back_rounded)),
                   const Text('حجر ورقة مقص',
                       style:
-                          TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
+                          TextStyle(fontSize: _Fs.display, fontWeight: FontWeight.w700)),
                 ]),
               ),
               Expanded(
@@ -440,14 +440,14 @@ class _RpsState extends State<RpsScreen> {
                         child: Column(mainAxisSize: MainAxisSize.min, children: [
                           Text(msg,
                               style: const TextStyle(
-                                  fontSize: 20, fontWeight: FontWeight.w700)),
+                                  fontSize: _Fs.display, fontWeight: FontWeight.w700)),
                           const SizedBox(height: 20),
                           Row(mainAxisSize: MainAxisSize.min, children: [
                             Text(_rpsEmoji(myPick),
                                 style: const TextStyle(fontSize: 48)),
-                            const SizedBox(width: 24),
-                            const Text('VS', style: TextStyle(fontSize: 16)),
-                            const SizedBox(width: 24),
+                            const SizedBox(width: _Sp.xl),
+                            const Text('VS', style: TextStyle(fontSize: _Fs.title)),
+                            const SizedBox(width: _Sp.xl),
                             Text(_rpsEmoji(other.isEmpty ? null : picks[other] as String?),
                                 style: const TextStyle(fontSize: 48)),
                           ]),
@@ -460,7 +460,7 @@ class _RpsState extends State<RpsScreen> {
                     if (myPick != null) {
                       return const Center(
                         child: Text('اخترت، ننتظر الطرف الثاني...',
-                            style: TextStyle(fontSize: 16)),
+                            style: TextStyle(fontSize: _Fs.title)),
                       );
                     }
 
@@ -469,12 +469,12 @@ class _RpsState extends State<RpsScreen> {
                         const Text('اختر سراً، والنتيجة تطلع لما يختار الاثنين',
                             textAlign: TextAlign.center,
                             style: TextStyle(color: Color(0xAAFFFFFF))),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: _Sp.xl),
                         Row(mainAxisSize: MainAxisSize.min, children: [
                           _choiceBtn('حجر', 'rock', () => _pick(cur!, 'rock')),
-                          const SizedBox(width: 12),
+                          const SizedBox(width: _Sp.md),
                           _choiceBtn('ورقة', 'paper', () => _pick(cur!, 'paper')),
-                          const SizedBox(width: 12),
+                          const SizedBox(width: _Sp.md),
                           _choiceBtn('مقص', 'scissors',
                               () => _pick(cur!, 'scissors')),
                         ]),

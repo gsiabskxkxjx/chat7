@@ -7,24 +7,24 @@ extension _ChatActions on _ChatState {
       context: context,
       builder: (ctx) => SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(_Sp.xl),
           child: Column(mainAxisSize: MainAxisSize.min, children: [
             _Avatar(path: _pAvatar, radius: 48, gender: _pGender),
-            const SizedBox(height: 12),
+            const SizedBox(height: _Sp.md),
             Text(_title(),
                 style:
-                    const TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
-            const SizedBox(height: 4),
+                    const TextStyle(fontSize: _Fs.display, fontWeight: FontWeight.w700)),
+            const SizedBox(height: _Sp.xs),
             Text('@${widget.chat.partner}',
                 textDirection: TextDirection.ltr,
                 style: const TextStyle(color: Color(0xAAFFFFFF))),
-            const SizedBox(height: 8),
+            const SizedBox(height: _Sp.sm),
             Text(_status(),
                 style: TextStyle(
                     color: _online
                         ? const Color(0xFF5BE584)
                         : const Color(0xAAFFFFFF))),
-            const SizedBox(height: 12),
+            const SizedBox(height: _Sp.md),
             Row(mainAxisAlignment: MainAxisAlignment.center, children: [
               TextButton.icon(
                 onPressed: () {
@@ -45,7 +45,7 @@ extension _ChatActions on _ChatState {
                     style: TextStyle(color: Color(0xFFFF6B60))),
               ),
             ]),
-            const SizedBox(height: 12),
+            const SizedBox(height: _Sp.md),
             TextButton.icon(
               onPressed: () {
                 Navigator.pop(ctx);
@@ -383,7 +383,11 @@ extension _ChatActions on _ChatState {
         final x = await _picker.pickVideo(
             source: src, maxDuration: const Duration(minutes: 2));
         if (x != null) {
-          final file = File(x.path);
+          final original = File(x.path);
+          if (await original.length() > 6 * 1024 * 1024 && mounted) {
+            _toast(context, 'نضغط الفيديو قبل الإرسال...');
+          }
+          final file = await _compressVideo(original);
           if (await file.length() > 50 * 1024 * 1024) {
             if (mounted) _toast(context, 'الفيديو كبير، الحد الأقصى 50 ميجا.');
           } else {
@@ -391,9 +395,10 @@ extension _ChatActions on _ChatState {
                 chatId: widget.chat.id,
                 file: file,
                 kind: 'video',
-                ext: _extOf(x.path),
-                mime: _mimeForVideo(x.path));
+                ext: _extOf(file.path),
+                mime: _mimeForVideo(file.path));
           }
+          await _dropTemp(file, original);
         }
       }
     } catch (_) {
@@ -478,7 +483,7 @@ extension _ChatActions on _ChatState {
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 2),
               child: Text(times,
-                  style: const TextStyle(fontSize: 12, color: Color(0x99FFFFFF))),
+                  style: const TextStyle(fontSize: _Fs.small, color: Color(0x99FFFFFF))),
             ),
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),

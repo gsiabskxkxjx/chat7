@@ -195,14 +195,14 @@ class _QuizState extends State<QuizScreen> {
   Widget _form(List<int?> pick, String headline, VoidCallback onSubmit) {
     final complete = pick.every((e) => e != null);
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(_Sp.lg),
       children: [
         Text(headline,
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-        const SizedBox(height: 16),
+            style: const TextStyle(fontSize: _Fs.title, fontWeight: FontWeight.w600)),
+        const SizedBox(height: _Sp.lg),
         for (var q = 0; q < _quizQ.length; q++) ...[
-          Text(_quizQ[q][0], style: const TextStyle(fontSize: 15)),
+          Text(_quizQ[q][0], style: const TextStyle(fontSize: _Fs.bodyL)),
           const SizedBox(height: 6),
           Wrap(spacing: 8, runSpacing: 8, children: [
             for (var o = 1; o < _quizQ[q].length; o++)
@@ -214,7 +214,7 @@ class _QuizState extends State<QuizScreen> {
           ]),
           const SizedBox(height: 14),
         ],
-        const SizedBox(height: 8),
+        const SizedBox(height: _Sp.sm),
         Center(
           child: _Btn(
               label: 'أرسل',
@@ -241,7 +241,7 @@ class _QuizState extends State<QuizScreen> {
                       icon: const Icon(Icons.arrow_back_rounded)),
                   const Text('كم تعرفني؟',
                       style:
-                          TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
+                          TextStyle(fontSize: _Fs.display, fontWeight: FontWeight.w700)),
                 ]),
               ),
               Expanded(
@@ -280,12 +280,12 @@ class _QuizState extends State<QuizScreen> {
                         child: Column(mainAxisSize: MainAxisSize.min, children: [
                           Text('نتيجتك: ${score[_me] ?? 0} من ${_quizQ.length}',
                               style: const TextStyle(
-                                  fontSize: 20, fontWeight: FontWeight.w700)),
-                          const SizedBox(height: 8),
+                                  fontSize: _Fs.display, fontWeight: FontWeight.w700)),
+                          const SizedBox(height: _Sp.sm),
                           Text(
                               'نتيجة الطرف الثاني: ${other.isEmpty ? 0 : (score[other] ?? 0)} من ${_quizQ.length}',
-                              style: const TextStyle(fontSize: 16)),
-                          const SizedBox(height: 24),
+                              style: const TextStyle(fontSize: _Fs.title)),
+                          const SizedBox(height: _Sp.xl),
                           _Btn(label: 'جولة جديدة', onTap: _newRound, busy: false),
                         ]),
                       );
@@ -295,7 +295,7 @@ class _QuizState extends State<QuizScreen> {
                       if (answers.containsKey(_me)) {
                         return const Center(
                           child: Text('أجبت، ننتظر الطرف الثاني يجاوب...',
-                              style: TextStyle(fontSize: 16)),
+                              style: TextStyle(fontSize: _Fs.title)),
                         );
                       }
                       return _form(_sel, 'جاوب على أسئلة عن نفسك',
@@ -306,7 +306,7 @@ class _QuizState extends State<QuizScreen> {
                     if (guesses.containsKey(_me)) {
                       return const Center(
                         child: Text('خمّنت، ننتظر الطرف الثاني يخمّن...',
-                            style: TextStyle(fontSize: 16)),
+                            style: TextStyle(fontSize: _Fs.title)),
                       );
                     }
                     return _form(_guess, 'خمّن إجابات الطرف الثاني',

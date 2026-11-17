@@ -65,10 +65,10 @@ class _RecoveryState extends State<RecoveryCodeScreen> {
                 'ما تقدر ترجع حسابك إلا بهذا الرمز. ما راح يظهر لك مرة ثانية.',
                 textAlign: TextAlign.center,
                 style: TextStyle(color: Color(0xCCFFFFFF))),
-            const SizedBox(height: 16),
+            const SizedBox(height: _Sp.lg),
             Glass(
               radius: 20,
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: _Sp.sm, vertical: 10),
               child: Row(children: [
                 Expanded(
                   child: SelectableText(
@@ -92,7 +92,7 @@ class _RecoveryState extends State<RecoveryCodeScreen> {
                 ),
               ]),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: _Sp.sm),
             CheckboxListTile(
               value: _saved,
               onChanged: (v) => setState(() => _saved = v ?? false),
@@ -100,7 +100,7 @@ class _RecoveryState extends State<RecoveryCodeScreen> {
               contentPadding: EdgeInsets.zero,
               title: const Text('حفظت الرمز'),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: _Sp.sm),
             _Btn(
               label: 'متابعة',
               onTap: () {
@@ -194,7 +194,7 @@ class _ResetState extends State<ResetPasswordScreen> {
               label: 'اسم المستخدم',
               icon: Icons.alternate_email_rounded,
               onSubmit: _submit),
-          const SizedBox(height: 12),
+          const SizedBox(height: _Sp.md),
           _Field(
               controller: _c,
               label: 'رمز الاسترجاع',
@@ -203,12 +203,12 @@ class _ResetState extends State<ResetPasswordScreen> {
               maxLength: 19,
               pattern: r'[A-Za-z0-9-]',
               upper: true),
-          const SizedBox(height: 12),
+          const SizedBox(height: _Sp.md),
           _PassField(
               controller: _p,
               label: 'كلمة السر الجديدة',
               onSubmit: _submit),
-          const SizedBox(height: 12),
+          const SizedBox(height: _Sp.md),
           _PassField(
               controller: _p2,
               label: 'تأكيد كلمة السر',

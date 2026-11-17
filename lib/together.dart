@@ -146,7 +146,7 @@ class _LoveNotesState extends State<LoveNotesScreen> {
                 if (rows.isEmpty) {
                   return const Center(
                       child: Text('علّق أول ملاحظة 📌',
-                          style: TextStyle(fontSize: 18)));
+                          style: TextStyle(fontSize: _Fs.heading)));
                 }
                 return GridView.builder(
                   padding: const EdgeInsets.fromLTRB(14, 14, 14, 90),
@@ -185,7 +185,7 @@ class _LoveNotesState extends State<LoveNotesScreen> {
                                   child: Text('${n['body']}',
                                       overflow: TextOverflow.fade,
                                       style: const TextStyle(
-                                          fontSize: 16,
+                                          fontSize: _Fs.title,
                                           height: 1.4,
                                           color: Color(0xFF2A2A2A),
                                           fontWeight: FontWeight.w600)),
@@ -193,7 +193,7 @@ class _LoveNotesState extends State<LoveNotesScreen> {
                                 Text(
                                     '${mine ? 'منك' : 'منه'}${at == null ? '' : ' · ${at.day}/${at.month}'}',
                                     style: const TextStyle(
-                                        fontSize: 11, color: Color(0x99000000))),
+                                        fontSize: _Fs.caption, color: Color(0x99000000))),
                               ]),
                         ),
                       ),
@@ -324,7 +324,7 @@ class _CalendarState extends State<CalendarScreen> {
         child: Glass(
           radius: 20,
           shadow: false,
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(_Sp.md),
           child: Row(children: [
             Container(
               width: 52,
@@ -335,17 +335,17 @@ class _CalendarState extends State<CalendarScreen> {
               ),
               child: Column(children: [
                 Text(d == null ? '' : '${d.day}',
-                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
+                    style: const TextStyle(fontSize: _Fs.display, fontWeight: FontWeight.w800)),
                 Text(d == null ? '' : _months[d.month - 1],
                     style: const TextStyle(fontSize: 10)),
               ]),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: _Sp.md),
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text('${e['title']}',
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-                Text(when, style: const TextStyle(fontSize: 12, color: Color(0xB3FFFFFF))),
+                    style: const TextStyle(fontSize: _Fs.title, fontWeight: FontWeight.w600)),
+                Text(when, style: const TextStyle(fontSize: _Fs.small, color: Color(0xB3FFFFFF))),
               ]),
             ),
           ]),
@@ -397,7 +397,7 @@ class _CalendarState extends State<CalendarScreen> {
                   children: [
                     if (next.isEmpty)
                       const Padding(
-                        padding: EdgeInsets.all(24),
+                        padding: EdgeInsets.all(_Sp.xl),
                         child: Text('ما في مواعيد جاية. ضيفوا أول موعد 📅',
                             textAlign: TextAlign.center),
                       ),
@@ -523,7 +523,7 @@ class _PhotoChallengeState extends State<PhotoChallengeScreen> {
       Expanded(
         child: Column(children: [
           Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),
-          const SizedBox(height: 8),
+          const SizedBox(height: _Sp.sm),
           AspectRatio(
             aspectRatio: 0.8,
             child: _Press(
@@ -545,7 +545,7 @@ class _PhotoChallengeState extends State<PhotoChallengeScreen> {
                       )
                     : Center(
                         child: Padding(
-                          padding: const EdgeInsets.all(12),
+                          padding: const EdgeInsets.all(_Sp.md),
                           child: Text(empty,
                               textAlign: TextAlign.center,
                               style: const TextStyle(color: Color(0xCCFFFFFF))),
@@ -596,7 +596,7 @@ class _PhotoChallengeState extends State<PhotoChallengeScreen> {
                       const SizedBox(height: 6),
                       const Text('صوّر، والصورتين تنكشف لما الاثنين يخلصون.',
                           textAlign: TextAlign.center,
-                          style: TextStyle(fontSize: 12, color: Color(0xB3FFFFFF))),
+                          style: TextStyle(fontSize: _Fs.small, color: Color(0xB3FFFFFF))),
                     ]),
                   ),
                   const SizedBox(height: 18),
@@ -607,7 +607,7 @@ class _PhotoChallengeState extends State<PhotoChallengeScreen> {
                       _slot('أنت', mine,
                           _busy ? 'جاري الإرسال...' : '📷\nاضغط وصوّر',
                           onTap: mine == null && !_busy ? _shoot : null),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: _Sp.md),
                       _slot(
                           'هو',
                           theirs,

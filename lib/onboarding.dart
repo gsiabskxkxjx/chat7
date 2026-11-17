@@ -163,7 +163,7 @@ class _OnboardingState extends State<OnboardingScreen> {
                   itemBuilder: (_, i) {
                     final c = _cards[i];
                     return Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      padding: const EdgeInsets.symmetric(horizontal: _Sp.xl),
                       child: Center(
                         child: Glass(
                           radius: 32,
@@ -195,12 +195,12 @@ class _OnboardingState extends State<OnboardingScreen> {
                             Text(c.title,
                                 textAlign: TextAlign.center,
                                 style: const TextStyle(
-                                    fontSize: 24, fontWeight: FontWeight.w700)),
+                                    fontSize: _Fs.big, fontWeight: FontWeight.w700)),
                             const SizedBox(height: 10),
                             Text(c.text,
                                 textAlign: TextAlign.center,
                                 style: const TextStyle(
-                                    fontSize: 16,
+                                    fontSize: _Fs.title,
                                     height: 1.6,
                                     color: Color(0xDDFFFFFF))),
                           ]),
@@ -216,7 +216,7 @@ class _OnboardingState extends State<OnboardingScreen> {
                   for (var k = 0; k < _cards.length; k++)
                     AnimatedContainer(
                       duration: const Duration(milliseconds: 250),
-                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                      margin: const EdgeInsets.symmetric(horizontal: _Sp.xs),
                       width: k == _i ? 22 : 8,
                       height: 8,
                       decoration: BoxDecoration(

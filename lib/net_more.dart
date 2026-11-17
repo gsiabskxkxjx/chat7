@@ -152,18 +152,18 @@ class _LinkPreview extends StatelessWidget {
                                   overflow: TextOverflow.ellipsis,
                                   style: const TextStyle(
                                       fontWeight: FontWeight.w700,
-                                      fontSize: 14,
+                                      fontSize: _Fs.body,
                                       color: Colors.white)),
                             Row(mainAxisSize: MainAxisSize.min, children: [
                               const Icon(Icons.link_rounded,
                                   size: 14, color: Color(0xB3FFFFFF)),
-                              const SizedBox(width: 4),
+                              const SizedBox(width: _Sp.xs),
                               Flexible(
                                 child: Text(host,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: const TextStyle(
-                                        fontSize: 12,
+                                        fontSize: _Fs.small,
                                         color: Color(0xB3FFFFFF))),
                               ),
                             ]),
@@ -212,9 +212,9 @@ class _PendingBubble extends StatelessWidget {
             child: Row(mainAxisSize: MainAxisSize.min, children: [
               Flexible(
                 child: Text('${p.row['body'] ?? ''}',
-                    style: const TextStyle(fontSize: 16, color: Colors.white)),
+                    style: const TextStyle(fontSize: _Fs.title, color: Colors.white)),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: _Sp.sm),
               p.sending
                   ? const SizedBox(
                       width: 14,
@@ -236,7 +236,7 @@ class _PendingNote extends StatelessWidget {
         padding: EdgeInsets.only(bottom: 4),
         child: Text('ما وصلت بعد، راح نعيد إرسالها لحالها. اضغط عليها تعيدها الحين، ومطوّل تلغيها.',
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 11, color: Color(0xB3FFFFFF))),
+            style: TextStyle(fontSize: _Fs.caption, color: Color(0xB3FFFFFF))),
       );
 }
 
@@ -420,7 +420,7 @@ Future<void> _tipOnce(BuildContext context, String key, String text) async {
   if (!context.mounted) return;
   ScaffoldMessenger.of(context).showSnackBar(SnackBar(
     content: Row(children: [
-      const Text('💡 ', style: TextStyle(fontSize: 18)),
+      const Text('💡 ', style: TextStyle(fontSize: _Fs.heading)),
       Expanded(child: Text(text)),
     ]),
     duration: const Duration(seconds: 7),

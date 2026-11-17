@@ -241,3 +241,143 @@ class _R2Tone {
     }, loop: false, vol: 0.5);
   }
 }
+
+// ===== ويدجت «موعدنا القادم» (381) وحالة «شنو أحتاج» (383) =====
+
+DateTime _nextOcc(DateTime on, String rep, DateTime from) {
+  if (rep == 'none' || !on.isBefore(from)) return on;
+  var d = on;
+  for (var i = 1; i < 5000 && d.isBefore(from); i++) {
+    d = switch (rep) {
+      'weekly' => on.add(Duration(days: 7 * i)),
+      'monthly' => DateTime(on.year, on.month + i, on.day),
+      'yearly' => DateTime(on.year + i, on.month, on.day),
+      _ => on,
+    };
+    if (rep != 'weekly' && rep != 'monthly' && rep != 'yearly') break;
+  }
+  return d;
+}
+
+extension _R2WidgetFeed on _ChatState {
+  Future<void> _feedNextWidget() async {
+    try {
+      final today = _today();
+      final rows = await _db
+          .from('chat_events')
+          .select('title,on_date,repeat_every')
+          .eq('chat_id', widget.chat.id)
+          .limit(200);
+      DateTime? best;
+      String? bestTitle;
+      for (final r in rows) {
+        final on = DateTime.tryParse('${r['on_date']}');
+        if (on == null) continue;
+        final d = _nextOcc(DateTime(on.year, on.month, on.day), '${r['repeat_every'] ?? 'none'}', today);
+        if (d.isBefore(today)) continue;
+        if (best == null || d.isBefore(best)) {
+          best = d;
+          bestTitle = '${r['title']}';
+        }
+      }
+      await _HomeWidgets._save({
+        'next_ms': best == null ? null : '${best.millisecondsSinceEpoch}',
+        'next_title': bestTitle,
+        'need': (_pNeed == null || _pNeed!.isEmpty) ? null : _pNeed,
+      }, 'NextWidget');
+      await _updateCountdown(best, bestTitle, today);
+    } catch (_) {}
+  }
+}
+
+// ===== إشعار ثابت بعدّ تنازلي لموعد قريب (386)، اختياري =====
+
+const _countdownId = 9300;
+String? _lastCountdown;
+
+Future<void> _updateCountdown(DateTime? best, String? title, DateTime today) async {
+  try {
+    final on = _R2Store.get<bool>('ongoingNext') == true;
+    final days = best?.difference(today).inDays;
+    if (!on || best == null || days == null || days > 2) {
+      if (_lastCountdown != null) {
+        _lastCountdown = null;
+        await _callNotifier.cancel(_countdownId);
+      }
+      return;
+    }
+    final body = days == 0 ? 'اليوم 🎉' : (days == 1 ? 'باجر' : 'بعد يومين');
+    final key = '$title|$body';
+    if (_lastCountdown == key) return;
+    _lastCountdown = key;
+    await _callNotifier.show(
+      _countdownId,
+      'موعدكم القادم: ${title ?? ''}',
+      body,
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          'countdown',
+          'عدّ تنازلي للموعد',
+          importance: Importance.low,
+          priority: Priority.low,
+          ongoing: true,
+          autoCancel: false,
+          onlyAlertOnce: true,
+          silent: true,
+          visibility: NotificationVisibility.private,
+        ),
+      ),
+    );
+  } catch (_) {}
+}
+
+class _CountdownTile extends StatefulWidget {
+  const _CountdownTile();
+
+  @override
+  State<_CountdownTile> createState() => _CountdownTileState();
+}
+
+class _CountdownTileState extends State<_CountdownTile> {
+  bool _on = _R2Store.get<bool>('ongoingNext') == true;
+
+  @override
+  Widget build(BuildContext context) => SwitchListTile(
+        secondary: const Icon(Icons.hourglass_top_rounded),
+        title: const Text('إشعار ثابت لموعد قريب'),
+        subtitle: const Text('عدّ تنازلي بالإشعارات لما يبقى يومين أو أقل على موعدكم'),
+        value: _on,
+        onChanged: (v) async {
+          setState(() => _on = v);
+          await _R2Store.set('ongoingNext', v);
+          if (!v) {
+            _lastCountdown = null;
+            try {
+              await _callNotifier.cancel(_countdownId);
+            } catch (_) {}
+          }
+        },
+      );
+}
+
+// ===== قراءة الرسالة بصوت عالي (276) =====
+
+class _R2Tts {
+  static FlutterTts? _t;
+
+  static Future<void> speak(String text) async {
+    try {
+      final t = _t ??= FlutterTts();
+      await t.stop();
+      final arabic = RegExp(r'[\u0600-\u06FF]').hasMatch(text);
+      await t.setLanguage(arabic ? 'ar' : 'en-US');
+      await t.speak(text);
+    } catch (_) {}
+  }
+
+  static Future<void> stop() async {
+    try {
+      await _t?.stop();
+    } catch (_) {}
+  }
+}

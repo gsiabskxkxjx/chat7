@@ -61,6 +61,7 @@ extension _R2Live on _ChatState {
         _pNeed = need;
         _myNick = nick;
       });
+      unawaited(_feedNextWidget());
     } catch (_) {}
   }
 

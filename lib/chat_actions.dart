@@ -255,6 +255,12 @@ extension _ChatActions on _ChatState {
               onTap: () => Navigator.pop(ctx, 'photo_gallery'),
             ),
             ListTile(
+              leading: const Icon(Icons.high_quality_rounded),
+              title: const Text('صورة بجودتها الكاملة'),
+              subtitle: const Text('بدون ضغط (حتى ٤ صور، أبطأ وتستهلك إنترنت أكثر)'),
+              onTap: () => Navigator.pop(ctx, 'photo_full'),
+            ),
+            ListTile(
               leading: const Icon(Icons.photo_camera_rounded),
               title: const Text('تصوير صورة'),
               onTap: () => Navigator.pop(ctx, 'photo_camera'),
@@ -367,12 +373,16 @@ extension _ChatActions on _ChatState {
               source: src, maxWidth: 1600, maxHeight: 1600, imageQuality: 82);
           picked = one == null ? const [] : [one];
         } else {
+          final full = act == 'photo_full';
           picked = await _picker.pickMultiImage(
-              maxWidth: 1600, maxHeight: 1600, imageQuality: 82, limit: 10);
+              maxWidth: full ? null : 1600,
+              maxHeight: full ? null : 1600,
+              imageQuality: full ? null : 82,
+              limit: full ? 4 : 10);
         }
         var files = picked.take(10).map((x) => File(x.path)).toList();
         // صورة وحدة: نفتح شاشة التعديل (فلاتر، تدوير، قص)
-        if (files.length == 1 && mounted) {
+        if (files.length == 1 && act != 'photo_full' && mounted) {
           final edited = await Navigator.of(context).push<File>(MaterialPageRoute(
               builder: (_) => _ImageEditScreen(file: files.first)));
           files = edited == null ? <File>[] : [edited];
@@ -544,6 +554,11 @@ extension _ChatActions on _ChatState {
               title: const Text('ترجمة'),
               onTap: () => Navigator.pop(ctx, 'translate'),
             ),
+            ListTile(
+              leading: const Icon(Icons.record_voice_over_rounded),
+              title: const Text('اقرأها بصوت عالي'),
+              onTap: () => Navigator.pop(ctx, 'speak'),
+            ),
             if (!m.mine)
               ListTile(
                 leading: const Icon(Icons.auto_awesome_rounded),
@@ -607,6 +622,8 @@ extension _ChatActions on _ChatState {
       await _editMsg(m);
     } else if (act == 'pin') {
       await _togglePin(m);
+    } else if (act == 'speak') {
+      await _R2Tts.speak(m.text);
     } else if (act == 'translate') {
       await _aiTranslate(m);
     } else if (act == 'aireply') {

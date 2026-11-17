@@ -277,7 +277,7 @@ extension _R2Share on _ChatState {
       if (!mounted) return;
       final until = r == null ? null : DateTime.tryParse('${r['expires_at']}');
       final ok = r != null && (until == null || until.isAfter(DateTime.now()));
-      if (ok != (_pLoc != null) || (ok && _pLoc?['updated_at'] != r['updated_at'])) {
+      if (ok != (_pLoc != null) || (ok && _pLoc?['updated_at'] != r?['updated_at'])) {
         setState(() => _pLoc = ok ? r : null);
       }
     } catch (_) {}

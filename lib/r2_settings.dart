@@ -39,6 +39,7 @@ class _R2Tiles extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: _Sp.xs),
       child: Column(children: [
         const _SecureTile(),
+        const _CountdownTile(),
         tile(Icons.devices_rounded, 'أجهزتي', 'الأجهزة المسجّلة بحسابك وتسجيل الخروج من الباقي', const DevicesScreen()),
         tile(Icons.notifications_paused_rounded, 'لا تزعج', 'كتم الإشعارات لساعة أو لين الصبح', const DndScreen()),
         tile(Icons.storage_rounded, 'التخزين', 'حجم الكاش وحده الأعلى', const CacheScreen()),

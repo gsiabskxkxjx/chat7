@@ -272,7 +272,7 @@ jobs:
                   // تحديث ويدجت الشاشة الرئيسية لما التطبيق يكتب بيانات جديدة
                   MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "bainatna/widgets").setMethodCallHandler { call, result ->
                       if (call.method == "refresh") {
-                          for (name in listOf("com.bainatna.chat.DaysWidget", "com.bainatna.chat.PhotoWidget")) {
+                          for (name in listOf("com.bainatna.chat.DaysWidget", "com.bainatna.chat.PhotoWidget", "com.bainatna.chat.NextWidget")) {
                               try {
                                   val cn = ComponentName(packageName, name)
                                   val ids = AppWidgetManager.getInstance(this).getAppWidgetIds(cn)
@@ -381,6 +381,29 @@ jobs:
               }
           }
 
+          class NextWidget : AppWidgetProvider() {
+              override fun onUpdate(context: Context, manager: AppWidgetManager, ids: IntArray) {
+                  val d = widgetData(context)
+                  val ms = d.optString("next_ms", "").toLongOrNull()
+                  val title = if (d.isNull("next_title")) "" else d.optString("next_title", "")
+                  val need = if (d.isNull("need")) "" else d.optString("need", "")
+                  val now = System.currentTimeMillis()
+                  val tz = TimeZone.getDefault()
+                  val day = 86400000L
+                  val left = if (ms == null) null else ((ms + tz.getOffset(ms)) / day - (now + tz.getOffset(now)) / day)
+                  for (id in ids) {
+                      val v = RemoteViews(context.packageName, R.layout.bainatna_next_widget)
+                      val big = if (left == null) "♡" else if (left <= 0L) "اليوم" else left.toString()
+                      v.setTextViewText(R.id.w_big, big)
+                      v.setTextViewText(R.id.w_unit, if (left == null) "ما في موعد قادم" else if (left <= 0L) "" else "يوم للموعد")
+                      v.setTextViewText(R.id.w_title, title)
+                      v.setTextViewText(R.id.w_need, if (need.isEmpty()) "" else "🫶 " + need)
+                      v.setOnClickPendingIntent(R.id.w_root, openApp(context))
+                      manager.updateAppWidget(id, v)
+                  }
+              }
+          }
+
           class PhotoWidget : AppWidgetProvider() {
               override fun onUpdate(context: Context, manager: AppWidgetManager, ids: IntArray) {
                   val d = widgetData(context)
@@ -439,6 +462,36 @@ jobs:
                   android:gravity="center"/>
           </LinearLayout>
           XML
+          cat > "$RES/layout/bainatna_next_widget.xml" <<'XML'
+          <?xml version="1.0" encoding="utf-8"?>
+          <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:id="@+id/w_root"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent"
+              android:background="@drawable/bainatna_widget_bg"
+              android:gravity="center"
+              android:orientation="vertical"
+              android:padding="12dp">
+              <TextView android:id="@+id/w_big" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                  android:textColor="#FFFFFFFF" android:textSize="38sp" android:textStyle="bold" android:text="♡"/>
+              <TextView android:id="@+id/w_unit" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                  android:textColor="#E6FFFFFF" android:textSize="12sp"/>
+              <TextView android:id="@+id/w_title" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                  android:layout_marginTop="2dp" android:textColor="#FFFFFFFF" android:textSize="14sp" android:maxLines="1" android:ellipsize="end"/>
+              <TextView android:id="@+id/w_need" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                  android:layout_marginTop="4dp" android:textColor="#FFFFFFFF" android:textSize="11sp" android:maxLines="2" android:gravity="center"/>
+          </LinearLayout>
+          XML
+          cat > "$RES/xml/bainatna_next_info.xml" <<'XML'
+          <?xml version="1.0" encoding="utf-8"?>
+          <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+              android:minWidth="110dp" android:minHeight="110dp"
+              android:targetCellWidth="2" android:targetCellHeight="2"
+              android:updatePeriodMillis="3600000"
+              android:initialLayout="@layout/bainatna_next_widget"
+              android:resizeMode="horizontal|vertical"
+              android:widgetCategory="home_screen"/>
+          XML
           cat > "$RES/layout/bainatna_photo_widget.xml" <<'XML'
           <?xml version="1.0" encoding="utf-8"?>
           <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
@@ -488,6 +541,10 @@ jobs:
                   <receiver android:name="com.bainatna.chat.DaysWidget" android:exported="true" android:label="عدّاد أيامنا">
                       <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE"/></intent-filter>
                       <meta-data android:name="android.appwidget.provider" android:resource="@xml/bainatna_days_info"/>
+                  </receiver>
+                  <receiver android:name="com.bainatna.chat.NextWidget" android:exported="true" android:label="موعدنا القادم">
+                      <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE"/></intent-filter>
+                      <meta-data android:name="android.appwidget.provider" android:resource="@xml/bainatna_next_info"/>
                   </receiver>
                   <receiver android:name="com.bainatna.chat.PhotoWidget" android:exported="true" android:label="صورة من ذكرياتنا">
                       <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE"/></intent-filter>

@@ -224,7 +224,36 @@ class _CallState extends State<CallScreen> {
   Timer? _tick;
   bool _closing = false;
   bool _lastVideo = false;
+  bool _locked = false; // قفل الشاشة بالمكالمة حتى ما تضغط شي بالغلط
   CallSession get s => widget.session;
+
+  Future<void> _pickOutput() async {
+    try {
+      final outs = await Helper.audiooutputs;
+      if (!mounted) return;
+      if (outs.isEmpty) {
+        _toast(context, 'ما لقيت مخارج صوت.');
+        return;
+      }
+      final id = await showModalBottomSheet<String>(
+        context: context,
+        builder: (ctx) => SafeArea(
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            const Padding(padding: EdgeInsets.all(14), child: Text('مخرج الصوت', style: TextStyle(fontWeight: FontWeight.bold))),
+            for (final o in outs)
+              ListTile(
+                leading: const Icon(Icons.speaker_rounded),
+                title: Text((((o.label as String?) ?? '').trim().isEmpty) ? o.deviceId : '${o.label}'),
+                onTap: () => Navigator.pop(ctx, o.deviceId),
+              ),
+          ]),
+        ),
+      );
+      if (id != null) await Helper.selectAudioOutput(id);
+    } catch (_) {
+      if (mounted) _toast(context, 'تعذر تغيير مخرج الصوت.');
+    }
+  }
 
   @override
   void initState() {
@@ -388,6 +417,17 @@ class _CallState extends State<CallScreen> {
                           label: 'قلب',
                           onTap: () => unawaited(s.flipCamera()),
                         ),
+                      if (s.phase.value == CallPhase.connected)
+                        _CallBtn(
+                          icon: Icons.headset_rounded,
+                          label: 'المخرج',
+                          onTap: () => unawaited(_pickOutput()),
+                        ),
+                      _CallBtn(
+                        icon: Icons.lock_rounded,
+                        label: 'قفل',
+                        onTap: () => setState(() => _locked = true),
+                      ),
                       _CallBtn(
                         icon: Icons.call_end_rounded,
                         bg: const Color(0xFFE5392E),
@@ -411,6 +451,20 @@ class _CallState extends State<CallScreen> {
                       mirror: true,
                       objectFit:
                           RTCVideoViewObjectFit.RTCVideoViewObjectFitCover),
+                ),
+              ),
+            if (_locked && !ended)
+              Positioned.fill(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onLongPress: () => setState(() => _locked = false),
+                  child: const ColoredBox(
+                    color: Color(0xE6000000),
+                    child: Center(
+                      child: Text('🔒 الشاشة مقفلة\nاضغط مطولاً لفتح القفل',
+                          textAlign: TextAlign.center, style: TextStyle(fontSize: 18, color: Colors.white70, height: 1.6)),
+                    ),
+                  ),
                 ),
               ),
           ]),

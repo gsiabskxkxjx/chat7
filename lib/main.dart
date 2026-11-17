@@ -13,6 +13,7 @@ import 'package:flutter/rendering.dart' show RenderRepaintBoundary;
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart' show GoogleFonts;
 import 'package:url_launcher/url_launcher.dart' show launchUrl, LaunchMode;
+import 'package:flutter_tts/flutter_tts.dart' show FlutterTts;
 import 'package:geolocator/geolocator.dart'
     show Geolocator, LocationPermission, LocationSettings, LocationAccuracy, Position;
 import 'package:image_picker/image_picker.dart'

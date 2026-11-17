@@ -67,6 +67,7 @@ class _HomeWidgets {
   static Future<void> clear() async {
     await _save({'start_ms': null, 'partner': null, 'think': null}, 'DaysWidget');
     await _save({'photo': null}, 'PhotoWidget');
+    await _save({'next_ms': null, 'next_title': null, 'need': null}, 'NextWidget');
   }
 }
 

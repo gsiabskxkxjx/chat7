@@ -2,6 +2,7 @@ package com.bainatna.chat
 
 import android.app.Activity
 import android.app.PendingIntent
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
@@ -56,7 +57,7 @@ object R2Native {
     }
 
     private fun proximity(a: Activity, on: Boolean) {
-        val pm = a.getSystemService(Activity.POWER_SERVICE) as PowerManager
+        val pm = a.getSystemService(Context.POWER_SERVICE) as PowerManager
         if (on) {
             if (prox == null && pm.isWakeLockLevelSupported(PowerManager.PROXIMITY_SCREEN_OFF_WAKE_LOCK)) {
                 prox = pm.newWakeLock(PowerManager.PROXIMITY_SCREEN_OFF_WAKE_LOCK, "bainatna:prox")

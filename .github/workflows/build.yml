@@ -650,7 +650,8 @@ jobs:
       - run: flutter pub get
 
       - name: Unit tests (pure logic)
-        run: flutter test 2>&1 | tail -n 25 || echo "WARNING: unit tests failed - see the log above"
+        run: |
+          flutter test 2>&1 | tail -n 25 || echo "WARNING unit tests failed"
 
       - name: Analyze (errors only, does not stop the build)
         run: flutter analyze --no-fatal-infos --no-fatal-warnings lib 2>&1 | grep -E "(error|warning) •" || echo "no analyzer errors or warnings in lib"

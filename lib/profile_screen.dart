@@ -290,6 +290,7 @@ class _ProfileState extends State<ProfileScreen> {
                           radius: 28,
                           padding: const EdgeInsets.symmetric(vertical: _Sp.xs),
                           child: Column(children: [
+                            const _PhoneVerifyTile(),
                             ListTile(
                               leading: const Icon(Icons.feedback_rounded),
                               title: const Text('إرسال ملاحظة'),
@@ -431,8 +432,8 @@ Future<void> _showAbout(BuildContext context) => showDialog<void>(
         content: Column(mainAxisSize: MainAxisSize.min, children: [
           Text(
               _buildNo == 0
-                  ? 'الإصدار 0.12'
-                  : 'الإصدار 0.12 (بناء $_buildNo)',
+                  ? 'الإصدار 0.13'
+                  : 'الإصدار 0.13 (بناء $_buildNo)',
               style: const TextStyle(color: Color(0xB3FFFFFF))),
           const SizedBox(height: 6),
           const Text('محادثة خاصة لشخصين.', textAlign: TextAlign.center),

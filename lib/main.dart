@@ -53,6 +53,7 @@ import 'package:supabase_flutter/supabase_flutter.dart'
         AuthResponse,
         CountOption,
         FileOptions,
+        FunctionException,
         PostgresChangeEvent,
         PostgresChangeFilter,
         PostgresChangeFilterType,
@@ -119,6 +120,8 @@ part 'home_more.dart';
 part 'whats_new.dart';
 part 'tokens.dart';
 part 'native_more.dart';
+part 'voice_text.dart';
+part 'phone_verify.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

@@ -611,6 +611,17 @@ jobs:
 
       - run: flutter build apk --release --build-number=${{ github.run_number }} --dart-define=BUILD_NO=${{ github.run_number }} --dart-define=SIDELOAD=true
 
+      - name: Safety check - the APK must have a launcher icon
+        run: |
+          APK=build/app/outputs/flutter-apk/app-release.apk
+          BT=$(ls -d "$ANDROID_HOME"/build-tools/*/ 2>/dev/null | sort -V | tail -n 1)
+          "${BT}aapt" dump badging "$APK" | grep -E "launchable-activity|application-icon-640" | head -n 4
+          if ! "${BT}aapt" dump badging "$APK" | grep -q "launchable-activity"; then
+            echo "ERROR: no launcher activity in the APK - the app would not show on the home screen"
+            exit 1
+          fi
+          "${BT}aapt" dump xmltree "$APK" AndroidManifest.xml | grep -E "activity-alias|Icon(Default|Rose|Mint|Sunset|Night)" | head -n 12 || true
+
       - name: Build App Bundle (for Google Play)
         continue-on-error: true
         run: flutter build appbundle --release --build-number=${{ github.run_number }} --dart-define=BUILD_NO=${{ github.run_number }}

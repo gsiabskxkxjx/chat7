@@ -19,6 +19,7 @@ extension _ChatActions on _ChatState {
                 textDirection: TextDirection.ltr,
                 style: const TextStyle(color: Color(0xAAFFFFFF))),
             const SizedBox(height: _Sp.sm),
+            _PartnerVerified(chatId: widget.chat.id),
             Text(_status(),
                 style: TextStyle(
                     color: _online
@@ -509,6 +510,13 @@ extension _ChatActions on _ChatState {
               title: const Text('نسخ'),
               onTap: () => Navigator.pop(ctx, 'copy'),
             ),
+          if (m.kind == 'audio' && m.mediaPath != null)
+            ListTile(
+              leading: const Icon(Icons.subtitles_rounded),
+              title: const Text('حوّلها لنص'),
+              subtitle: const Text('تنرسل لخدمة تحويل خارجية'),
+              onTap: () => Navigator.pop(ctx, 'transcribe'),
+            ),
           if (m.kind == 'text' && _isMusicLink(m.text))
             ListTile(
               leading: const Icon(Icons.headphones_rounded),
@@ -554,6 +562,8 @@ extension _ChatActions on _ChatState {
       if (mounted) _toast(context, 'تم النسخ');
     } else if (act == 'del') {
       await _deleteMsgs([m], m.mine);
+    } else if (act == 'transcribe') {
+      await _transcribe(m);
     } else if (act == 'listen') {
       await _listenTogether(m);
     } else if (act == 'select') {

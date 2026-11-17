@@ -74,6 +74,7 @@ import 'package:supabase_flutter/supabase_flutter.dart'
         SupabaseClient,
         UserAttributes;
 
+import 'e2e_crypto.dart';
 import 'pure.dart' as pure;
 import 'config.dart';
 import 'turn_config.dart';

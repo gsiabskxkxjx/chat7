@@ -5,7 +5,7 @@ part of 'main.dart';
 // مفتاح المحادثة = ECDH بين مفتاحك الخاص ومفتاح الطرف الثاني ثم HKDF، والرسائل تتشفّر بـ AES-256-GCM.
 // السيرفر يشوف نص مشفّر فقط (e2e1:<رقم المحادثة>:<base64>)، حتى لو انفتحت قاعدة البيانات كاملة.
 
-const _e2ePrefix = 'e2e1:';
+const _e2ePrefix = e2ePrefix;
 const _e2eLocked = '🔒 رسالة مشفّرة، تعذّر فتحها على هالجهاز';
 
 final _navKey = GlobalKey<NavigatorState>();
@@ -19,47 +19,23 @@ class _E2EUnavailable implements Exception {
 
 // ---- عمليات AES (تنعمل بخيط منفصل للملفات الكبيرة) ----
 
-Future<Uint8List> _e2eAesSeal(Uint8List key, Uint8List data, Uint8List aad) async {
-  final box = await cr.AesGcm.with256bits()
-      .encrypt(data, secretKey: cr.SecretKey(key), aad: aad);
-  final b = BytesBuilder(copy: false)
-    ..add(_E2E._magic)
-    ..add(box.concatenation());
-  return b.toBytes();
-}
+Future<Uint8List> _e2eAesSeal(Uint8List key, Uint8List data, Uint8List aad) =>
+    E2ECrypto.sealBytes(key, data, aad);
 
-Future<Uint8List?> _e2eAesOpen(Uint8List key, Uint8List data, Uint8List aad) async {
-  try {
-    final body = Uint8List.sublistView(data, _E2E._magic.length);
-    final box = cr.SecretBox.fromConcatenation(body, nonceLength: 12, macLength: 16);
-    final clear = await cr.AesGcm.with256bits()
-        .decrypt(box, secretKey: cr.SecretKey(key), aad: aad);
-    return Uint8List.fromList(clear);
-  } catch (_) {
-    return null;
-  }
-}
+Future<Uint8List?> _e2eAesOpen(Uint8List key, Uint8List data, Uint8List aad) =>
+    E2ECrypto.openBytes(key, data, aad);
 
 Future<Uint8List> _isoSeal(Uint8List k, Uint8List d, Uint8List a) =>
-    Isolate.run(() => _e2eAesSeal(k, d, a));
+    Isolate.run(() => E2ECrypto.sealBytes(k, d, a));
 
 Future<Uint8List?> _isoOpen(Uint8List k, Uint8List d, Uint8List a) =>
-    Isolate.run(() => _e2eAesOpen(k, d, a));
+    Isolate.run(() => E2ECrypto.openBytes(k, d, a));
 
-Future<Uint8List> _isoKdf(String code, Uint8List salt) => Isolate.run(() async {
-      final k = await cr.Pbkdf2(
-              macAlgorithm: cr.Hmac.sha256(), iterations: 100000, bits: 256)
-          .deriveKeyFromPassword(password: code, nonce: salt);
-      return Uint8List.fromList(await k.extractBytes());
-    });
+Future<Uint8List> _isoKdf(String code, Uint8List salt) =>
+    Isolate.run(() => E2ECrypto.kdf(code, salt));
 
 class _E2E {
-  static const _magic = <int>[0x42, 0x45, 0x32, 0x45, 0x31]; // BE2E1
   static final _store = FlutterSecureStorage();
-  static final _x = cr.X25519();
-  static final _aes = cr.AesGcm.with256bits();
-  static final _hkdf = cr.Hkdf(hmac: cr.Hmac.sha256(), outputLength: 32);
-
   static Uint8List? _seed;
   static Uint8List? _pub;
   static String? _uid;
@@ -177,10 +153,7 @@ class _E2E {
     } catch (_) {}
   }
 
-  static Future<Uint8List> _pubOf(Uint8List seed) async {
-    final kp = await _x.newKeyPairFromSeed(seed);
-    return Uint8List.fromList((await kp.extractPublicKey()).bytes);
-  }
+  static Future<Uint8List> _pubOf(Uint8List seed) => E2ECrypto.pubOf(seed);
 
   static void _setSeed(Uint8List seed, Uint8List pub) {
     _seed = seed;
@@ -213,32 +186,20 @@ class _E2E {
   static String _normCode(String s) =>
       s.toUpperCase().replaceAll(RegExp(r'[^A-Z0-9]'), '');
 
-  static Future<String> _wrap(Uint8List seed, String code, Uint8List salt) async {
-    final kb = await _isoKdf(code, salt);
-    final box = await _aes.encrypt(seed,
-        secretKey: cr.SecretKey(kb), aad: utf8.encode('bainatna-e2e-backup'));
-    return 'bk1:${base64Encode(box.concatenation())}';
-  }
+  static Future<String> _wrap(Uint8List seed, String code, Uint8List salt) async =>
+      E2ECrypto.wrap(seed, await _isoKdf(code, salt));
 
   static Future<Uint8List?> _unwrap(String bk, String code, Uint8List salt) async {
     try {
-      if (!bk.startsWith('bk1:')) return null;
-      final kb = await _isoKdf(code, salt);
-      final box = cr.SecretBox.fromConcatenation(base64Decode(bk.substring(4)),
-          nonceLength: 12, macLength: 16);
-      final clear = await _aes.decrypt(box,
-          secretKey: cr.SecretKey(kb), aad: utf8.encode('bainatna-e2e-backup'));
-      return Uint8List.fromList(clear);
+      return await E2ECrypto.unwrap(bk, await _isoKdf(code, salt));
     } catch (_) {
       return null;
     }
   }
 
   static Future<void> _setupNew(String uid) async {
-    final kp = await _x.newKeyPair();
-    final seed = Uint8List.fromList(await kp.extractPrivateKeyBytes());
-    final pub = Uint8List.fromList((await kp.extractPublicKey()).bytes);
-    await _publishNew(uid, seed, pub, replace: false);
+    final k = await E2ECrypto.newKeys();
+    await _publishNew(uid, k.seed, k.pub, replace: false);
   }
 
   /// ينشر المفتاح العام + نسخة احتياطية مشفّرة برمز يظهر للمستخدم مرة وحدة
@@ -330,10 +291,8 @@ class _E2E {
           return true;
         },
         onNew: () async {
-          final kp = await _x.newKeyPair();
-          final seed = Uint8List.fromList(await kp.extractPrivateKeyBytes());
-          final pub = Uint8List.fromList((await kp.extractPublicKey()).bytes);
-          await _publishNew(uid, seed, pub, replace: true);
+          final k = await E2ECrypto.newKeys();
+          await _publishNew(uid, k.seed, k.pub, replace: true);
           return true;
         },
       ),
@@ -354,16 +313,8 @@ class _E2E {
     return true;
   }
 
-  static Future<cr.SecretKey> _derive(String chatId, Uint8List peer) async {
-    final kp = await _x.newKeyPairFromSeed(_seed!);
-    final shared = await _x.sharedSecretKey(
-        keyPair: kp,
-        remotePublicKey: cr.SimplePublicKey(peer, type: cr.KeyPairType.x25519));
-    return _hkdf.deriveKey(
-        secretKey: shared,
-        nonce: utf8.encode('bainatna-e2e-v1'),
-        info: utf8.encode(chatId));
-  }
+  static Future<cr.SecretKey> _derive(String chatId, Uint8List peer) =>
+      E2ECrypto.derive(_seed!, peer, chatId);
 
   static final _keyInflight = <String, Future<cr.SecretKey?>>{};
 
@@ -485,31 +436,22 @@ class _E2E {
     await waitReady();
     final k = await keyFor(chatId);
     if (k == null) throw const _E2EUnavailable();
-    final box = await _aes.encrypt(utf8.encode(plain),
-        secretKey: k, aad: utf8.encode(chatId));
-    return '$_e2ePrefix$chatId:${base64Encode(box.concatenation())}';
+    return E2ECrypto.seal(k, chatId, plain);
   }
 
   static Future<String?> open(String s) async {
     final cached = _plain[s];
     if (cached != null) return cached;
-    if (!s.startsWith(_e2ePrefix) || s.length < _e2ePrefix.length + 38) return null;
-    final chatId = s.substring(_e2ePrefix.length, _e2ePrefix.length + 36);
-    if (s[_e2ePrefix.length + 36] != ':') return null;
-    Uint8List data;
-    try {
-      data = base64Decode(s.substring(_e2ePrefix.length + 37));
-    } catch (_) {
-      return null;
-    }
-    var res = await _tryOpen(chatId, data);
+    final chatId = E2ECrypto.chatOf(s);
+    if (chatId == null) return null;
+    var res = await _tryOpen(chatId, s);
     if (res == null) {
       // يمكن مفتاح الطرف الثاني تغيّر: نحدّثه مرة كل نص دقيقة
       final last = _lastRefresh[chatId];
       if (last == null || DateTime.now().difference(last) > const Duration(seconds: 30)) {
         _lastRefresh[chatId] = DateTime.now();
         _peerAt.remove(chatId);
-        res = await _tryOpen(chatId, data);
+        res = await _tryOpen(chatId, s);
       }
     }
     if (res != null) {
@@ -519,22 +461,19 @@ class _E2E {
     return res;
   }
 
-  static Future<String?> _tryOpen(String chatId, Uint8List data) async {
-    if (_seed == null) return null;
+  static Future<List<cr.SecretKey>> _allKeys(String chatId) async {
     final keys = <cr.SecretKey>[];
     final cur = await keyFor(chatId);
     if (cur != null) keys.add(cur);
     for (final p in await _history(chatId)) {
       keys.add(await _derive(chatId, p));
     }
-    for (final k in keys) {
-      try {
-        final box = cr.SecretBox.fromConcatenation(data, nonceLength: 12, macLength: 16);
-        final clear = await _aes.decrypt(box, secretKey: k, aad: utf8.encode(chatId));
-        return utf8.decode(clear);
-      } catch (_) {}
-    }
-    return null;
+    return keys;
+  }
+
+  static Future<String?> _tryOpen(String chatId, String s) async {
+    if (_seed == null) return null;
+    return E2ECrypto.open(s, await _allKeys(chatId));
   }
 
   /// يمشي على JSON ويفك كل نص مشفّر
@@ -589,13 +528,7 @@ class _E2E {
 
   // ---------- ملفات ----------
 
-  static bool isSealed(List<int> b) {
-    if (b.length < _magic.length + 28) return false;
-    for (var i = 0; i < _magic.length; i++) {
-      if (b[i] != _magic[i]) return false;
-    }
-    return true;
-  }
+  static bool isSealed(List<int> b) => E2ECrypto.isSealed(b);
 
   static Future<Uint8List> sealBytes(String chatId, Uint8List data) async {
     await waitReady();
@@ -611,13 +544,7 @@ class _E2E {
     await waitReady();
     if (_seed == null) return null;
     final aad = Uint8List.fromList(utf8.encode(chatId));
-    final keys = <cr.SecretKey>[];
-    final cur = await keyFor(chatId);
-    if (cur != null) keys.add(cur);
-    for (final p in await _history(chatId)) {
-      keys.add(await _derive(chatId, p));
-    }
-    for (final k in keys) {
+    for (final k in await _allKeys(chatId)) {
       final kb = Uint8List.fromList(await k.extractBytes());
       final r = data.length > 200 * 1024
           ? await _isoOpen(kb, data, aad)
@@ -704,22 +631,7 @@ class _E2E {
     final mine = _pub;
     final peer = _peer[chatId];
     if (k == null || mine == null || peer == null) return null;
-    final a = base64Encode(mine);
-    final b = base64Encode(peer);
-    final first = a.compareTo(b) <= 0 ? mine : peer;
-    final second = a.compareTo(b) <= 0 ? peer : mine;
-    final h = await cr.Sha256().hash([...first, ...second]);
-    final by = h.bytes;
-    final groups = <String>[];
-    for (var i = 0; i < 12; i++) {
-      final v = (by[2 * i] << 8) | by[2 * i + 1];
-      groups.add(v.toString().padLeft(5, '0'));
-    }
-    return [
-      groups.sublist(0, 4).join(' '),
-      groups.sublist(4, 8).join(' '),
-      groups.sublist(8, 12).join(' '),
-    ].join('\n');
+    return E2ECrypto.safety(mine, peer);
   }
 }
 

@@ -217,6 +217,7 @@ void showGamesMenu(BuildContext context, String chatId) {
       (Icons.blur_circular_rounded, 'داما', 'الأكل إجباري، والملك يمشي بكل الاتجاهات', () => push(() => CheckersScreen(chatId: chatId))),
       (Icons.castle_rounded, 'شطرنج', 'شطرنج كامل بالدور', () => push(() => ChessScreen(chatId: chatId))),
       (Icons.leaderboard_rounded, 'نتائجنا وشاراتنا', 'النقاط والإنجازات', () => push(() => ScoresScreen(chatId: chatId))),
+      ..._r2GameItems(context, chatId),
     ]),
     ('💞 سوا', [
       (Icons.push_pin_rounded, 'جدار الحب', 'ملاحظات قصيرة تبقى لبعض', () => push(() => LoveNotesScreen(chatId: chatId))),
@@ -229,6 +230,7 @@ void showGamesMenu(BuildContext context, String chatId) {
       (Icons.menu_book_rounded, 'يومياتنا', 'كل واحد يكتب يومه والثاني يقراه', () => push(() => DiaryScreen(chatId: chatId))),
       (Icons.account_balance_wallet_rounded, 'ميزانيتنا', 'مصاريف مشتركة ومين دفع', () => push(() => BudgetScreen(chatId: chatId))),
       (Icons.casino_rounded, 'عجلة القرار', 'وين نطلع؟ شنو ناكل؟', () => push(() => DecisionWheelScreen(chatId: chatId))),
+      ..._r2CoupleItems(context, chatId),
     ]),
     ('📸 ذكرياتنا', [
       (Icons.timeline_rounded, 'قصتنا', 'أول رسالة، أول صورة، أول مكالمة...', () => push(() => StoryScreen(chatId: chatId))),

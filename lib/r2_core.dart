@@ -150,9 +150,19 @@ class _R2 {
         'p_version': verLabel(),
       }));
     } catch (_) {}
+    unawaited(saveTimezone());
     try {
       final has = await _net(_db.rpc('has_recovery_code'));
       needRecovery.value = has == false;
+    } catch (_) {}
+  }
+
+  /// فرق التوقيت عن UTC (للعرض عند الطرف الثاني بوضع المسافة)
+  static Future<void> saveTimezone() async {
+    final u = _db.auth.currentUser;
+    if (!_configured || u == null) return;
+    try {
+      await _db.from('profiles').update({'tz': _offsetStr(DateTime.now().timeZoneOffset)}).eq('id', u.id);
     } catch (_) {}
   }
 

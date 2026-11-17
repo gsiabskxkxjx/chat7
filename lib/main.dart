@@ -6,6 +6,7 @@ import 'dart:math' show Random;
 import 'dart:math' as math;
 import 'dart:ui';
 
+import 'package:flutter/foundation.dart' show defaultTargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show RenderRepaintBoundary;
 import 'package:flutter/services.dart';
@@ -127,6 +128,9 @@ part 'r2_core.dart';
 part 'r2_settings.dart';
 part 'r2_chat.dart';
 part 'r2_plans.dart';
+part 'r2_couple.dart';
+part 'games4.dart';
+part 'games5.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

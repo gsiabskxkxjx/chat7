@@ -126,6 +126,10 @@ class _ChatState extends State<ChatScreen> {
   Map<int, Map<String, String>> _reactions = {};
   List<int> _pinIds = const []; // الرسائل المثبّتة
   StreamSubscription<List<Map<String, dynamic>>>? _pinSub;
+  Map<String, dynamic>? _pLive; // حالة الطرف الثاني (نص، مؤقت، توقيت)
+  String? _pNeed; // شنو يحتاج اليوم
+  String? _myNick; // اسم الدلع اللي حطيته له
+  Timer? _liveTimer;
   bool _clockDismissed = false;
   bool _recoveryDismissed = false;
   StreamSubscription<List<Map<String, dynamic>>>? _reactSub;
@@ -146,6 +150,8 @@ class _ChatState extends State<ChatScreen> {
     unawaited(_loadDaily());
     unawaited(_loadStars());
     _watchPins();
+    unawaited(_loadLive());
+    _liveTimer = Timer.periodic(const Duration(seconds: 90), (_) => unawaited(_loadLive()));
     _R2.clockOff.addListener(_r2Refresh);
     _R2.needRecovery.addListener(_r2Refresh);
     unawaited(_loadBirthday());
@@ -228,6 +234,7 @@ class _ChatState extends State<ChatScreen> {
     _statusTimer?.cancel();
     _reactSub?.cancel();
     _pinSub?.cancel();
+    _liveTimer?.cancel();
     _R2.clockOff.removeListener(_r2Refresh);
     _R2.needRecovery.removeListener(_r2Refresh);
     _typingTimer?.cancel();
@@ -273,6 +280,8 @@ class _ChatState extends State<ChatScreen> {
   }
 
   String _title() {
+    final nick = _myNick?.trim();
+    if (nick != null && nick.isNotEmpty) return nick;
     final n = _pName?.trim();
     return (n != null && n.isNotEmpty) ? n : '@${widget.chat.partner}';
   }

@@ -60,34 +60,7 @@ extension _R2Chat on _ChatState {
   /// أشرطة الجولة الثانية: المثبّتات، ساعة الجهاز، كود الاستعادة
   List<Widget> _r2Bars() {
     final out = <Widget>[];
-    Widget bar(String emoji, String text, {VoidCallback? onTap, VoidCallback? onClose}) =>
-        Padding(
-          padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
-          child: InkWell(
-            borderRadius: BorderRadius.circular(20),
-            onTap: onTap,
-            child: Glass(
-              radius: 20,
-              shadow: false,
-              padding: const EdgeInsets.fromLTRB(14, 8, 4, 8),
-              child: Row(children: [
-                Text(emoji, style: const TextStyle(fontSize: _Fs.display)),
-                const SizedBox(width: 10),
-                Expanded(
-                    child: Text(text,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontSize: _Fs.meta))),
-                if (onClose != null)
-                  IconButton(
-                      tooltip: 'إغلاق',
-                      onPressed: onClose,
-                      icon: const Icon(Icons.close_rounded, size: 18)),
-                if (onClose == null) const SizedBox(width: 10),
-              ]),
-            ),
-          ),
-        );
+    final bar = _r2Bar;
     if (_pinIds.isNotEmpty) {
       final id = _pinIds.last;
       out.add(bar('📌', _pinText(id),
@@ -106,6 +79,7 @@ extension _R2Chat on _ChatState {
           onTap: () => unawaited(_makeRecoveryNow()),
           onClose: () => setState(() => _recoveryDismissed = true)));
     }
+    out.addAll(_liveBars());
     return out;
   }
 

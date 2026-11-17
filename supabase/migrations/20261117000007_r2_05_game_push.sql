@@ -27,6 +27,5 @@ exception when others then
   return new;
 end $$;
 revoke execute on function public.notify_game() from public, anon, authenticated;
-drop trigger if exists chat_games_notify on public.chat_games;
-create trigger chat_games_notify after insert or update of turn on public.chat_games
+create or replace trigger chat_games_notify after insert or update of turn on public.chat_games
   for each row execute function public.notify_game();

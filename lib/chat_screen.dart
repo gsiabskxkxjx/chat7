@@ -12,6 +12,14 @@ class ChatScreen extends StatefulWidget {
 
 /// مسودات الرسائل اللي ما انرسلت (تبقى لو طلعت من المحادثة ورجعت)
 final _drafts = <String, String>{};
+Timer? _draftTimer;
+
+/// حفظ المسودة بالجهاز (تنرجع حتى لو قتل النظام التطبيق)
+void _persistDraft(String chat, String text) {
+  _draftTimer?.cancel();
+  _draftTimer = Timer(const Duration(milliseconds: 700),
+      () => unawaited(_R2Store.set('draft_$chat', text.trim().isEmpty ? null : text)));
+}
 
 class _ChatState extends State<ChatScreen> {
   final _c = TextEditingController();
@@ -73,6 +81,7 @@ class _ChatState extends State<ChatScreen> {
   // "يكتب الآن..." - قناة بث خفيفة بين الطرفين (ما تحفظ شي بقاعدة البيانات)
   RealtimeChannel? _typeCh;
   DateTime _typingSeen = DateTime.fromMillisecondsSinceEpoch(0); // آخر مرة شفنا الطرف الثاني يكتب
+  String _typingAct = 'type'; // type | rec | photo
   DateTime _typingSent = DateTime.fromMillisecondsSinceEpoch(0); // آخر مرة أرسلنا إشارة
   Timer? _typingTimer;
   DateTime? _linkedAt; // تاريخ ارتباطكم (لعداد الأيام)
@@ -139,7 +148,7 @@ class _ChatState extends State<ChatScreen> {
   @override
   void initState() {
     super.initState();
-    _c.text = _drafts[widget.chat.id] ?? '';
+    _c.text = _drafts[widget.chat.id] ?? _R2Store.get<String>('draft_${widget.chat.id}') ?? '';
     unawaited(Push.start());
     _scroll.addListener(_onScroll);
     _scroll.addListener(() {
@@ -227,8 +236,12 @@ class _ChatState extends State<ChatScreen> {
         unawaited(_pingOnline());
         unawaited(_markRead());
         unawaited(_hub.checkPending());
+        unawaited(_checkIncomingShare());
       },
     )..start();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) unawaited(_checkIncomingShare());
+    });
   }
 
   @override
@@ -297,7 +310,11 @@ class _ChatState extends State<ChatScreen> {
     final inner = payload['payload'];
     final uid = inner is Map ? inner['uid'] : payload['uid'];
     if (uid == _uid || !mounted) return;
-    setState(() => _typingSeen = DateTime.now());
+    final act = inner is Map ? inner['act'] : payload['act'];
+    setState(() {
+      _typingSeen = DateTime.now();
+      _typingAct = act is String ? act : 'type';
+    });
     _typingTimer?.cancel();
     _typingTimer = Timer(const Duration(seconds: 4), () {
       if (mounted) setState(() {});
@@ -343,7 +360,11 @@ class _ChatState extends State<ChatScreen> {
 
   String _status() {
     if (DateTime.now().difference(_typingSeen) < const Duration(seconds: 4)) {
-      return 'يكتب الآن...';
+      return switch (_typingAct) {
+        'rec' => 'يسجّل رسالة صوتية...',
+        'photo' => 'يرسل صورة...',
+        _ => 'يكتب الآن...',
+      };
     }
     final lines = statusLines(
       online: _online,

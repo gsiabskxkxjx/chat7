@@ -30,18 +30,9 @@ Widget _r2Bar(String emoji, String text, {VoidCallback? onTap, VoidCallback? onC
       ),
     );
 
-Duration? _parseOffset(String? s) {
-  if (s == null) return null;
-  final m = RegExp(r'^([+-])(\d{2}):(\d{2})$').firstMatch(s);
-  if (m == null) return null;
-  final mins = int.parse(m.group(2)!) * 60 + int.parse(m.group(3)!);
-  return Duration(minutes: m.group(1) == '-' ? -mins : mins);
-}
+Duration? _parseOffset(String? s) => pure.parseOffset(s);
 
-String _offsetStr(Duration d) {
-  final m = d.inMinutes.abs();
-  return '${d.isNegative ? '-' : '+'}${_two(m ~/ 60)}:${_two(m % 60)}';
-}
+String _offsetStr(Duration d) => pure.offsetStr(d);
 
 extension _R2Live on _ChatState {
   Future<void> _loadLive() async {
@@ -611,7 +602,7 @@ class _CapsulesState extends State<CapsulesScreen> {
           child: _err != null
               ? Center(child: Text(_err!))
               : rows == null
-                  ? const Center(child: CircularProgressIndicator())
+                  ? const _SkeletonList()
                   : rows.isEmpty
                       ? const Center(
                           child: Padding(

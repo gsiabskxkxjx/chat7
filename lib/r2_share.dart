@@ -29,15 +29,7 @@ String? _specialPreview(String kind, String body) {
 // آخر موقع معروف لي (يُحدَّث عند الإرسال أو المشاركة)
 ({double lat, double lng})? _lastMyPos;
 
-double _distKm(double la1, double ln1, double la2, double ln2) {
-  const r = 6371.0;
-  double rad(double d) => d * math.pi / 180;
-  final dLa = rad(la2 - la1);
-  final dLn = rad(ln2 - ln1);
-  final a = math.pow(math.sin(dLa / 2), 2) +
-      math.cos(rad(la1)) * math.cos(rad(la2)) * math.pow(math.sin(dLn / 2), 2);
-  return 2 * r * math.asin(math.min(1, math.sqrt(a)));
-}
+double _distKm(double la1, double ln1, double la2, double ln2) => pure.distKm(la1, ln1, la2, ln2);
 
 String _distLabel(double km) {
   if (km < 1) return '${_Fmt.digits('${(km * 1000).round()}')} م';
@@ -148,6 +140,15 @@ class _LiveShare {
 DateTime _lastAlertSent = DateTime.fromMillisecondsSinceEpoch(0);
 
 extension _R2Share on _ChatState {
+  /// مؤشر نشاط مؤقت للطرف الثاني: rec (يسجّل صوت) أو photo (يرسل صورة)
+  Future<void> _sendAct(String act) async {
+    final ch = _typeCh;
+    if (ch == null) return;
+    try {
+      await ch.sendBroadcastMessage(event: 'typing', payload: {'uid': _uid, 'act': act});
+    } catch (_) {}
+  }
+
   Future<void> _insertSpecial(String kind, String body) async {
     try {
       await _db.from('messages').insert({'chat_id': widget.chat.id, 'kind': kind, 'body': body});

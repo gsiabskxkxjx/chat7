@@ -532,7 +532,7 @@ class _DisappearState extends State<DisappearScreen> {
   Widget build(BuildContext context) => _R2Page(
         title: 'رسائل تختفي',
         child: !_loaded
-            ? const Center(child: CircularProgressIndicator())
+            ? const _SkeletonList()
             : ListView(padding: const EdgeInsets.all(_Sp.lg), children: [
                 const Text('الرسائل تنحذف من عند الطرفين بعد المدة اللي تختارها. تطبّق على الرسائل الجديدة والقديمة. الصور والملفات ما تنحذف من التخزين، بس الرسالة نفسها.',
                     style: TextStyle(height: 1.6, color: Color(0xCCFFFFFF))),

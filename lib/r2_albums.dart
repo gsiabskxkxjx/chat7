@@ -119,7 +119,7 @@ class _AlbumsState extends State<AlbumsScreen> {
                   return const Center(child: Text('الألبومات $_needUpdate5'));
                 }
                 final rows = snap.data;
-                if (rows == null) return const Center(child: CircularProgressIndicator());
+                if (rows == null) return const _SkeletonGrid();
                 return GridView.builder(
                   padding: const EdgeInsets.fromLTRB(14, 14, 14, 90),
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -239,7 +239,7 @@ class _MonthAlbumState extends State<MonthAlbumScreen> {
                 child: snap.hasError
                     ? const Center(child: Text('تعذر التحميل.'))
                     : items == null
-                        ? const Center(child: CircularProgressIndicator())
+                        ? const _SkeletonGrid()
                         : items.isEmpty
                             ? const Center(child: Text('ما في صور هذا الشهر بعد.'))
                             : GridView.builder(
@@ -384,13 +384,7 @@ class _AlbumState extends State<AlbumScreen> {
   }
 
   List<String> _splitTags(String s) {
-    final out = <String>[];
-    for (final p in s.split(RegExp(r'[,،\n]'))) {
-      final t = p.trim();
-      if (t.isNotEmpty && t.length <= 14 && !out.contains(t)) out.add(t);
-      if (out.length >= 5) break;
-    }
-    return out;
+    return pure.splitTags(s);
   }
 
   Future<void> _setCover(_AItem it) async {
@@ -653,7 +647,7 @@ class _AlbumState extends State<AlbumScreen> {
           child: _err != null
               ? const Center(child: Text('تعذر التحميل.'))
               : all == null
-                  ? const Center(child: CircularProgressIndicator())
+                  ? const _SkeletonGrid()
                   : all.isEmpty
                       ? Center(
                           child: Column(mainAxisSize: MainAxisSize.min, children: [
@@ -954,7 +948,7 @@ class _AlbumPickerState extends State<_AlbumPicker> {
               builder: (_, snap) {
                 final items = snap.data;
                 if (snap.hasError) return const Center(child: Text('تعذر التحميل.'));
-                if (items == null) return const Center(child: CircularProgressIndicator());
+                if (items == null) return const _SkeletonGrid();
                 if (items.isEmpty) return const Center(child: Text('كل صور المحادثة موجودة بالألبوم.'));
                 return GridView.builder(
                   padding: const EdgeInsets.all(_Sp.sm),

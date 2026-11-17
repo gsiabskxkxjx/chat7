@@ -268,9 +268,31 @@ class _NetImageState extends State<_NetImage> {
       );
 }
 
-class ImageViewerScreen extends StatelessWidget {
-  const ImageViewerScreen({super.key, required this.path});
+class ImageViewerScreen extends StatefulWidget {
+  const ImageViewerScreen({super.key, required this.path, this.paths});
   final String path;
+
+  /// قائمة صور للتنقل بينها بالسحب (الافتراضي: صور المحادثة)
+  final List<String>? paths;
+
+  @override
+  State<ImageViewerScreen> createState() => _ImageViewerState();
+}
+
+class _ImageViewerState extends State<ImageViewerScreen> {
+  late final List<String> _list = () {
+    final l = widget.paths ?? _ChatMedia.images;
+    return l.contains(widget.path) ? l : [widget.path];
+  }();
+  late int _i = _list.indexOf(widget.path);
+  late final PageController _pc = PageController(initialPage: _i);
+  bool _zoomed = false;
+
+  @override
+  void dispose() {
+    _pc.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) => Scaffold(
@@ -278,22 +300,82 @@ class ImageViewerScreen extends StatelessWidget {
         appBar: AppBar(
           backgroundColor: Colors.black,
           elevation: 0,
+          title: _list.length > 1
+              ? Text('${_Fmt.digits('${_i + 1}')} / ${_Fmt.digits('${_list.length}')}', style: const TextStyle(fontSize: _Fs.body))
+              : null,
           actions: [
             IconButton(
               tooltip: 'حفظ في المعرض',
               icon: const Icon(Icons.download_rounded),
-              onPressed: () => _saveImage(context, path),
+              onPressed: () => _saveImage(context, _list[_i]),
             ),
           ],
         ),
-        body: Center(
-          child: InteractiveViewer(
-            maxScale: 5,
-            child: Hero(
-                tag: 'img-$path', child: _NetImage(path: path, full: true)),
+        body: PageView.builder(
+          controller: _pc,
+          physics: _zoomed ? const NeverScrollableScrollPhysics() : null,
+          itemCount: _list.length,
+          onPageChanged: (v) => setState(() => _i = v),
+          itemBuilder: (_, i) => _ZoomPage(
+            key: ValueKey('zp-${_list[i]}'),
+            path: _list[i],
+            hero: _list[i] == widget.path,
+            onZoom: (z) {
+              if (z != _zoomed) setState(() => _zoomed = z);
+            },
           ),
         ),
       );
+}
+
+/// صفحة صورة بتكبير بالقرص وبضغطتين
+class _ZoomPage extends StatefulWidget {
+  const _ZoomPage({super.key, required this.path, required this.hero, required this.onZoom});
+  final String path;
+  final bool hero;
+  final void Function(bool zoomed) onZoom;
+
+  @override
+  State<_ZoomPage> createState() => _ZoomPageState();
+}
+
+class _ZoomPageState extends State<_ZoomPage> {
+  final _tc = TransformationController();
+  Offset _tap = Offset.zero;
+
+  @override
+  void dispose() {
+    _tc.dispose();
+    super.dispose();
+  }
+
+  bool get _isZoomed => _tc.value.getMaxScaleOnAxis() > 1.05;
+
+  void _onDouble() {
+    if (_isZoomed) {
+      _tc.value = Matrix4.identity();
+      widget.onZoom(false);
+    } else {
+      const k = 2.5;
+      _tc.value = Matrix4(k, 0, 0, 0, 0, k, 0, 0, 0, 0, 1, 0, -_tap.dx * (k - 1), -_tap.dy * (k - 1), 0, 1);
+      widget.onZoom(true);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final img = _NetImage(path: widget.path, full: true);
+    return GestureDetector(
+      onDoubleTapDown: (d) => _tap = d.localPosition,
+      onDoubleTap: _onDouble,
+      child: InteractiveViewer(
+        transformationController: _tc,
+        maxScale: 5,
+        onInteractionEnd: (_) => widget.onZoom(_isZoomed),
+        child: Center(child: widget.hero ? Hero(tag: 'img-${widget.path}', child: img) : img),
+      ),
+    );
+  }
 }
 
 // ---------- حفظ الصورة في معرض الجوال ----------

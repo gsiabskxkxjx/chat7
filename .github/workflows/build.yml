@@ -13,6 +13,8 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-java@v5
         with:
@@ -69,10 +71,34 @@ jobs:
                           <category android:name="android.intent.category.BROWSABLE"/>
                           <data android:scheme="bainatna" android:host="join"/>
                       </intent-filter>
+                      <intent-filter>
+                          <action android:name="android.intent.action.SEND"/>
+                          <category android:name="android.intent.category.DEFAULT"/>
+                          <data android:mimeType="text/plain"/>
+                      </intent-filter>
+                      <intent-filter>
+                          <action android:name="android.intent.action.SEND"/>
+                          <category android:name="android.intent.category.DEFAULT"/>
+                          <data android:mimeType="image/*"/>
+                      </intent-filter>
                   </activity>'''
           if '</activity>' not in s:
               raise SystemExit('ERROR: no </activity> in AndroidManifest.xml')
           s = s.replace('</activity>', deep, 1)
+          tile = '''
+              <service android:name="com.bainatna.chat.ThinkTile"
+                  android:exported="true"
+                  android:icon="@drawable/ic_tile_heart"
+                  android:label="أفكر فيك"
+                  android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+                  <intent-filter>
+                      <action android:name="android.service.quicksettings.action.QS_TILE"/>
+                  </intent-filter>
+              </service>
+          </application>'''
+          s = s.replace('</application>', tile, 1)
+          if 'resizeableActivity' not in s:
+              s = s.replace('<application', '<application android:resizeableActivity="true"', 1)
           # نافذة عائمة لمكالمة الفيديو
           if 'android:name=".MainActivity"' in s and 'supportsPictureInPicture' not in s:
               s = s.replace('android:name=".MainActivity"', 'android:name=".MainActivity"\n            android:supportsPictureInPicture="true"', 1)
@@ -263,10 +289,17 @@ jobs:
                           result.notImplemented()
                       }
                   }
+                  R2Native.register(this, flutterEngine.dartExecutor.binaryMessenger)
+              }
+
+              override fun onNewIntent(intent: Intent) {
+                  super.onNewIntent(intent)
+                  R2Native.handleIntent(this, intent)
               }
 
               override fun onCreate(savedInstanceState: Bundle?) {
                   super.onCreate(savedInstanceState)
+                  R2Native.handleIntent(this, intent)
                   if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
                       setShowWhenLocked(true)
                       setTurnScreenOn(true)
@@ -538,9 +571,17 @@ jobs:
           fi
           PKG=$(grep -m1 '^package ' "$F" | sed -E 's/^package +//; s/;//')
           D=$(dirname "$F")
-          for K in VideoCompressor IconSwitcher; do
+          for K in VideoCompressor IconSwitcher R2Native; do
             sed "s/^package .*/package ${PKG}/" ".github/android/$K.kt" > "$D/$K.kt"
           done
+          mkdir -p android/app/src/main/res/drawable
+          cat > android/app/src/main/res/drawable/ic_tile_heart.xml <<'XML'
+          <vector xmlns:android="http://schemas.android.com/apk/res/android"
+              android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
+              <path android:fillColor="#FFFFFFFF"
+                  android:pathData="M12,21.35l-1.45,-1.32C5.4,15.36 2,12.28 2,8.5 2,5.42 4.42,3 7.5,3c1.74,0 3.41,0.81 4.5,2.09C13.09,3.81 14.76,3 16.5,3 19.58,3 22,5.42 22,8.5c0,3.78 -3.4,6.86 -8.55,11.54L12,21.35z"/>
+          </vector>
+          XML
           G=android/app/build.gradle.kts
           if [ -f "$G" ]; then
             printf '\ndependencies {\n    implementation("androidx.media3:media3-transformer:1.5.1")\n    implementation("androidx.media3:media3-effect:1.5.1")\n    implementation("androidx.media3:media3-common:1.5.1")\n}\n' >> "$G"
@@ -608,6 +649,9 @@ jobs:
 
       - run: flutter pub get
 
+      - name: Unit tests (pure logic)
+        run: flutter test 2>&1 | tail -n 25 || echo "WARNING: unit tests failed - see the log above"
+
       - name: Analyze (errors only, does not stop the build)
         run: flutter analyze --no-fatal-infos --no-fatal-warnings lib 2>&1 | grep -E "(error|warning) •" || echo "no analyzer errors or warnings in lib"
 
@@ -649,11 +693,25 @@ jobs:
           echo "=== bundle ==="
           ls -la build/app/outputs/bundle/release/ 2>/dev/null || echo "no AAB produced"
 
+      - name: Release notes from commits
+        run: |
+          PREV=$(git describe --tags --abbrev=0 2>/dev/null || true)
+          {
+            echo "## التغييرات"
+            if [ -n "$PREV" ]; then
+              git log "$PREV"..HEAD --no-merges --pretty='- %s' | head -n 40
+            else
+              git log -n 15 --no-merges --pretty='- %s'
+            fi
+          } > release_notes.md
+          cat release_notes.md
+
       - name: Publish APK as a release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: build-${{ github.run_number }}
           name: Build ${{ github.run_number }}
+          body_path: release_notes.md
           files: |
             build/app/outputs/flutter-apk/app-release.apk
             build/app/outputs/bundle/release/app-release.aab

@@ -508,7 +508,7 @@ class _PlansState extends State<PlansScreen> {
                   return const Center(child: Text('تعذر التحميل. تأكد من الإنترنت.'));
                 }
                 final all = snap.data;
-                if (all == null) return const Center(child: CircularProgressIndicator());
+                if (all == null) return const _SkeletonList();
                 final rows = all.where((r) => r['kind'] == _spec.kind).toList();
                 if (rows.isEmpty) {
                   return Center(
@@ -535,15 +535,7 @@ class _PlansState extends State<PlansScreen> {
 }
 
 /// يحوّل الأرقام العربية لإنجليزية قبل التحليل
-String _asciiDigits(String s) {
-  const ar = '٠١٢٣٤٥٦٧٨٩';
-  final b = StringBuffer();
-  for (final c in s.split('')) {
-    final i = ar.indexOf(c);
-    b.write(i >= 0 ? '$i' : c);
-  }
-  return b.toString();
-}
+String _asciiDigits(String s) => pure.asciiDigits(s);
 
 // ===== تصويت على موعد (348) =====
 
@@ -720,7 +712,7 @@ class _DatePollState extends State<DatePollScreen> {
               stream: _s,
               builder: (_, snap) {
                 final all = snap.data;
-                if (all == null) return const Center(child: CircularProgressIndicator());
+                if (all == null) return const _SkeletonList();
                 final rows = all.where((r) => r['kind'] == 'poll').toList();
                 if (rows.isEmpty) {
                   return const Center(
@@ -808,7 +800,7 @@ class _TripsState extends State<TripsScreen> {
               stream: _s,
               builder: (_, snap) {
                 final all = snap.data;
-                if (all == null) return const Center(child: CircularProgressIndicator());
+                if (all == null) return const _SkeletonList();
                 final rows = all.where((r) => r['kind'] == 'trip').toList();
                 if (rows.isEmpty) {
                   return const Center(
@@ -1063,7 +1055,7 @@ class _YearQaState extends State<YearQaScreen> {
           stream: _s,
           builder: (_, snap) {
             final all = snap.data;
-            if (all == null) return const Center(child: CircularProgressIndicator());
+            if (all == null) return const _SkeletonList();
             final answers = all.where((r) => r['kind'] == 'qa' && _numOf(_dataOf(r)['q']) == _day).toList();
             final mine = answers.where((r) => r['created_by'] == _me).toList();
             final theirs = answers.where((r) => r['created_by'] != _me).toList();

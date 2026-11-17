@@ -163,6 +163,17 @@ class _PrefsCardState extends State<_PrefsCard> {
               _startAppLook();
             },
           ),
+          SwitchListTile(
+            secondary: const Icon(Icons.phone_android_rounded),
+            title: const Text('يتبع وضع الجوال'),
+            subtitle: const Text('فاتح أو غامق حسب إعداد أندرويد (يتفوق على النهار والليل)'),
+            value: _R2Store.get<bool>('followSystem') == true,
+            onChanged: (x) async {
+              await _R2Store.set('followSystem', x);
+              if (mounted) setState(() {});
+              _startAppLook();
+            },
+          ),
           ListTile(
             leading: const Icon(Icons.alarm_rounded),
             title: const Text('تذكير سؤال اليوم'),

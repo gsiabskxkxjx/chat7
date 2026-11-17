@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:convert' show jsonDecode, jsonEncode, utf8;
-import 'dart:typed_data' show Int64List, Uint8List;
+import 'dart:typed_data' show ByteData, Endian, Int64List, Uint8List;
 import 'dart:io' show Directory, File, HttpClient, HttpDate;
 import 'dart:math' show Random;
 import 'dart:math' as math;
@@ -69,6 +69,7 @@ import 'package:supabase_flutter/supabase_flutter.dart'
         SupabaseClient,
         UserAttributes;
 
+import 'pure.dart' as pure;
 import 'config.dart';
 import 'turn_config.dart';
 
@@ -140,12 +141,16 @@ part 'r2_insights.dart';
 part 'r2_gallery.dart';
 part 'r2_share.dart';
 part 'r2_albums.dart';
+part 'r2_native.dart';
+part 'r2_ui.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   _Crash.install();
   await _Prefs.load();
   await _R2Store.load();
+  // «تقليل الحركة» من أندرويد = نخفف التمويه والحركات
+  if (PlatformDispatcher.instance.accessibilityFeatures.disableAnimations) _Prefs.lowFx.value = true;
   if (_configured) {
     await Supabase.initialize(url: supabaseUrl, anonKey: supabaseAnonKey);
   }
@@ -157,6 +162,7 @@ Future<void> main() async {
     });
   }
   runApp(const App());
+  unawaited(_R2Native.applySaved());
   _listenInvites();
   _setupShortcuts();
   // الإشعارات تبدأ بعد أول شاشة، حتى يفتح التطبيق أسرع

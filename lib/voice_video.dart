@@ -110,7 +110,9 @@ class _VoiceBubble extends StatefulWidget {
 
 class _VoiceState extends State<_VoiceBubble> {
   static VideoPlayerController? _active; // رسالة وحدة تشتغل بنفس الوقت
+  static final Map<String, _VoiceState> _byPath = {};
   VideoPlayerController? _c;
+  bool _wasPlaying = false;
   bool _loading = false;
   bool _failed = false;
   double _speed = 1.0; // سرعة التشغيل: 1x أو 1.5x أو 2x
@@ -123,7 +125,14 @@ class _VoiceState extends State<_VoiceBubble> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    _byPath[widget.path] = this;
+  }
+
+  @override
   void dispose() {
+    if (identical(_byPath[widget.path], this)) _byPath.remove(widget.path);
     final c = _c;
     if (c != null) {
       if (identical(_active, c)) _active = null;
@@ -134,6 +143,18 @@ class _VoiceState extends State<_VoiceBubble> {
   }
 
   void _tick() {
+    final c = _c;
+    if (c != null) {
+      final d = c.value.duration;
+      final playing = c.value.isPlaying;
+      // خلصت الرسالة: نشغّل الصوتية اللي بعدها تلقائياً (إذا كانت ظاهرة)
+      if (_wasPlaying && !playing && d > Duration.zero && c.value.position >= d - const Duration(milliseconds: 150)) {
+        final nxt = _ChatMedia.nextVoice(widget.path);
+        final st = nxt == null ? null : _byPath[nxt];
+        if (st != null && st.mounted) unawaited(st._toggle());
+      }
+      _wasPlaying = playing;
+    }
     if (mounted) setState(() {});
   }
 

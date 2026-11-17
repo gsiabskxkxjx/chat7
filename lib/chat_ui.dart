@@ -319,6 +319,7 @@ extension _ChatUi on _ChatState {
             style: const TextStyle(color: Colors.white),
             onChanged: (_) {
               setState(() {});
+              _persistDraft(widget.chat.id, _c.text);
               _notifyTyping();
             },
             minLines: 1,

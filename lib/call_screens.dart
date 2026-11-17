@@ -223,13 +223,20 @@ class CallScreen extends StatefulWidget {
 class _CallState extends State<CallScreen> {
   Timer? _tick;
   bool _closing = false;
+  bool _lastVideo = false;
   CallSession get s => widget.session;
 
   @override
   void initState() {
     super.initState();
     s.phase.addListener(_onPhase);
+    unawaited(_R2Native.callMode(video: s.video));
+    _lastVideo = s.video;
     _tick = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (s.video != _lastVideo) {
+        _lastVideo = s.video;
+        unawaited(_R2Native.callMode(video: s.video));
+      }
       if (mounted) setState(() {});
     });
     WidgetsBinding.instance.addPostFrameCallback((_) => _onPhase());
@@ -238,6 +245,8 @@ class _CallState extends State<CallScreen> {
   @override
   void dispose() {
     _tick?.cancel();
+    unawaited(_R2Native.callEnd());
+    unawaited(_R2Tone.ringback(false));
     s.phase.removeListener(_onPhase);
     super.dispose();
   }
@@ -245,8 +254,11 @@ class _CallState extends State<CallScreen> {
   void _onPhase() {
     if (!mounted) return;
     setState(() {});
-    if (s.phase.value != CallPhase.ended || _closing) return;
+    final ph = s.phase.value;
+    unawaited(_R2Tone.ringback(ph == CallPhase.calling && s.outgoing));
+    if (ph != CallPhase.ended || _closing) return;
     _closing = true;
+    unawaited(_R2Tone.ended());
     final msg = s.endReason;
     final messenger = ScaffoldMessenger.of(context);
     Future.delayed(const Duration(milliseconds: 900), () {

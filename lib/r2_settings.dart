@@ -38,6 +38,7 @@ class _R2Tiles extends StatelessWidget {
       radius: 28,
       padding: const EdgeInsets.symmetric(vertical: _Sp.xs),
       child: Column(children: [
+        const _SecureTile(),
         tile(Icons.devices_rounded, 'أجهزتي', 'الأجهزة المسجّلة بحسابك وتسجيل الخروج من الباقي', const DevicesScreen()),
         tile(Icons.notifications_paused_rounded, 'لا تزعج', 'كتم الإشعارات لساعة أو لين الصبح', const DndScreen()),
         tile(Icons.storage_rounded, 'التخزين', 'حجم الكاش وحده الأعلى', const CacheScreen()),
@@ -125,7 +126,7 @@ class _DevicesState extends State<DevicesScreen> {
       child: _err != null
           ? Center(child: Padding(padding: const EdgeInsets.all(24), child: Text(_err!, textAlign: TextAlign.center)))
           : rows == null
-              ? const Center(child: CircularProgressIndicator())
+              ? const _SkeletonList()
               : ListView(padding: const EdgeInsets.all(_Sp.lg), children: [
                   for (final d in rows)
                     Padding(

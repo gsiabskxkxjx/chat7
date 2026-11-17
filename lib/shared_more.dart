@@ -225,7 +225,7 @@ class _BudgetState extends State<BudgetScreen> {
                   anyOpen = true;
                   final v = (r['amount'] as num?) ?? num.tryParse('${r['amount']}') ?? 0;
                   final mode = '${r['split_mode'] ?? 'equal'}';
-                  final owed = mode == 'other' ? v : (mode == 'payer' ? 0 : v / 2);
+                  final owed = pure.owedToPayer(v.toDouble(), mode);
                   if (r['paid_by'] == _meId) {
                     mine += v;
                     net += owed;

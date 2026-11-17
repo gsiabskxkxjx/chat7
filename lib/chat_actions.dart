@@ -212,6 +212,7 @@ extension _ChatActions on _ChatState {
     if (t.isEmpty) return;
     final reply = _replyTo;
     _c.clear();
+    _persistDraft(widget.chat.id, '');
     setState(() => _replyTo = null);
     final row = <String, dynamic>{
       'chat_id': widget.chat.id,
@@ -355,6 +356,7 @@ extension _ChatActions on _ChatState {
       if (!okExplain || !mounted) return;
     }
     setState(() => _uploading = true);
+    if (act.startsWith('photo')) unawaited(_sendAct('photo'));
     try {
       final camera = act.endsWith('camera');
       final src = camera ? ImageSource.camera : ImageSource.gallery;
@@ -438,6 +440,8 @@ extension _ChatActions on _ChatState {
     _recTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (!mounted) return;
       setState(() => _recSecs++);
+      if (_recSecs % 2 == 0) unawaited(_sendAct('rec'));
+      if (_recSecs == 285) _toast(context, 'باقي ١٥ ثانية وتنتهي الرسالة الصوتية.');
       if (_recSecs >= 300) unawaited(_finishRec(true));
     });
     setState(() => _recording = true);

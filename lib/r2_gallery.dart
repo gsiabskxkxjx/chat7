@@ -77,7 +77,7 @@ class _GalleryState extends State<GalleryScreen> {
             child: _err != null
                 ? Center(child: Text(_err!))
                 : rows == null
-                    ? const Center(child: CircularProgressIndicator())
+                    ? const _SkeletonGrid()
                     : Padding(
                         padding: const EdgeInsets.only(top: 48),
                         child: TabBarView(children: [

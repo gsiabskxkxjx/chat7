@@ -277,6 +277,9 @@ class _MsgCache {
   static Future<void> clearAll() async {
     _outboxes.clear();
     _drafts.clear();
+    for (final k in _R2Store._m.keys.where((k) => k.startsWith('draft_') || k.startsWith('pod_')).toList()) {
+      await _R2Store.set(k, null);
+    }
     await _HomeWidgets.clear();
     await _MediaFiles.clearAll();
     try {

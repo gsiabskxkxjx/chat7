@@ -79,6 +79,7 @@ extension _R2Chat on _ChatState {
           onTap: () => unawaited(_makeRecoveryNow()),
           onClose: () => setState(() => _recoveryDismissed = true)));
     }
+    out.insert(0, _E2EBar(chatId: widget.chat.id));
     out.addAll(_liveBars());
     out.addAll(_shareBars());
     return out;
@@ -182,6 +183,15 @@ extension _R2Chat on _ChatState {
       builder: (ctx) => SafeArea(
         child: SingleChildScrollView(
           child: Column(mainAxisSize: MainAxisSize.min, children: [
+            ListTile(
+              leading: const Icon(Icons.lock_rounded),
+              title: const Text('التشفير والأمان'),
+              subtitle: const Text('رقم الأمان ورمز الاسترجاع'),
+              onTap: () {
+                Navigator.pop(ctx);
+                push(_E2EScreen(chatId: id));
+              },
+            ),
             ListTile(
               leading: const Icon(Icons.schedule_send_rounded),
               title: const Text('رسالة مجدولة'),

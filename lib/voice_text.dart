@@ -70,8 +70,14 @@ extension _ChatVoiceText on _ChatState {
     String? text;
     String? err;
     try {
-      final d = await _callTranscribe(
-          {'chat_id': widget.chat.id, 'path': path, 'language': 'ar'});
+      // الصوت مشفّر بالسيرفر: نفكه هنا وننرسله للتحويل بس لما إنت تضغط
+      final f = await _MediaFiles.get(path);
+      if (f == null) throw const _E2EUnavailable('no_audio');
+      final d = await _callTranscribe({
+        'audio_b64': base64Encode(await f.readAsBytes()),
+        'ext': path.contains('.') ? path.split('.').last : 'm4a',
+        'language': 'ar',
+      });
       if (d is Map && d['text'] is String) {
         text = d['text'] as String;
       } else {

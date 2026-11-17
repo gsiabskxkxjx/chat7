@@ -128,18 +128,22 @@ class _ThumbImage extends StatelessWidget {
   final String path;
 
   @override
-  Widget build(BuildContext context) => FutureBuilder<String?>(
-        future: MediaUrls.get('chat-media', path),
+  Widget build(BuildContext context) => FutureBuilder<File?>(
+        future: _MediaFiles.get(path),
         builder: (_, s) {
-          final url = s.data;
-          if (url == null) {
+          final f = s.data;
+          if (s.connectionState != ConnectionState.done) {
+            return const Center(child: CircularProgressIndicator(strokeWidth: 2));
+          }
+          if (f == null) {
             return const Center(child: Icon(Icons.broken_image_rounded));
           }
-          return Image.network(
-            url,
+          return Image.file(
+            f,
             fit: BoxFit.cover,
             width: double.infinity,
             height: double.infinity,
+            cacheWidth: 480,
             errorBuilder: (_, __, ___) =>
                 const Center(child: Icon(Icons.broken_image_rounded)),
           );

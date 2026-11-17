@@ -99,6 +99,11 @@ jobs:
           s = s.replace('</application>', tile, 1)
           if 'resizeableActivity' not in s:
               s = s.replace('<application', '<application android:resizeableActivity="true"', 1)
+          # أمان: ما ننسخ بيانات التطبيق لنسخ جوجل الاحتياطية (adb/Drive)، ولا نسمح بالاتصال غير المشفّر
+          if 'allowBackup' not in s:
+              s = s.replace('<application', '<application android:allowBackup="false" android:fullBackupContent="false"', 1)
+          if 'usesCleartextTraffic' not in s:
+              s = s.replace('<application', '<application android:usesCleartextTraffic="false"', 1)
           # نافذة عائمة لمكالمة الفيديو
           if 'android:name=".MainActivity"' in s and 'supportsPictureInPicture' not in s:
               s = s.replace('android:name=".MainActivity"', 'android:name=".MainActivity"\n            android:supportsPictureInPicture="true"', 1)

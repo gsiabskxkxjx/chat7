@@ -38,6 +38,7 @@ class _R2Tiles extends StatelessWidget {
       radius: 28,
       padding: const EdgeInsets.symmetric(vertical: _Sp.xs),
       child: Column(children: [
+        tile(Icons.lock_rounded, 'التشفير والأمان', 'رمز الاسترجاع وتشفير الرسائل القديمة', const _E2EScreen()),
         const _SecureTile(),
         const _CountdownTile(),
         tile(Icons.devices_rounded, 'أجهزتي', 'الأجهزة المسجّلة بحسابك وتسجيل الخروج من الباقي', const DevicesScreen()),

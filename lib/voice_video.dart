@@ -35,9 +35,7 @@ Future<void> _sendMedia({
   int? durationMs,
 }) async {
   final path = '$chatId/${DateTime.now().microsecondsSinceEpoch}.$ext';
-  await _db.storage
-      .from('chat-media')
-      .upload(path, file, fileOptions: FileOptions(contentType: mime));
+  await _E2E.uploadFile(chatId, path, file);
   await _db.from('messages').insert({
     'chat_id': chatId,
     'kind': kind,
@@ -171,12 +169,12 @@ class _VoiceState extends State<_VoiceBubble> {
     var c = _c;
     if (c == null) {
       setState(() => _loading = true);
-      final url = await MediaUrls.get('chat-media', widget.path);
-      if (url == null || !mounted) {
+      final f = await _MediaFiles.get(widget.path);
+      if (f == null || !mounted) {
         _fail();
         return;
       }
-      final nc = VideoPlayerController.networkUrl(Uri.parse(url));
+      final nc = VideoPlayerController.file(f);
       try {
         await nc.initialize();
       } catch (_) {
@@ -332,12 +330,12 @@ class _VideoScreenState extends State<VideoScreen> {
   }
 
   Future<void> _init() async {
-    final url = await MediaUrls.get('chat-media', widget.path);
-    if (url == null) {
+    final f = await _MediaFiles.get(widget.path);
+    if (f == null) {
       if (mounted) setState(() => _failed = true);
       return;
     }
-    final c = VideoPlayerController.networkUrl(Uri.parse(url));
+    final c = VideoPlayerController.file(f);
     try {
       await c.initialize();
     } catch (_) {

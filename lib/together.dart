@@ -31,7 +31,8 @@ class _LoveNotesState extends State<LoveNotesScreen> {
       .stream(primaryKey: ['id'])
       .eq('chat_id', widget.chatId)
       .order('id', ascending: false)
-      .limit(200);
+      .limit(200)
+      .e2e;
 
   String get _me => _db.auth.currentUser?.id ?? '';
 
@@ -530,8 +531,7 @@ class _PhotoChallengeState extends State<PhotoChallengeScreen> {
       final day = _dayStr(_today());
       final path =
           '${widget.chatId}/challenge_${day}_${DateTime.now().millisecondsSinceEpoch}.${_extFor(x.path)}';
-      await _db.storage.from('chat-media').upload(path, File(x.path),
-          fileOptions: FileOptions(contentType: _mimeFor(x.path)));
+      await _E2E.uploadFile(widget.chatId, path, File(x.path));
       await _db.rpc('challenge_submit',
           params: {'p_chat': widget.chatId, 'p_day': day, 'p_path': path});
       unawaited(_sendText(widget.chatId, '📸 خلّصت تحدي الصورة اليوم، دورك!'));

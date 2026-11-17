@@ -22,15 +22,30 @@ class _GalleryState extends State<GalleryScreen> {
 
   Future<void> _load() async {
     try {
-      final r = await _net(
+      final media = await _net(
           _db
               .from('messages')
               .select('id,kind,body,media_path,duration_ms,created_at')
               .eq('chat_id', widget.chatId)
-              .or('kind.in.(image,video,file),and(kind.eq.text,body.ilike.%http%)')
+              .inFilter('kind', const ['image', 'video', 'file'])
               .order('id', ascending: false)
               .limit(600),
           t: const Duration(seconds: 25));
+      // الروابط: النص مشفّر بالسيرفر، فنفلتره بالجهاز
+      final texts = await _net(
+          _db
+              .from('messages')
+              .select('id,kind,body,media_path,duration_ms,created_at')
+              .eq('chat_id', widget.chatId)
+              .eq('kind', 'text')
+              .order('id', ascending: false)
+              .limit(1500),
+          t: const Duration(seconds: 25));
+      final r = <Map<String, dynamic>>[
+        for (final e in media) Map<String, dynamic>.from(e),
+        for (final e in texts)
+          if ('${e['body']}'.contains('http')) Map<String, dynamic>.from(e),
+      ]..sort((a, b) => (b['id'] as int).compareTo(a['id'] as int));
       if (mounted) setState(() => _rows = [for (final e in r) Map<String, dynamic>.from(e)]);
     } catch (e) {
       if (mounted) setState(() => _err = _friendlyError(e));

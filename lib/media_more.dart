@@ -591,8 +591,7 @@ extension _ChatMedia on _ChatState {
     setState(() => _uploading = true);
     try {
       final path = '${widget.chat.id}/${DateTime.now().microsecondsSinceEpoch}_file.$ext';
-      await _db.storage.from('chat-media').upload(path, File(local),
-          fileOptions: FileOptions(contentType: _fileMime(name)));
+      await _E2E.uploadFile(widget.chat.id, path, File(local));
       try {
         await _db.from('messages').insert({
           'chat_id': widget.chat.id,

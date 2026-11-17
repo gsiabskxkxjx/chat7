@@ -1,6 +1,7 @@
 import 'dart:async';
-import 'dart:convert' show jsonDecode, jsonEncode, utf8;
-import 'dart:typed_data' show ByteData, Endian, Int64List, Uint8List;
+import 'dart:convert' show base64Decode, base64Encode, jsonDecode, jsonEncode, utf8;
+import 'dart:typed_data' show BytesBuilder, ByteData, Endian, Int64List, Uint8List;
+import 'dart:isolate' show Isolate;
 import 'dart:io' show Directory, File, HttpClient, HttpDate;
 import 'dart:math' show Random;
 import 'dart:math' as math;
@@ -14,6 +15,10 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart' show GoogleFonts;
 import 'package:url_launcher/url_launcher.dart' show launchUrl, LaunchMode;
 import 'package:flutter_tts/flutter_tts.dart' show FlutterTts;
+import 'package:cryptography/cryptography.dart' as cr;
+import 'package:flutter_secure_storage/flutter_secure_storage.dart'
+    show AndroidOptions, FlutterSecureStorage;
+import 'package:http/http.dart' as http;
 import 'package:geolocator/geolocator.dart'
     show Geolocator, LocationPermission, LocationSettings, LocationAccuracy, Position;
 import 'package:image_picker/image_picker.dart'
@@ -144,6 +149,7 @@ part 'r2_share.dart';
 part 'r2_albums.dart';
 part 'r2_native.dart';
 part 'r2_ui.dart';
+part 'e2e.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -153,14 +159,17 @@ Future<void> main() async {
   // «تقليل الحركة» من أندرويد = نخفف التمويه والحركات
   if (PlatformDispatcher.instance.accessibilityFeatures.disableAnimations) _Prefs.lowFx.value = true;
   if (_configured) {
-    await Supabase.initialize(url: supabaseUrl, anonKey: supabaseAnonKey);
+    await Supabase.initialize(
+        url: supabaseUrl, anonKey: supabaseAnonKey, httpClient: _E2EClient(http.Client()));
   }
   if (_configured) {
     _startAppLook();
     _db.auth.onAuthStateChange.listen((_) {
       _startAppLook();
+      _E2E.onAuthChange();
       unawaited(_R2.onAuth());
     });
+    _E2E.onAuthChange(); // جلسة محفوظة من قبل: نجهّز مفاتيح التشفير
   }
   runApp(const App());
   unawaited(_R2Native.applySaved());
@@ -208,6 +217,7 @@ class App extends StatelessWidget {
         title: appName,
         debugShowCheckedModeBanner: false,
         scaffoldMessengerKey: _messengerKey,
+        navigatorKey: _navKey,
         theme: ThemeData(
           useMaterial3: true,
           brightness: Brightness.dark,

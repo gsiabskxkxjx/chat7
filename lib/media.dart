@@ -59,8 +59,19 @@ class _MediaFiles {
         final req = await client.getUrl(Uri.parse(url));
         final res = await req.close();
         if (res.statusCode != 200) return null;
+        final bb = BytesBuilder(copy: false);
+        await for (final chunk in res) {
+          bb.add(chunk);
+        }
+        var bytes = bb.takeBytes();
+        // الملفات الجديدة مشفّرة: نفكها هنا ونخزّن النسخة المفتوحة بكاش الجهاز
+        if (_E2E.isSealed(bytes)) {
+          final plain = await _E2E.openBytes(path.split('/').first, bytes);
+          if (plain == null) return null;
+          bytes = plain;
+        }
         final tmp = File('${f.path}.part');
-        await res.pipe(tmp.openWrite());
+        await tmp.writeAsBytes(bytes, flush: true);
         await tmp.rename(f.path);
         return f;
       } finally {

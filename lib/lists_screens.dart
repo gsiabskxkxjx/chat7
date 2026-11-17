@@ -29,7 +29,8 @@ class _ListsState extends State<SharedListsScreen> {
       .from('shared_items')
       .stream(primaryKey: ['id'])
       .eq('chat_id', widget.chatId)
-      .order('id', ascending: true);
+      .order('id', ascending: true)
+      .e2e;
 
   final _input = TextEditingController();
   late String _list = widget.initialList ?? _suggestedLists.first;

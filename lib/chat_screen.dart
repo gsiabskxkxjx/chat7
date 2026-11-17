@@ -38,7 +38,8 @@ class _ChatState extends State<ChatScreen> {
       .stream(primaryKey: ['id'])
       .eq('chat_id', widget.chat.id)
       .order('id', ascending: false)
-      .limit(_limit);
+      .limit(_limit)
+      .e2e;
 
   /// لما توصل لآخر الرسائل المعروضة، نحمّل 100 رسالة أقدم.
   void _onScroll() {
@@ -150,6 +151,9 @@ class _ChatState extends State<ChatScreen> {
     super.initState();
     _c.text = _drafts[widget.chat.id] ?? _R2Store.get<String>('draft_${widget.chat.id}') ?? '';
     unawaited(Push.start());
+    _E2E.activeChat = widget.chat.id;
+    _E2E.epoch.addListener(_e2eRefresh);
+    unawaited(_E2E.prepare(widget.chat.id));
     _scroll.addListener(_onScroll);
     _scroll.addListener(() {
       final s = _scroll.hasClients && _scroll.offset > 500;
@@ -246,6 +250,8 @@ class _ChatState extends State<ChatScreen> {
 
   @override
   void dispose() {
+    _E2E.epoch.removeListener(_e2eRefresh);
+    if (_E2E.activeChat == widget.chat.id) _E2E.activeChat = null;
     _drafts[widget.chat.id] = _c.text;
     _pulse.stop();
     _recTimer?.cancel();
@@ -267,6 +273,13 @@ class _ChatState extends State<ChatScreen> {
     unawaited(_hub.dispose());
     _c.dispose();
     super.dispose();
+  }
+
+  /// المفاتيح جهزت أو تغيّرت: نعيد تحميل الرسائل حتى تنفتح
+  void _e2eRefresh() {
+    if (!mounted) return;
+    setState(() => _stream = _makeStream());
+    unawaited(_E2E.prepare(widget.chat.id));
   }
 
   void _r2Refresh() {

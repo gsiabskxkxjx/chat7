@@ -43,6 +43,7 @@ Future<T> _net<T>(Future<T> f, {Duration t = _C.netTimeout}) =>
 /// رسالة عربية مفهومة لأي خطأ
 String _friendlyError(Object e, {String fallback = 'تعذر تنفيذ الطلب. جرّب مرة ثانية.'}) {
   if (e is _NetTimeout) return e.toString();
+  if (e is _E2EUnavailable) return 'التشفير ما اكتمل. الطرف الثاني لازم يفتح آخر نسخة من التطبيق.';
   if (e is PostgrestException) {
     final m = e.message;
     if (m.contains('rate_limited')) return 'ترسل بسرعة كبيرة، انتظر ثواني.';
@@ -50,6 +51,7 @@ String _friendlyError(Object e, {String fallback = 'تعذر تنفيذ الطل
     if (m.contains('sched_limit')) return 'عندك 20 رسالة مجدولة، احذف وحدة منها أول.';
     if (m.contains('media_locked')) return 'الوسائط تنفتح لما الطرفين يضغطون «أثق فيه».';
     if (m.contains('not_authenticated')) return 'سجّل دخولك من جديد.';
+    if (m.contains('e2e_required')) return 'الرسالة لازم تنرسل مشفّرة. حدّث التطبيق.';
     return fallback;
   }
   if (e is AuthException) return e.message;

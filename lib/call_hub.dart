@@ -44,6 +44,7 @@ class CallHub {
   CallSession? current;
   bool ready = false;
   String? _lastRestored;
+  Future<void> _sigChain = Future<void>.value();
 
   void start() {
     _ch = _db
@@ -57,7 +58,16 @@ class CallHub {
             column: 'chat_id',
             value: chatId,
           ),
-          callback: (p) => _onRow(p.newRecord),
+          callback: (p) {
+            // الإشارات مشفّرة: نفكها بالترتيب حتى ما يتبدل تسلسل العرض/الجواب/المرشحين
+            final rec = Map<String, dynamic>.from(p.newRecord);
+            _sigChain = _sigChain.then((_) async {
+              try {
+                final r = await _E2E.walk(rec);
+                _onRow(Map<String, dynamic>.from(r as Map));
+              } catch (_) {}
+            });
+          },
         )
         .subscribe((status, [_]) {
       ready = status == RealtimeSubscribeStatus.subscribed;

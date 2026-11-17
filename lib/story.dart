@@ -22,13 +22,28 @@ class _StoryState extends State<StoryScreen> {
   }
 
   Future<Map<String, dynamic>?> _first(String kind, {String? like}) async {
-    var q = _db
+    if (like != null) {
+      // النص مشفّر بالسيرفر، فالبحث عن كلمة يصير عندك بالجهاز
+      final needle = like.replaceAll('%', '');
+      final all = await _db
+          .from('messages')
+          .select('body,created_at')
+          .eq('chat_id', widget.chatId)
+          .eq('kind', kind)
+          .order('id', ascending: true)
+          .limit(1500);
+      for (final m in all) {
+        if ('${m['body']}'.contains(needle)) return m;
+      }
+      return null;
+    }
+    final r = await _db
         .from('messages')
         .select('body,created_at')
         .eq('chat_id', widget.chatId)
-        .eq('kind', kind);
-    if (like != null) q = q.ilike('body', like);
-    final r = await q.order('id', ascending: true).limit(1);
+        .eq('kind', kind)
+        .order('id', ascending: true)
+        .limit(1);
     return r.isEmpty ? null : r.first;
   }
 

@@ -17,6 +17,7 @@ class _SearchState extends State<SearchScreen> {
   bool _busy = false;
   bool _failed = false;
   String _last = '';
+  List<Map<String, dynamic>>? _all; // الرسائل مفكوكة بجوالك (السيرفر ما يقدر يبحث بالمشفّر)
 
   String get _me => _db.auth.currentUser?.id ?? '';
 
@@ -47,20 +48,19 @@ class _SearchState extends State<SearchScreen> {
       _busy = true;
       _failed = false;
     });
-    // نهرب من الرموز اللي لها معنى خاص بالبحث
-    final esc = term
-        .replaceAll('\\', '\\\\')
-        .replaceAll('%', '\\%')
-        .replaceAll('_', '\\_');
     try {
-      final r = await _db
+      _all ??= List<Map<String, dynamic>>.from(await _db
           .from('messages')
           .select('id,body,sender_id,created_at')
           .eq('chat_id', widget.chatId)
           .eq('kind', 'text')
-          .ilike('body', '%$esc%')
           .order('id', ascending: false)
-          .limit(50);
+          .limit(2000));
+      final needle = term.toLowerCase();
+      final r = [
+        for (final m in _all!)
+          if ('${m['body']}'.toLowerCase().contains(needle)) m
+      ].take(50).toList();
       if (!mounted || _last != term) return;
       setState(() {
         _results = List<Map<String, dynamic>>.from(r);

@@ -342,7 +342,8 @@ class _DiaryState extends State<DiaryScreen> {
       .stream(primaryKey: ['id'])
       .eq('chat_id', widget.chatId)
       .order('id', ascending: false)
-      .limit(300);
+      .limit(300)
+      .e2e;
 
   Future<void> _write([Map<String, dynamic>? edit]) async {
     final c = TextEditingController(text: edit?['body'] as String?);

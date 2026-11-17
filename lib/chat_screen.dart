@@ -21,6 +21,8 @@ class _ChatState extends State<ChatScreen> {
   bool _hasMore = false;
   bool _loadingMore = false;
   final _scroll = ScrollController();
+  // ارتفاع الرأس والشرائط اللي فوق الرسائل (الرسائل تنزل تحتها وهي زجاجية)
+  final ValueNotifier<double> _topH = ValueNotifier<double>(76);
   late Stream<List<Map<String, dynamic>>> _stream = _makeStream();
 
   Stream<List<Map<String, dynamic>>> _makeStream() => _db
@@ -221,6 +223,7 @@ class _ChatState extends State<ChatScreen> {
     final tc = _typeCh;
     if (tc != null) unawaited(_db.removeChannel(tc).then((_) {}));
     _scroll.dispose();
+    _topH.dispose();
     _newBelow.dispose();
     unawaited(_rec.cancel().then((_) => _rec.dispose()));
     unawaited(_hub.dispose());
@@ -351,15 +354,30 @@ class _ChatState extends State<ChatScreen> {
             child: DefaultTextStyle.merge(
               style: TextStyle(color: _t.text),
               child: Column(children: [
-                if (_offline) _offlineBar(),
-                if (_selected.isEmpty) _header() else _selectionBar(),
-                if (_mediaLocked) _trustBar(),
-                if (_showDailyBar) _dailyBar(),
-                if (_askContinue) _continueBar(),
-                ..._extraBars(),
                 Expanded(
                   child: Stack(children: [
-                    Positioned.fill(child: _messages()),
+                    Positioned.fill(
+                      child: ValueListenableBuilder<double>(
+                        valueListenable: _topH,
+                        builder: (_, __, ___) => _messages(),
+                      ),
+                    ),
+                    Positioned(
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      child: _MeasureHeight(
+                        onHeight: (h) => _topH.value = h,
+                        child: Column(mainAxisSize: MainAxisSize.min, children: [
+                          if (_offline) _offlineBar(),
+                          if (_selected.isEmpty) _header() else _selectionBar(),
+                          if (_mediaLocked) _trustBar(),
+                          if (_showDailyBar) _dailyBar(),
+                          if (_askContinue) _continueBar(),
+                          ..._extraBars(),
+                        ]),
+                      ),
+                    ),
                     PositionedDirectional(
                       bottom: 10,
                       end: 16,

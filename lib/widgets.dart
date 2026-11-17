@@ -625,3 +625,46 @@ Future<ChatInfo?> _loadChat() async {
     myGender: m?['gender'] as String?,
   );
 }
+
+// ---------- قياس ارتفاع ودجت ----------
+
+/// يقيس ارتفاع ابنه ويبلّغ عنه كل ما تغيّر.
+/// نستخدمه لإزاحة قائمة الرسائل تحت الرأس الزجاجي بدون ما تنقص أول رسالة.
+class _MeasureHeight extends StatefulWidget {
+  const _MeasureHeight({required this.onHeight, required this.child});
+  final ValueChanged<double> onHeight;
+  final Widget child;
+
+  @override
+  State<_MeasureHeight> createState() => _MeasureHeightState();
+}
+
+class _MeasureHeightState extends State<_MeasureHeight> {
+  double _last = -1;
+  bool _queued = false;
+
+  void _queue() {
+    if (_queued) return;
+    _queued = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _queued = false;
+      if (!mounted) return;
+      final h = context.size?.height;
+      if (h == null || (h - _last).abs() < 0.5) return;
+      _last = h;
+      widget.onHeight(h);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    _queue();
+    return NotificationListener<SizeChangedLayoutNotification>(
+      onNotification: (_) {
+        _queue();
+        return false;
+      },
+      child: SizeChangedLayoutNotifier(child: widget.child),
+    );
+  }
+}

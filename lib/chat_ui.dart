@@ -125,17 +125,23 @@ extension _ChatUi on _ChatState {
             return _messageList(cached, live: false);
           }
           if (snap.hasError) {
-            return const Center(
-              child: Padding(
-                padding: EdgeInsets.all(32),
-                child: Text('تعذر تحميل الرسائل. تأكد من الإنترنت.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: Color(0xAAFFFFFF))),
+            return Padding(
+              padding: EdgeInsets.only(top: _topH.value),
+              child: const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(32),
+                  child: Text('تعذر تحميل الرسائل. تأكد من الإنترنت.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Color(0xAAFFFFFF))),
+                ),
               ),
             );
           }
           if (!snap.hasData) {
-            return const Center(child: CircularProgressIndicator());
+            return Padding(
+              padding: EdgeInsets.only(top: _topH.value),
+              child: const Center(child: CircularProgressIndicator()),
+            );
           }
           final rows = snap.data!;
           _hasMore = rows.length >= _limit;
@@ -152,7 +158,10 @@ extension _ChatUi on _ChatState {
               .where((m) => !_hidden.contains(m.id) && !_hiddenMine.contains(m.id))
               .toList();
           if (live) _trackNew(msgs);
-          if (msgs.isEmpty && _outbox.isEmpty) return _emptyChat();
+          if (msgs.isEmpty && _outbox.isEmpty) {
+            return Padding(
+                padding: EdgeInsets.only(top: _topH.value), child: _emptyChat());
+          }
           final entries = _withDayHeaders(msgs);
           _addUnreadMarker(entries);
           // أول شي بالمحادثة (أقدم شي): عداد الأيام، يظهر لما نكون وصلنا لأول الرسائل
@@ -174,7 +183,7 @@ extension _ChatUi on _ChatState {
           return ListView.builder(
             controller: _scroll,
             reverse: true,
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.fromLTRB(16, 16 + _topH.value, 16, 16),
             itemCount: entries.length,
             itemBuilder: (_, i) {
               final e = entries[i];

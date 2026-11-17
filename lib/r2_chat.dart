@@ -130,6 +130,47 @@ extension _R2Chat on _ChatState {
     });
   }
 
+  // ----- الانتقال لتاريخ -----
+
+  Future<void> _jumpToDate() async {
+    final now = DateTime.now();
+    final d = await showDatePicker(
+        context: context, initialDate: now, firstDate: DateTime(2020), lastDate: now);
+    if (d == null || !mounted) return;
+    try {
+      final start = DateTime(d.year, d.month, d.day).toUtc().toIso8601String();
+      final r = await _net(_db
+          .from('messages')
+          .select('id')
+          .eq('chat_id', widget.chat.id)
+          .gte('created_at', start)
+          .order('id', ascending: true)
+          .limit(1)
+          .maybeSingle());
+      if (r == null) {
+        if (mounted) _toast(context, 'ما في رسائل من هذا اليوم أو بعده.');
+        return;
+      }
+      final target = (r['id'] as num).toInt();
+      final cnt = (await _net(_db
+              .from('messages')
+              .select('id')
+              .eq('chat_id', widget.chat.id)
+              .gte('id', target)
+              .count(CountOption.exact)))
+          .count;
+      if (!mounted) return;
+      setState(() {
+        _limit = math.min(cnt + 30, 2500);
+        _stream = _makeStream();
+      });
+      await Future<void>.delayed(const Duration(milliseconds: 900));
+      if (mounted) _jumpToMsg(target);
+    } catch (e) {
+      if (mounted) _toast(context, _friendlyError(e));
+    }
+  }
+
   // ----- أدوات المحادثة (قائمة) -----
 
   void _openR2Tools() {
@@ -156,6 +197,41 @@ extension _R2Chat on _ChatState {
               onTap: () {
                 Navigator.pop(ctx);
                 push(DisappearScreen(chatId: id));
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library_rounded),
+              title: const Text('معرض المحادثة'),
+              subtitle: const Text('صور، فيديو، ملفات، روابط'),
+              onTap: () {
+                Navigator.pop(ctx);
+                push(GalleryScreen(chatId: id));
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.event_rounded),
+              title: const Text('انتقل لتاريخ'),
+              onTap: () {
+                Navigator.pop(ctx);
+                unawaited(_jumpToDate());
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.auto_awesome_rounded),
+              title: const Text('شنو فاتك؟'),
+              subtitle: const Text('ملخص بنقاط لآخر الرسائل'),
+              onTap: () {
+                Navigator.pop(ctx);
+                unawaited(_aiCatchUp());
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.spellcheck_rounded),
+              title: const Text('صحّح كتابتي'),
+              subtitle: const Text('يصحح النص اللي بمربع الكتابة'),
+              onTap: () {
+                Navigator.pop(ctx);
+                unawaited(_aiFixDraft());
               },
             ),
             ListTile(

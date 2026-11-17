@@ -230,6 +230,7 @@ extension _ChatUi on _ChatState {
                 rx: _reactions[m.id],
                 onReact: (e) => unawaited(_react(m.id, e)),
                 onReply: () => setState(() => _replyTo = m),
+                onQuoteTap: m.replyToId == null ? null : () => _jumpToMsg(m.replyToId!),
               )));
             },
           );
@@ -521,7 +522,7 @@ String _dayLabel(DateTime d) {
   final diff = today.difference(day).inDays;
   if (diff == 0) return 'اليوم';
   if (diff == 1) return 'أمس';
-  return '${d.day} ${_months[d.month - 1]} ${d.year}';
+  return _Fmt.date(d);
 }
 
 class _DayPill extends StatelessWidget {

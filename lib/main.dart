@@ -7,6 +7,7 @@ import 'dart:math' as math;
 import 'dart:ui';
 
 import 'package:flutter/foundation.dart' show defaultTargetPlatform;
+import 'package:flutter/gestures.dart' show TapGestureRecognizer;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show RenderRepaintBoundary;
 import 'package:flutter/services.dart';
@@ -131,6 +132,10 @@ part 'r2_plans.dart';
 part 'r2_couple.dart';
 part 'games4.dart';
 part 'games5.dart';
+part 'r2_ai.dart';
+part 'r2_text.dart';
+part 'r2_insights.dart';
+part 'r2_gallery.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

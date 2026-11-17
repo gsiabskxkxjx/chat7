@@ -238,6 +238,7 @@ void showGamesMenu(BuildContext context, String chatId) {
       (Icons.auto_graph_rounded, 'ملخصنا', 'بطاقة الشهر أو السنة، تنحفظ كصورة', () => push(() => SummaryScreen(chatId: chatId))),
       (Icons.star_rounded, 'الرسائل المفضلة', 'نصوص وصور وصوتيات', () => push(() => StarredScreen(chatId: chatId))),
       (Icons.insights_rounded, 'إحصائياتنا', 'كم رسالة وصورة ومكالمة', () => push(() => StatsScreen(chatId: chatId))),
+      (Icons.query_stats_rounded, 'إحصائيات أعمق', 'ساعات النشاط، الكلمات، الشارات...', () => push(() => InsightsScreen(chatId: chatId))),
       (Icons.favorite_rounded, 'تاريخ بدايتنا', 'لعدّاد الأيام والاحتفالات', () => unawaited(_setStartDate(context, chatId))),
     ]),
     ('🗓️ خطط', [
@@ -253,6 +254,7 @@ void showGamesMenu(BuildContext context, String chatId) {
       (Icons.lightbulb_rounded, 'أفكار للطلعات', 'شي جديد تسوونه سوا', () => unawaited(showTalkCards(context, chatId, 'date'))),
       (Icons.flash_on_rounded, 'ردود سريعة', 'جملك المحفوظة', () => showQuickReplies(context, chatId)),
       (Icons.search_rounded, 'بحث في المحادثة', 'لاقي أي رسالة', () => push(() => SearchScreen(chatId: chatId))),
+      ..._r2AiItems(context, chatId),
     ]),
   ];
 

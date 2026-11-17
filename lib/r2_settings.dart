@@ -271,6 +271,20 @@ class _DndState extends State<DndScreen> {
         opt('لين الصبح (8:00)', morning, icon: Icons.bedtime_rounded),
         if (on) opt('إيقاف لا تزعج', null, icon: Icons.notifications_active_rounded),
         const SizedBox(height: _Sp.md),
+        Glass(
+          radius: 20,
+          padding: EdgeInsets.zero,
+          child: SwitchListTile(
+            title: const Text('إخفاء اسم المرسل والنص بالإشعار'),
+            subtitle: const Text('يظهر «رسالة جديدة» بس على شاشة القفل'),
+            value: _R2Store.get<bool>('hide_sender') ?? false,
+            onChanged: (v) async {
+              await _R2Store.set('hide_sender', v);
+              if (mounted) setState(() {});
+            },
+          ),
+        ),
+        const SizedBox(height: _Sp.md),
         const Text('المكالمات الواردة تبقى تنبّهك. لو تبي ساعات نوم ثابتة كل يوم استخدم «وضع النوم» من التخصيص.',
             style: TextStyle(fontSize: _Fs.small, color: Color(0xB3FFFFFF), height: 1.5)),
       ]),

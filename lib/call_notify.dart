@@ -26,18 +26,55 @@ int _msgNotifId(String chat) =>
 @pragma('vm:entry-point')
 Future<void> _bgCallMessage(RemoteMessage message) async {
   final type = message.data['type'];
-  if (type != 'call' && type != 'message' && type != 'online') return;
+  const known = {'call', 'message', 'online', 'reminder', 'capsule', 'device', 'game', 'alert'};
+  if (!known.contains(type)) return;
   try {
     if (Firebase.apps.isEmpty) await Firebase.initializeApp();
     await _initCallNotifier();
+    await _R2Store.load();
     if (type == 'call') {
       await _showCall(message.data);
     } else if (type == 'online') {
       await _showOnline(message.data);
-    } else {
+    } else if (type == 'message') {
       await _showMessage(message.data);
+    } else {
+      await _showSimple(type as String, message.data);
     }
   } catch (_) {}
+}
+
+/// تذكيرات، كبسولات، تنبيه جهاز جديد، ألعاب، و«أحتاجك»: كل نوع بقناة تنكتم لحالها
+Future<void> _showSimple(String type, Map<String, dynamic> data) async {
+  await _Prefs.load();
+  final dnd = _R2.dndActive() || _Prefs.inQuiet();
+  final (id, name, imp) = switch (type) {
+    'reminder' => ('reminders', 'تذكيرات ومناسبات', Importance.defaultImportance),
+    'capsule' => ('reminders', 'تذكيرات ومناسبات', Importance.defaultImportance),
+    'device' => ('security', 'تنبيهات الأمان', Importance.high),
+    'alert' => ('alerts', 'أحتاجك (عاجل)', Importance.max),
+    _ => ('games', 'الألعاب', Importance.low),
+  };
+  // «أحتاجك» وتنبيه الأمان ما ينكتمون بلا تزعج
+  final silent = dnd && type != 'alert' && type != 'device';
+  final hide = _R2Store.get<bool>('hide_sender') == true;
+  await _callNotifier.show(
+    type == 'alert' ? 9100 : (type == 'device' ? 9101 : 9200 + (data['chat'] ?? '').toString().hashCode % 700),
+    hide && type == 'game' ? 'بيناتنا' : (data['title'] ?? 'بيناتنا').toString(),
+    hide && type == 'game' ? 'دورك باللعبة' : (data['body'] ?? '').toString(),
+    NotificationDetails(
+      android: AndroidNotificationDetails(
+        id,
+        name,
+        importance: imp,
+        priority: imp == Importance.max ? Priority.max : Priority.defaultPriority,
+        silent: silent,
+        category: type == 'alert' ? AndroidNotificationCategory.alarm : null,
+        visibility: NotificationVisibility.private,
+      ),
+    ),
+    payload: (data['chat'] ?? '').toString(),
+  );
 }
 
 Future<void> _showCall(Map<String, dynamic> data) async {
@@ -68,13 +105,15 @@ Future<void> _showMessage(Map<String, dynamic> data) async {
   final chat = (data['chat'] ?? '').toString();
   if (chat.length < 7) return;
   await _Prefs.load(); // ممكن نكون بالخلفية: نقرا الإعدادات من الملف
-  final quiet = _Prefs.inQuiet();
+  await _R2Store.load();
+  final quiet = _Prefs.inQuiet() || _R2.dndActive();
+  final hide = _R2Store.get<bool>('hide_sender') == true;
   final n = await _bumpUnread();
   final buzz = _Prefs.buzz.value && !quiet;
   await _callNotifier.show(
     _msgNotifId(chat),
-    (data['title'] ?? 'بيناتنا').toString(),
-    n > 1 ? '$n رسائل جديدة' : (data['body'] ?? 'رسالة جديدة').toString(),
+    hide ? 'بيناتنا' : (data['title'] ?? 'بيناتنا').toString(),
+    (n > 1 || hide) ? (n > 1 ? '$n رسائل جديدة' : 'رسالة جديدة') : (data['body'] ?? 'رسالة جديدة').toString(),
     NotificationDetails(
       android: AndroidNotificationDetails(
         buzz ? 'messages_buzz' : 'messages',
@@ -115,7 +154,8 @@ Future<void> _showMessage(Map<String, dynamic> data) async {
 /// «صار متصل» (الطرف الثاني فتح التطبيق)
 Future<void> _showOnline(Map<String, dynamic> data) async {
   await _Prefs.load();
-  if (_Prefs.inQuiet()) return;
+  await _R2Store.load();
+  if (_Prefs.inQuiet() || _R2.dndActive()) return;
   await _callNotifier.show(
     9003,
     (data['title'] ?? 'بيناتنا').toString(),

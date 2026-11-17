@@ -107,8 +107,7 @@ String _mimeFor(String path) {
   }
 }
 
-String _hhmm(DateTime? t) =>
-    t == null ? '' : '${_two(t.hour)}:${_two(t.minute)}';
+String _hhmm(DateTime? t) => t == null ? '' : _Fmt.time(t);
 
 /// يسأل: من المعرض أو بالكاميرا؟ (ومعه خيار الحذف إذا طُلب)
 Future<String?> _photoSheet(BuildContext context, {bool canRemove = false}) =>
@@ -229,7 +228,7 @@ class _NetImageState extends State<_NetImage> {
                 file,
                 width: widget.full ? null : 220,
                 height: widget.full ? null : 220,
-                cacheWidth: widget.full ? null : 480,
+                cacheWidth: widget.full ? 1800 : 480,
                 fit: widget.full ? BoxFit.contain : BoxFit.cover,
                 errorBuilder: (_, __, ___) =>
                     _box(const Icon(Icons.broken_image_rounded, size: 36)),

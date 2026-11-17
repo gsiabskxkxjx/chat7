@@ -67,7 +67,10 @@ class _Bubble extends StatelessWidget {
     this.onReply,
     this.rx,
     this.onReact,
+    this.onQuoteTap,
   });
+
+  final VoidCallback? onQuoteTap;
 
   /// تفاعلات الرسالة الخام (للتصويت)
   final Map<String, String>? rx;
@@ -127,8 +130,10 @@ class _Bubble extends StatelessWidget {
     }
     final k = _Prefs.fontScale.value;
     if (_emojiOnly) return Text(m.text, style: TextStyle(fontSize: 44 * k));
-    final txt = Text(m.text,
-        style: TextStyle(fontSize: _Fs.title * k, color: m.mine ? Colors.white : t.text));
+    final txt = _RichMsgText(
+        text: m.text,
+        style: TextStyle(fontSize: _Fs.title * k, color: m.mine ? Colors.white : t.text),
+        linkColor: m.mine ? const Color(0xFFD6ECFF) : t.accent);
     final url = _firstUrl(m.text);
     if (url == null) return txt;
     return Column(
@@ -190,6 +195,9 @@ class _Bubble extends StatelessWidget {
           : AlignmentDirectional.centerEnd,
       child: GestureDetector(
         onLongPress: onLongPress,
+        onDoubleTap: (onReact != null && m.kind != 'call' && !(m.kind == 'text' && _parsePoll(m.text) != null))
+            ? () => onReact!('❤️')
+            : null,
         child: Container(
           margin: EdgeInsets.only(
               top: joinPrev ? 1.5 : 4, bottom: joinNext ? 1.5 : 4),
@@ -224,7 +232,9 @@ class _Bubble extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               if (m.replyToId != null)
-                Container(
+                GestureDetector(
+                  onTap: onQuoteTap,
+                  child: Container(
                   width: double.infinity,
                   margin: const EdgeInsets.only(bottom: 6),
                   padding: const EdgeInsets.fromLTRB(8, 4, 8, 4),
@@ -239,7 +249,7 @@ class _Bubble extends StatelessWidget {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(fontSize: _Fs.small, color: Colors.white70)),
-                ),
+                )),
               _content(context),
               if (reactions != null && reactions!.isNotEmpty)
                 Padding(

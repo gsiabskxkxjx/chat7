@@ -109,6 +109,14 @@ extension _ChatVoiceText on _ChatState {
         title: const Text('نص الرسالة'),
         content: SingleChildScrollView(child: SelectableText(text)),
         actions: [
+          if (text.length > 60)
+            TextButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                unawaited(_aiSummarizeText(text));
+              },
+              child: const Text('لخّص'),
+            ),
           TextButton(
             onPressed: () async {
               await Clipboard.setData(ClipboardData(text: text));

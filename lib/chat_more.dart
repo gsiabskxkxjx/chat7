@@ -59,7 +59,7 @@ class _UnreadPill extends StatelessWidget {
       );
 }
 
-String _clockOf(DateTime d) => '${_two(d.hour)}:${_two(d.minute)}';
+String _clockOf(DateTime d) => _Fmt.time(d);
 
 extension _ChatMore on _ChatState {
   Future<void> _loadHiddenMine() async {

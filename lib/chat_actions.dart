@@ -534,6 +534,26 @@ extension _ChatActions on _ChatState {
             title: Text(_stars.contains(m.id) ? 'إزالة من المفضلة' : 'نجمة (المفضلة)'),
             onTap: () => Navigator.pop(ctx, 'star'),
           ),
+          if (m.kind == 'text' && m.text.trim().isNotEmpty) ...[
+            ListTile(
+              leading: const Icon(Icons.translate_rounded),
+              title: const Text('ترجمة'),
+              onTap: () => Navigator.pop(ctx, 'translate'),
+            ),
+            if (!m.mine)
+              ListTile(
+                leading: const Icon(Icons.auto_awesome_rounded),
+                title: const Text('اقترح ردّ'),
+                onTap: () => Navigator.pop(ctx, 'aireply'),
+              ),
+            if (_findAppointment(m.text) != null)
+              ListTile(
+                leading: const Icon(Icons.event_available_rounded),
+                title: const Text('أضفه للتقويم'),
+                subtitle: Text('لقينا موعد: ${_findAppointment(m.text)!.label}'),
+                onTap: () => Navigator.pop(ctx, 'appt'),
+              ),
+          ],
           if (m.kind != 'call')
             ListTile(
               leading: Icon(_pinIds.contains(m.id) ? Icons.push_pin : Icons.push_pin_outlined),
@@ -583,6 +603,13 @@ extension _ChatActions on _ChatState {
       await _editMsg(m);
     } else if (act == 'pin') {
       await _togglePin(m);
+    } else if (act == 'translate') {
+      await _aiTranslate(m);
+    } else if (act == 'aireply') {
+      await _aiReplies(m);
+    } else if (act == 'appt') {
+      final a = _findAppointment(m.text);
+      if (a != null) await _addAppointment(a, m.text);
     }
   }
 

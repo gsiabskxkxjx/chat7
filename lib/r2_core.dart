@@ -249,7 +249,7 @@ class _R2 {
 
 class _Fmt {
   static bool get arabicDigits => _R2Store.get<bool>('arabic_digits') ?? false;
-  static bool get h24 => _R2Store.get<bool>('h24') ?? true;
+  static bool get h24 => _R2Store.get<bool>('h24') ?? PlatformDispatcher.instance.alwaysUse24HourFormat;
   static bool get iraqiMonths => _R2Store.get<bool>('iraqi_months') ?? false;
 
   static const _ar = '٠١٢٣٤٥٦٧٨٩';

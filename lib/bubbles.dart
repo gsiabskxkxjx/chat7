@@ -96,6 +96,10 @@ class _Bubble extends StatelessWidget {
   Widget _content(BuildContext context) {
     final path = m.mediaPath;
     if (m.kind == 'card') return _CardMsg(text: m.text, color: m.durationMs);
+    final fg = m.mine ? Colors.white : t.text;
+    if (m.kind == 'location') return _LocationMsg(body: m.text, fg: fg);
+    if (m.kind == 'alert') return _AlertMsg(text: m.text);
+    if (m.kind == 'ref') return _RefMsg(body: m.text, fg: fg);
     if (m.kind == 'text') {
       final poll = _parsePoll(m.text);
       if (poll != null) {

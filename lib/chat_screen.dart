@@ -129,6 +129,8 @@ class _ChatState extends State<ChatScreen> {
   Map<String, dynamic>? _pLive; // حالة الطرف الثاني (نص، مؤقت، توقيت)
   String? _pNeed; // شنو يحتاج اليوم
   String? _myNick; // اسم الدلع اللي حطيته له
+  Map<String, dynamic>? _pLoc; // موقعه المباشر (إن شغّله)
+  int _liveTick = 0;
   Timer? _liveTimer;
   bool _clockDismissed = false;
   bool _recoveryDismissed = false;
@@ -151,7 +153,12 @@ class _ChatState extends State<ChatScreen> {
     unawaited(_loadStars());
     _watchPins();
     unawaited(_loadLive());
-    _liveTimer = Timer.periodic(const Duration(seconds: 90), (_) => unawaited(_loadLive()));
+    unawaited(_loadPartnerLoc());
+    _liveTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      _liveTick++;
+      unawaited(_loadPartnerLoc());
+      if (_liveTick % 3 == 0) unawaited(_loadLive());
+    });
     _R2.clockOff.addListener(_r2Refresh);
     _R2.needRecovery.addListener(_r2Refresh);
     unawaited(_loadBirthday());

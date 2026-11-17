@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:convert' show jsonDecode, jsonEncode, utf8;
-import 'dart:typed_data' show Int64List;
+import 'dart:typed_data' show Int64List, Uint8List;
 import 'dart:io' show Directory, File, HttpClient, HttpDate;
 import 'dart:math' show Random;
 import 'dart:math' as math;
@@ -13,6 +13,8 @@ import 'package:flutter/rendering.dart' show RenderRepaintBoundary;
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart' show GoogleFonts;
 import 'package:url_launcher/url_launcher.dart' show launchUrl, LaunchMode;
+import 'package:geolocator/geolocator.dart'
+    show Geolocator, LocationPermission, LocationSettings, LocationAccuracy, Position;
 import 'package:image_picker/image_picker.dart'
     show CameraDevice, ImagePicker, ImageSource, XFile;
 import 'package:file_selector/file_selector.dart' show openFile;
@@ -136,6 +138,8 @@ part 'r2_ai.dart';
 part 'r2_text.dart';
 part 'r2_insights.dart';
 part 'r2_gallery.dart';
+part 'r2_share.dart';
+part 'r2_albums.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

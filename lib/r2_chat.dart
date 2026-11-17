@@ -80,6 +80,7 @@ extension _R2Chat on _ChatState {
           onClose: () => setState(() => _recoveryDismissed = true)));
     }
     out.addAll(_liveBars());
+    out.addAll(_shareBars());
     return out;
   }
 
@@ -235,6 +236,41 @@ extension _R2Chat on _ChatState {
               },
             ),
             ListTile(
+              leading: const Icon(Icons.my_location_rounded),
+              title: const Text('أرسل موقعي'),
+              onTap: () {
+                Navigator.pop(ctx);
+                unawaited(_sendLocation());
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.directions_car_rounded),
+              title: const Text('أنا بطريقي'),
+              subtitle: const Text('شارك موقعك المباشر لمدة محددة'),
+              onTap: () {
+                Navigator.pop(ctx);
+                unawaited(_omw());
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.sos_rounded),
+              title: const Text('أحتاجك'),
+              subtitle: const Text('تنبيه مهم يوصله فوراً'),
+              onTap: () {
+                Navigator.pop(ctx);
+                unawaited(_sendNeedYou());
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.bookmark_add_rounded),
+              title: const Text('بطاقة مرجع'),
+              subtitle: const Text('معلومة أو رابط تحتاجون ترجعون له'),
+              onTap: () {
+                Navigator.pop(ctx);
+                unawaited(_sendRef());
+              },
+            ),
+            ListTile(
               leading: const Icon(Icons.ios_share_rounded),
               title: const Text('صدّر المحادثة'),
               subtitle: const Text('ملف نصي بالرسائل'),
@@ -276,6 +312,7 @@ extension _R2Chat on _ChatState {
           'audio' => '[رسالة صوتية]',
           'vnote' => '[فيديو دائري]',
           'file' => '[ملف] ${r['body'] ?? ''}',
+          'location' || 'alert' || 'ref' => _specialPreview(k, '${r['body'] ?? ''}') ?? '',
           _ => '${r['body'] ?? ''}',
         };
         b.writeln('${at == null ? '' : '${_Fmt.date(at)} ${_Fmt.time(at)}'} - $who: $body');

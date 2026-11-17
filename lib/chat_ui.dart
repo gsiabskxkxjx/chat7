@@ -321,7 +321,11 @@ extension _ChatUi on _ChatState {
               setState(() {});
               _notifyTyping();
             },
-            onSubmitted: (_) => _send(),
+            minLines: 1,
+            maxLines: 6,
+            keyboardType: TextInputType.multiline,
+            textInputAction: TextInputAction.newline,
+            textCapitalization: TextCapitalization.sentences,
             inputFormatters: [LengthLimitingTextInputFormatter(4000)],
             contentInsertionConfiguration: ContentInsertionConfiguration(
               allowedMimeTypes: const [
@@ -664,6 +668,10 @@ String? _quoteOf(List<Msg> msgs, int? id, {String? stored}) {
       return '⭕ فيديو دائري';
     case 'file':
       return '📎 ${x.text}';
+    case 'location':
+    case 'alert':
+    case 'ref':
+      return _specialPreview(x.kind, x.text) ?? x.text;
     default:
       return x.text;
   }

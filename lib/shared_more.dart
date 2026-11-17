@@ -88,211 +88,6 @@ Future<void> _addToAlbum(BuildContext context, String chatId, int messageId) asy
   }
 }
 
-class AlbumsScreen extends StatefulWidget {
-  const AlbumsScreen({super.key, required this.chatId});
-  final String chatId;
-
-  @override
-  State<AlbumsScreen> createState() => _AlbumsState();
-}
-
-class _AlbumsState extends State<AlbumsScreen> {
-  late Future<List<Map<String, dynamic>>> _f = _load();
-
-  Future<List<Map<String, dynamic>>> _load() async => List<Map<String, dynamic>>.from(await _db
-      .from('albums')
-      .select('id,title,album_items(message_id, messages(media_path,kind))')
-      .eq('chat_id', widget.chatId)
-      .order('id', ascending: false));
-
-  Future<void> _create() async {
-    final id = await _newAlbum(context, widget.chatId);
-    if (id != null && mounted) setState(() => _f = _load());
-  }
-
-  @override
-  Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(title: const Text('الألبومات'), backgroundColor: Colors.transparent),
-        extendBodyBehindAppBar: true,
-        floatingActionButton: FloatingActionButton.extended(
-          onPressed: _create,
-          icon: const Icon(Icons.add_rounded),
-          label: const Text('ألبوم'),
-        ),
-        body: Backdrop(
-          child: SafeArea(
-            child: FutureBuilder<List<Map<String, dynamic>>>(
-              future: _f,
-              builder: (_, snap) {
-                if (snap.hasError) {
-                  return const Center(child: Text('الألبومات $_needUpdate5'));
-                }
-                final rows = snap.data;
-                if (rows == null) return const Center(child: CircularProgressIndicator());
-                if (rows.isEmpty) {
-                  return const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(32),
-                      child: Text('ما في ألبومات. سوّ ألبوم، وضيف له صور من المعرض بالضغط المطوّل.',
-                          textAlign: TextAlign.center),
-                    ),
-                  );
-                }
-                return GridView.builder(
-                  padding: const EdgeInsets.fromLTRB(14, 14, 14, 90),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2, mainAxisSpacing: 14, crossAxisSpacing: 14, childAspectRatio: 0.85),
-                  itemCount: rows.length,
-                  itemBuilder: (_, i) {
-                    final a = rows[i];
-                    final items = List<Map>.from((a['album_items'] ?? const []) as List);
-                    String? cover;
-                    for (final it in items) {
-                      final m = it['messages'];
-                      if (m is Map && m['kind'] == 'image' && m['media_path'] != null) {
-                        cover = '${m['media_path']}';
-                        break;
-                      }
-                    }
-                    return _Press(
-                      onTap: () async {
-                        await Navigator.of(context).push(MaterialPageRoute(
-                            builder: (_) => AlbumScreen(
-                                albumId: (a['id'] as num).toInt(), title: '${a['title']}')));
-                        if (mounted) setState(() => _f = _load());
-                      },
-                      child: Glass(
-                        radius: 22,
-                        shadow: false,
-                        padding: const EdgeInsets.all(_Sp.sm),
-                        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                          Expanded(
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(16),
-                              child: cover == null
-                                  ? const ColoredBox(
-                                      color: Color(0x22FFFFFF),
-                                      child: Center(child: Icon(Icons.photo_album_rounded, size: 40)))
-                                  : FittedBox(
-                                      fit: BoxFit.cover,
-                                      clipBehavior: Clip.hardEdge,
-                                      child: _NetImage(path: cover)),
-                            ),
-                          ),
-                          const SizedBox(height: _Sp.sm),
-                          Text('${a['title']}',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(fontWeight: FontWeight.w700)),
-                          Text('${items.length} عنصر',
-                              style: const TextStyle(fontSize: _Fs.small, color: Color(0xB3FFFFFF))),
-                        ]),
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
-          ),
-        ),
-      );
-}
-
-class AlbumScreen extends StatefulWidget {
-  const AlbumScreen({super.key, required this.albumId, required this.title});
-  final int albumId;
-  final String title;
-
-  @override
-  State<AlbumScreen> createState() => _AlbumState();
-}
-
-class _AlbumState extends State<AlbumScreen> {
-  late Future<List<Map<String, dynamic>>> _f = _load();
-
-  Future<List<Map<String, dynamic>>> _load() async => List<Map<String, dynamic>>.from(await _db
-      .from('album_items')
-      .select('message_id, messages(id,kind,media_path)')
-      .eq('album_id', widget.albumId)
-      .order('created_at', ascending: false));
-
-  Future<void> _remove(int messageId) async {
-    try {
-      await _db
-          .from('album_items')
-          .delete()
-          .eq('album_id', widget.albumId)
-          .eq('message_id', messageId);
-      if (mounted) setState(() => _f = _load());
-    } catch (_) {}
-  }
-
-  Future<void> _deleteAlbum() async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text('تحذف ألبوم «${widget.title}»؟'),
-        content: const Text('الصور تبقى بالمحادثة، الألبوم بس ينحذف.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('لا')),
-          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('احذف')),
-        ],
-      ),
-    );
-    if (ok != true) return;
-    try {
-      await _db.from('albums').delete().eq('id', widget.albumId);
-      if (mounted) Navigator.pop(context);
-    } catch (_) {}
-  }
-
-  @override
-  Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(
-          title: Text(widget.title),
-          backgroundColor: Colors.transparent,
-          actions: [
-            IconButton(
-                tooltip: 'حذف الألبوم',
-                onPressed: _deleteAlbum,
-                icon: const Icon(Icons.delete_outline_rounded)),
-          ],
-        ),
-        extendBodyBehindAppBar: true,
-        body: Backdrop(
-          child: SafeArea(
-            child: FutureBuilder<List<Map<String, dynamic>>>(
-              future: _f,
-              builder: (_, snap) {
-                final rows = snap.data;
-                if (snap.hasError) return const Center(child: Text('تعذر التحميل.'));
-                if (rows == null) return const Center(child: CircularProgressIndicator());
-                final items = [
-                  for (final r in rows)
-                    if (r['messages'] is Map && (r['messages'] as Map)['media_path'] != null)
-                      Map<String, dynamic>.from(r['messages'] as Map),
-                ];
-                if (items.isEmpty) {
-                  return const Center(child: Text('الألبوم فاضي. ضيف صور من معرض الذكريات.'));
-                }
-                return GridView.builder(
-                  padding: const EdgeInsets.all(_Sp.sm),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 3, mainAxisSpacing: 6, crossAxisSpacing: 6),
-                  itemCount: items.length,
-                  itemBuilder: (_, i) => GestureDetector(
-                    onLongPress: () => _remove((items[i]['id'] as num).toInt()),
-                    child: _MemoryTile(
-                        kind: '${items[i]['kind']}', path: '${items[i]['media_path']}'),
-                  ),
-                );
-              },
-            ),
-          ),
-        ),
-      );
-}
-
 // ===== الميزانية المشتركة =====
 
 class BudgetScreen extends StatefulWidget {
@@ -313,14 +108,45 @@ class _BudgetState extends State<BudgetScreen> {
 
   String _fmt(num v) => v == v.roundToDouble() ? v.toInt().toString() : v.toStringAsFixed(2);
 
+  static const _modeLabels = {
+    'equal': 'نص نص',
+    'payer': 'لي بس',
+    'other': 'كله عليه',
+  };
+
+  Future<void> _settle() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('تسوية الحساب؟'),
+        content: const Text('كل المصاريف الحالية تنعلّم «مسوّاة» ويبدأ الحساب من الصفر.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('لا')),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('سوّينا')),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    try {
+      await _db
+          .from('budget_items')
+          .update({'settled_at': DateTime.now().toUtc().toIso8601String()})
+          .eq('chat_id', widget.chatId)
+          .isFilter('settled_at', null);
+    } catch (e) {
+      if (mounted) _toast(context, _friendlyError(e));
+    }
+  }
+
   Future<void> _add() async {
     final t = TextEditingController();
     final a = TextEditingController();
+    var mode = 'equal';
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('مصروف جديد'),
-        content: Column(mainAxisSize: MainAxisSize.min, children: [
+        content: StatefulBuilder(builder: (ctx, setM) => Column(mainAxisSize: MainAxisSize.min, children: [
           TextField(
             controller: t,
             autofocus: true,
@@ -332,7 +158,20 @@ class _BudgetState extends State<BudgetScreen> {
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
             decoration: const InputDecoration(labelText: 'المبلغ'),
           ),
-        ]),
+          const SizedBox(height: 10),
+          Wrap(spacing: 8, children: [
+            for (final e in _modeLabels.entries)
+              ChoiceChip(
+                label: Text(e.value),
+                selected: mode == e.key,
+                onSelected: (_) => setM(() => mode = e.key),
+              ),
+          ]),
+          const Padding(
+              padding: EdgeInsets.only(top: 6),
+              child: Text('نص نص: القسمة بالتساوي · لي بس: ما يدخل بالحساب · كله عليه: الطرف الثاني يرجّع لك المبلغ كامل',
+                  style: TextStyle(fontSize: _Fs.small))),
+        ])),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('إلغاء')),
           TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('أضف')),
@@ -352,7 +191,9 @@ class _BudgetState extends State<BudgetScreen> {
       return;
     }
     try {
-      await _db.from('budget_items').insert({'chat_id': widget.chatId, 'title': title, 'amount': amount});
+      await _db
+          .from('budget_items')
+          .insert({'chat_id': widget.chatId, 'title': title, 'amount': amount, 'split_mode': mode});
     } catch (_) {
       if (mounted) _toast(context, 'الميزانية $_needUpdate5');
     }
@@ -376,16 +217,25 @@ class _BudgetState extends State<BudgetScreen> {
                 final rows = snap.data;
                 if (rows == null) return const Center(child: CircularProgressIndicator());
                 num mine = 0, theirs = 0;
+                // net > 0: الطرف الثاني عليه لي، net < 0: أنا عليّ له (للمصاريف غير المسوّاة فقط)
+                num net = 0;
+                var anyOpen = false;
                 for (final r in rows) {
+                  if (r['settled_at'] != null) continue;
+                  anyOpen = true;
                   final v = (r['amount'] as num?) ?? num.tryParse('${r['amount']}') ?? 0;
+                  final mode = '${r['split_mode'] ?? 'equal'}';
+                  final owed = mode == 'other' ? v : (mode == 'payer' ? 0 : v / 2);
                   if (r['paid_by'] == _meId) {
                     mine += v;
+                    net += owed;
                   } else {
                     theirs += v;
+                    net -= owed;
                   }
                 }
                 final total = mine + theirs;
-                final diff = (mine - theirs) / 2;
+                final diff = net;
                 return ListView(padding: const EdgeInsets.fromLTRB(16, 16, 16, 90), children: [
                   Glass(
                     radius: 24,
@@ -404,10 +254,15 @@ class _BudgetState extends State<BudgetScreen> {
                             diff.abs() < 0.01
                                 ? 'متعادلين 👌'
                                 : diff > 0
-                                    ? 'لو تقسمونها نص نص: هو عليه لك ${_fmt(diff)}'
-                                    : 'لو تقسمونها نص نص: أنت عليك له ${_fmt(-diff)}',
+                                    ? 'المتبقي: هو عليه لك ${_fmt(diff)}'
+                                    : 'المتبقي: أنت عليك له ${_fmt(-diff)}',
                             style: const TextStyle(fontSize: _Fs.meta, color: Color(0xDDFFFFFF))),
                       ],
+                      if (anyOpen)
+                        TextButton.icon(
+                            onPressed: _settle,
+                            icon: const Icon(Icons.handshake_rounded),
+                            label: const Text('سوّينا الحساب')),
                     ]),
                   ),
                   const SizedBox(height: _Sp.md),
@@ -446,7 +301,15 @@ class _BudgetState extends State<BudgetScreen> {
                           child: Row(children: [
                             Text(r['paid_by'] == _meId ? '🙋' : '💌', style: const TextStyle(fontSize: _Fs.display)),
                             const SizedBox(width: 10),
-                            Expanded(child: Text('${r['title']}')),
+                            Expanded(
+                                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                              Text('${r['title']}',
+                                  style: TextStyle(
+                                      decoration: r['settled_at'] != null ? TextDecoration.lineThrough : null)),
+                              Text(
+                                  '${_modeLabels['${r['split_mode'] ?? 'equal'}'] ?? ''}${r['settled_at'] != null ? ' · مسوّاة ✓' : ''}',
+                                  style: const TextStyle(fontSize: _Fs.small, color: Color(0xB3FFFFFF))),
+                            ])),
                             Text(_fmt((r['amount'] as num?) ?? num.tryParse('${r['amount']}') ?? 0),
                                 style: const TextStyle(fontWeight: FontWeight.w800)),
                           ]),

@@ -1,0 +1,44 @@
+name: TURN usage check
+
+# يفحص استهلاك حصة مكالمات Metered (TURN) كل أسبوع، ويفشل لو وصل 80% (يوصلك إيميل من GitHub).
+# يحتاج سرّين: Settings > Secrets and variables > Actions
+#   METERED_APP         اسم تطبيقك بـ Metered (الجزء قبل .metered.live)
+#   METERED_SECRET_KEY  المفتاح السري من لوحة Metered
+# لو السرّين مو موجودين، الفحص يتخطى بدون خطأ.
+on:
+  schedule:
+    - cron: '41 5 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  usage:
+    runs-on: ubuntu-24.04
+    env:
+      METERED_APP: ${{ secrets.METERED_APP }}
+      METERED_SECRET_KEY: ${{ secrets.METERED_SECRET_KEY }}
+    steps:
+      - name: Check TURN quota
+        run: |
+          if [ -z "$METERED_APP" ] || [ -z "$METERED_SECRET_KEY" ]; then
+            echo "METERED_APP / METERED_SECRET_KEY secrets are not set - skipping"
+            exit 0
+          fi
+          code=$(curl -s -o /tmp/usage.json -w "%{http_code}" "https://${METERED_APP}.metered.live/api/v1/turn/current_usage?secretKey=${METERED_SECRET_KEY}")
+          echo "HTTP $code"
+          if [ "$code" != "200" ]; then echo "could not read usage"; exit 1; fi
+          python3 - <<'PY'
+          import json, os
+          d = json.load(open('/tmp/usage.json'))
+          quota = float(d.get('quotaInGB') or 0)
+          used = float(d.get('usageInGB') or 0)
+          pct = (used / quota * 100) if quota else 0
+          line = f"TURN usage: {used:.2f} GB of {quota:.2f} GB ({pct:.0f}%)"
+          print(line)
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as f:
+              f.write(line + "\n")
+          if quota and pct >= 80:
+              raise SystemExit("TURN quota is above 80% - consider a bigger plan or a second account")
+          PY

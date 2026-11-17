@@ -1,4 +1,4 @@
--- بيناتنا تحديث 7: توثيق الرقم عبر تلغرام (مجاني)
+-- بيناتنا تحديث 7: توثيق الرقم عبر تلغرام (مجاني)، وتنظيف ملفات الوسائط اليتيمة
 -- شغّله بعد update_1 إلى update_6. آمن لو انعاد.
 -- الفكرة: تلغرام نفسه يتأكد إن الرقم لصاحب الحساب. السيرفر ما يشوف الرقم، يحفظ بصمة مشفّرة بس عشان ما ينربط رقم بحسابين.
 
@@ -115,6 +115,23 @@ grant execute on function public.partner_verified(uuid) to authenticated;
 --    شيل علامتي التعليق عن السطرين تحت بعد ما تغيّر الاسم:
 -- delete from public.app_config where k = 'tg_bot';
 -- insert into public.app_config (k, v) values ('tg_bot', 'YOUR_BOT_USERNAME');
+
+-- 8) تنظيف دوري: ملفات الوسائط اللي ما لها رسالة (مثل رفع انقطع قبل الإرسال)
+--    ما نحذف إلا الأقدم من يومين، وما نحذف أي ملف مرتبط برسالة أو بتحدي الصورة.
+create or replace function public.orphan_media(p_chat uuid) returns setof text
+language sql stable security definer set search_path = public, storage as $$
+  select o.name
+  from storage.objects o
+  where public.is_member(p_chat)
+    and o.bucket_id = 'chat-media'
+    and o.name like p_chat::text || '/%'
+    and o.created_at < now() - interval '2 days'
+    and not exists (select 1 from public.messages m where m.chat_id = p_chat and m.media_path = o.name)
+    and not exists (select 1 from public.photo_challenge c where c.chat_id = p_chat and c.media_path = o.name)
+  limit 200
+$$;
+revoke execute on function public.orphan_media(uuid) from public, anon;
+grant execute on function public.orphan_media(uuid) to authenticated;
 
 -- فحص: لازم يطلع true
 select

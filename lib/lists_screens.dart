@@ -2,9 +2,13 @@ part of 'main.dart';
 
 // ---------- قوايم مشتركة: كل عناصرها تطلع عند الطرفين ----------
 
+const _visitedList = 'أماكن زرناها';
+const _placeLists = {'أماكن نبي نزورها', _visitedList};
+
 const _suggestedLists = [
   'مشتريات',
   'أماكن نبي نزورها',
+  _visitedList,
   'أفلام ومسلسلات',
   'أمنيات الهدايا',
   'أهدافنا',
@@ -84,6 +88,21 @@ class _ListsState extends State<SharedListsScreen> {
     } catch (_) {
       if (mounted) _toast(context, 'التواريخ تحتاج تحديث السيرفر (update_4).');
     }
+  }
+
+  /// يفتح اسم المكان بتطبيق الخرائط
+  Future<void> _openMap(String place) async {
+    final q = Uri.encodeComponent(place);
+    var ok = false;
+    try {
+      ok = await launchUrl(Uri.parse('geo:0,0?q=$q'), mode: LaunchMode.externalApplication);
+    } catch (_) {}
+    if (ok) return;
+    try {
+      ok = await launchUrl(Uri.parse('https://www.google.com/maps/search/?api=1&query=$q'),
+          mode: LaunchMode.externalApplication);
+    } catch (_) {}
+    if (!ok && mounted) _toast(context, 'تعذر فتح الخريطة.');
   }
 
   Future<void> _delete(Map<String, dynamic> it) async {
@@ -186,7 +205,13 @@ class _ListsState extends State<SharedListsScreen> {
                           ],
                         ),
                       ),
-                      if (items.isNotEmpty)
+                      if (items.isNotEmpty && _list == _visitedList)
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+                          child: Text('🗺️ زرتوا ${items.length} مكان سوا',
+                              style: const TextStyle(fontSize: _Fs.body, fontWeight: FontWeight.w600)),
+                        )
+                      else if (items.isNotEmpty)
                         Padding(
                           padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
                           child: Row(children: [
@@ -211,7 +236,9 @@ class _ListsState extends State<SharedListsScreen> {
                       Expanded(
                         child: items.isEmpty
                             ? Center(
-                                child: Text('ما في عناصر بقائمة $_list بعد\nاضغط مطوّل على أي بند تحط له تاريخ',
+                                child: Text(_list == _visitedList
+                                    ? 'سجّلوا الأماكن اللي زرتوها سوا\nواضغط مطوّل على المكان تحط تاريخ الزيارة'
+                                    : 'ما في عناصر بقائمة $_list بعد\nاضغط مطوّل على أي بند تحط له تاريخ',
                                     textAlign: TextAlign.center,
                                     style: const TextStyle(
                                         color: Color(0xAAFFFFFF))))
@@ -224,6 +251,7 @@ class _ListsState extends State<SharedListsScreen> {
                                   final due = DateTime.tryParse('${it['due_on']}');
                                   final late = due != null &&
                                       !done &&
+                                      _list != _visitedList &&
                                       due.isBefore(_today().add(const Duration(days: 1)));
                                   return ListTile(
                                     onTap: () => _toggle(it),
@@ -249,12 +277,20 @@ class _ListsState extends State<SharedListsScreen> {
                                               ? const Color(0x88FFFFFF)
                                               : null,
                                         )),
-                                    trailing: IconButton(
-                                      tooltip: 'حذف',
-                                      icon: const Icon(Icons.delete_outline_rounded,
-                                          size: 20),
-                                      onPressed: () => _delete(it),
-                                    ),
+                                    trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+                                      if (_placeLists.contains(_list))
+                                        IconButton(
+                                          tooltip: 'فتح بالخريطة',
+                                          icon: const Icon(Icons.map_rounded, size: 20),
+                                          onPressed: () => unawaited(_openMap(it['body'] as String)),
+                                        ),
+                                      IconButton(
+                                        tooltip: 'حذف',
+                                        icon: const Icon(Icons.delete_outline_rounded,
+                                            size: 20),
+                                        onPressed: () => _delete(it),
+                                      ),
+                                    ]),
                                   );
                                 },
                               ),

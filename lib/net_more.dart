@@ -474,3 +474,27 @@ Future<void> _checkForUpdate() async {
     }
   } catch (_) {}
 }
+
+
+// ===== تنظيف ملفات الوسائط اليتيمة (مرة باليوم لكل محادثة) =====
+
+/// الملفات اللي انرفعت وما انرسلت لها رسالة (رفع انقطع). السيرفر يحدد اليتيم (أقدم من يومين)،
+/// والتطبيق يحذفه. أي خطأ نتجاهله، وما يأثر على المحادثة.
+Future<void> _cleanOrphanMedia(String chatId) async {
+  try {
+    final dir = await getApplicationSupportDirectory();
+    final flag = File('${dir.path}/orphan_clean_$chatId');
+    final today = _dayStr(DateTime.now());
+    if (await flag.exists() && (await flag.readAsString()).trim() == today) return;
+    final r = await _db.rpc('orphan_media', params: {'p_chat': chatId});
+    if (r is List && r.isNotEmpty) {
+      final names = r.map((e) => '$e').where((n) => n.startsWith('$chatId/')).toList();
+      for (var i = 0; i < names.length; i += 50) {
+        await _db.storage
+            .from('chat-media')
+            .remove(names.sublist(i, i + 50 > names.length ? names.length : i + 50));
+      }
+    }
+    await flag.writeAsString(today);
+  } catch (_) {}
+}

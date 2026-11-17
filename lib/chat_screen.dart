@@ -148,6 +148,7 @@ class _ChatState extends State<ChatScreen> {
     unawaited(_loadToday());
     unawaited(_clearUnread(widget.chat.id));
     unawaited(_pingOnline());
+    unawaited(_cleanOrphanMedia(widget.chat.id));
     unawaited(_loadAnniv());
     if (_outbox.isNotEmpty) unawaited(_flushOutbox());
     WidgetsBinding.instance.addPostFrameCallback((_) {

@@ -16,8 +16,7 @@ import 'package:google_fonts/google_fonts.dart' show GoogleFonts;
 import 'package:url_launcher/url_launcher.dart' show launchUrl, LaunchMode;
 import 'package:flutter_tts/flutter_tts.dart' show FlutterTts;
 import 'package:cryptography/cryptography.dart' as cr;
-import 'package:flutter_secure_storage/flutter_secure_storage.dart'
-    show AndroidOptions, FlutterSecureStorage;
+import 'package:flutter_secure_storage/flutter_secure_storage.dart' show FlutterSecureStorage;
 import 'package:http/http.dart' as http;
 import 'package:geolocator/geolocator.dart'
     show Geolocator, LocationPermission, LocationSettings, LocationAccuracy, Position;

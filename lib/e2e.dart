@@ -55,8 +55,7 @@ Future<Uint8List> _isoKdf(String code, Uint8List salt) => Isolate.run(() async {
 
 class _E2E {
   static const _magic = <int>[0x42, 0x45, 0x32, 0x45, 0x31]; // BE2E1
-  static final _store =
-      FlutterSecureStorage(aOptions: AndroidOptions(encryptedSharedPreferences: true));
+  static final _store = FlutterSecureStorage();
   static final _x = cr.X25519();
   static final _aes = cr.AesGcm.with256bits();
   static final _hkdf = cr.Hkdf(hmac: cr.Hmac.sha256(), outputLength: 32);

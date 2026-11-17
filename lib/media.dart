@@ -281,7 +281,7 @@ class ImageViewerScreen extends StatefulWidget {
 
 class _ImageViewerState extends State<ImageViewerScreen> {
   late final List<String> _list = () {
-    final l = widget.paths ?? _ChatMedia.images;
+    final l = widget.paths ?? _MediaLog.images;
     return l.contains(widget.path) ? l : [widget.path];
   }();
   late int _i = _list.indexOf(widget.path);

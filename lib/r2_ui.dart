@@ -88,7 +88,7 @@ class _SkeletonList extends StatelessWidget {
 
 // ===== سجل وسائط المحادثة (للتنقل بين الصور بالسحب 241 وتشغيل الصوتيات تباعاً 246) =====
 
-class _ChatMedia {
+class _MediaLog {
   static List<String> images = const []; // الأقدم أولاً
   static List<String> voices = const [];
 

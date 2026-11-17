@@ -149,7 +149,7 @@ class _VoiceState extends State<_VoiceBubble> {
       final playing = c.value.isPlaying;
       // خلصت الرسالة: نشغّل الصوتية اللي بعدها تلقائياً (إذا كانت ظاهرة)
       if (_wasPlaying && !playing && d > Duration.zero && c.value.position >= d - const Duration(milliseconds: 150)) {
-        final nxt = _ChatMedia.nextVoice(widget.path);
+        final nxt = _MediaLog.nextVoice(widget.path);
         final st = nxt == null ? null : _byPath[nxt];
         if (st != null && st.mounted) unawaited(st._toggle());
       }

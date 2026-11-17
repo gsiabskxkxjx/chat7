@@ -75,7 +75,7 @@ extension _ChatMore on _ChatState {
   /// يتنادى من بناء القائمة: يعدّ الرسائل الجديدة وأنت فوق، ويحدد أول رسالة ما قريتها
   void _trackNew(List<Msg> msgs) {
     _lastMsgs = msgs;
-    _ChatMedia.update(msgs);
+    _MediaLog.update(msgs);
     if (msgs.isEmpty) return;
     final newest = msgs.first.id;
     final prev = _newestSeen;

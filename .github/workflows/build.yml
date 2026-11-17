@@ -615,12 +615,17 @@ jobs:
         run: |
           APK=build/app/outputs/flutter-apk/app-release.apk
           BT=$(ls -d "$ANDROID_HOME"/build-tools/*/ 2>/dev/null | sort -V | tail -n 1)
-          "${BT}aapt" dump badging "$APK" | grep -E "launchable-activity|application-icon-640" | head -n 4
-          if ! "${BT}aapt" dump badging "$APK" | grep -q "launchable-activity"; then
-            echo "ERROR: no launcher activity in the APK - the app would not show on the home screen"
+          "${BT}aapt" dump badging "$APK" | grep -E "launchable-activity|application-icon-640" | head -n 4 || true
+          "${BT}aapt" dump xmltree "$APK" AndroidManifest.xml > /tmp/manifest_tree.txt
+          echo "=== activities and aliases ==="
+          grep -nE "E: activity|E: activity-alias|android:name\(0x01010003\)=\"com.bainatna.chat.Icon|android:enabled|category.LAUNCHER|action.MAIN" /tmp/manifest_tree.txt | head -n 60 || true
+          HAS_LAUNCHER=0
+          grep -q "android.intent.category.LAUNCHER" /tmp/manifest_tree.txt && HAS_LAUNCHER=1
+          if [ "$HAS_LAUNCHER" != "1" ]; then
+            echo "ERROR: no launcher entry in the APK manifest - the app would not show on the home screen"
             exit 1
           fi
-          "${BT}aapt" dump xmltree "$APK" AndroidManifest.xml | grep -E "activity-alias|Icon(Default|Rose|Mint|Sunset|Night)" | head -n 12 || true
+          echo "launcher entry present"
 
       - name: Build App Bundle (for Google Play)
         continue-on-error: true

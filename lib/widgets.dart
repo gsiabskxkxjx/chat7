@@ -514,7 +514,9 @@ class _Btn extends StatelessWidget {
         button: true,
         label: label,
         child: _Press(
-          onTap: busy ? null : onTap,
+          onTap: busy ? null : () {
+            if (_tapOk()) onTap();
+          },
           dimWhenOff: false,
           scale: 0.96,
           child: Container(

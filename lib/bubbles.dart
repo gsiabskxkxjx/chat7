@@ -15,6 +15,9 @@ class Msg {
     this.replyToId,
     this.edited = false,
     this.readAt,
+    this.replyQuote,
+    this.alt,
+    this.thumbPath,
   });
 
   final int id;
@@ -28,6 +31,9 @@ class Msg {
   final int? replyToId; // رقم الرسالة اللي هذي رد عليها
   final bool edited; // انعدلت بعد الإرسال
   final DateTime? readAt; // متى قراها الطرف الثاني
+  final String? replyQuote; // نص الأصلية وقت الرد (يبقى لو انحذفت)
+  final String? alt; // وصف الصورة لقارئ الشاشة
+  final String? thumbPath; // صورة مصغّرة للفيديو
 
   factory Msg.fromRow(Map<String, dynamic> r, String uid) => Msg(
         id: (r['id'] as num).toInt(),
@@ -41,6 +47,9 @@ class Msg {
         replyToId: (r['reply_to_id'] as num?)?.toInt(),
         edited: r['edited_at'] != null,
         readAt: DateTime.tryParse((r['read_at'] as String?) ?? '')?.toLocal(),
+        replyQuote: r['reply_quote'] as String?,
+        alt: r['alt'] as String?,
+        thumbPath: r['thumb_path'] as String?,
       );
 }
 

@@ -390,6 +390,9 @@ class _ProfileState extends State<ProfileScreen> {
                         _secTitle('تخصيص'),
                         const _PrefsCard(),
                         const SizedBox(height: _Sp.lg),
+                        _secTitle('الأجهزة والبيانات'),
+                        const _R2Tiles(),
+                        const SizedBox(height: _Sp.lg),
                         _secTitle('عن التطبيق'),
                         Glass(
                           radius: 28,
@@ -432,8 +435,8 @@ Future<void> _showAbout(BuildContext context) => showDialog<void>(
         content: Column(mainAxisSize: MainAxisSize.min, children: [
           Text(
               _buildNo == 0
-                  ? 'الإصدار 0.13'
-                  : 'الإصدار 0.13 (بناء $_buildNo)',
+                  ? 'الإصدار 0.14'
+                  : 'الإصدار 0.14 (بناء $_buildNo)',
               style: const TextStyle(color: Color(0xB3FFFFFF))),
           const SizedBox(height: 6),
           const Text('محادثة خاصة لشخصين.', textAlign: TextAlign.center),

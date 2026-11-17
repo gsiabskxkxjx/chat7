@@ -239,11 +239,13 @@ extension _ChatMore on _ChatState {
     if (act == null || !mounted) return;
     setState(() => _selected = {});
     if (act == 'me') {
-      await _hideForMe(sel.map((m) => m.id));
+      _undoableDelete(sel, () => _hideForMe(sel.map((m) => m.id)));
     } else {
-      for (final m in sel) {
-        await _delete(m);
-      }
+      _undoableDelete(sel, () async {
+        for (final m in sel) {
+          await _delete(m);
+        }
+      });
     }
   }
 

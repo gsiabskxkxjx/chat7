@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:convert' show jsonDecode, jsonEncode, utf8;
 import 'dart:typed_data' show Int64List;
-import 'dart:io' show Directory, File, HttpClient;
+import 'dart:io' show Directory, File, HttpClient, HttpDate;
 import 'dart:math' show Random;
 import 'dart:math' as math;
 import 'dart:ui';
@@ -30,6 +30,7 @@ import 'package:record/record.dart'
     show AudioEncoder, AudioRecorder, RecordConfig;
 import 'package:video_player/video_player.dart'
     show VideoPlayer, VideoPlayerController, VideoProgressIndicator;
+import 'package:device_info_plus/device_info_plus.dart' show DeviceInfoPlugin;
 import 'package:firebase_core/firebase_core.dart' show Firebase;
 import 'package:firebase_messaging/firebase_messaging.dart'
     show AuthorizationStatus, FirebaseMessaging, RemoteMessage;
@@ -122,17 +123,24 @@ part 'tokens.dart';
 part 'native_more.dart';
 part 'voice_text.dart';
 part 'phone_verify.dart';
+part 'r2_core.dart';
+part 'r2_settings.dart';
+part 'r2_chat.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   _Crash.install();
   await _Prefs.load();
+  await _R2Store.load();
   if (_configured) {
     await Supabase.initialize(url: supabaseUrl, anonKey: supabaseAnonKey);
   }
   if (_configured) {
     _startAppLook();
-    _db.auth.onAuthStateChange.listen((_) => _startAppLook());
+    _db.auth.onAuthStateChange.listen((_) {
+      _startAppLook();
+      unawaited(_R2.onAuth());
+    });
   }
   runApp(const App());
   _listenInvites();
@@ -146,7 +154,14 @@ Future<void> main() async {
       if (_Prefs.dailyReminder.value >= 0) await _scheduleDailyReminder();
     } catch (_) {}
   }());
-  if (_configured) unawaited(Future.delayed(const Duration(seconds: 12), _Crash.sendPending));
+  if (_configured) {
+    unawaited(Future.delayed(const Duration(seconds: 12), _Crash.sendPending));
+    unawaited(Future.delayed(const Duration(seconds: 3), () {
+      _R2.perf('first_frame');
+      unawaited(_R2.onAuth());
+      unawaited(_R2.checkClock());
+    }));
+  }
   unawaited(Future.delayed(const Duration(seconds: 8), _checkForUpdate));
 }
 

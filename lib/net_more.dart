@@ -315,9 +315,12 @@ extension _ChatNet on _ChatState {
       try {
         await _db.from('messages').insert(p.row);
         box.remove(p);
-      } on PostgrestException {
+      } on PostgrestException catch (e) {
         box.remove(p); // السيرفر رفضها، ما نعيدها
-        if (mounted) _toast(context, 'رسالة ما انقبلت من السيرفر وانلغت.');
+        // 23505 = وصلت من قبل (الرسالة سليمة)، ما نعتبرها فشل
+        if (e.code != '23505' && mounted) {
+          _toast(context, _friendlyError(e, fallback: 'رسالة ما انقبلت من السيرفر وانلغت.'));
+        }
       } catch (_) {
         p.sending = false;
         break; // بعده ما في إنترنت

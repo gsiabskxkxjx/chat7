@@ -124,6 +124,10 @@ class _ChatState extends State<ChatScreen> {
   int? _dismissedRemindId; // آخر تذكير أغلقته (رقم آخر رسالة وقتها)
   // التفاعلات: رقم الرسالة -> (رقم المستخدم -> الإيموجي)
   Map<int, Map<String, String>> _reactions = {};
+  List<int> _pinIds = const []; // الرسائل المثبّتة
+  StreamSubscription<List<Map<String, dynamic>>>? _pinSub;
+  bool _clockDismissed = false;
+  bool _recoveryDismissed = false;
   StreamSubscription<List<Map<String, dynamic>>>? _reactSub;
 
   @override
@@ -141,6 +145,9 @@ class _ChatState extends State<ChatScreen> {
     unawaited(_loadStreak());
     unawaited(_loadDaily());
     unawaited(_loadStars());
+    _watchPins();
+    _R2.clockOff.addListener(_r2Refresh);
+    _R2.needRecovery.addListener(_r2Refresh);
     unawaited(_loadBirthday());
     unawaited(_loadMemory());
     unawaited(_loadHiddenMine());
@@ -220,6 +227,9 @@ class _ChatState extends State<ChatScreen> {
     _lookSub?.cancel();
     _statusTimer?.cancel();
     _reactSub?.cancel();
+    _pinSub?.cancel();
+    _R2.clockOff.removeListener(_r2Refresh);
+    _R2.needRecovery.removeListener(_r2Refresh);
     _typingTimer?.cancel();
     final tc = _typeCh;
     if (tc != null) unawaited(_db.removeChannel(tc).then((_) {}));
@@ -230,6 +240,10 @@ class _ChatState extends State<ChatScreen> {
     unawaited(_hub.dispose());
     _c.dispose();
     super.dispose();
+  }
+
+  void _r2Refresh() {
+    if (mounted) setState(() {});
   }
 
   // ---------- حالة الطرف الثاني ----------

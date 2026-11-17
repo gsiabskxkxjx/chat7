@@ -216,7 +216,9 @@ extension _ChatActions on _ChatState {
     final row = <String, dynamic>{
       'chat_id': widget.chat.id,
       'body': t,
+      'client_id': _uuid4(),
       if (reply != null) 'reply_to_id': reply.id,
+      if (reply != null) 'reply_quote': _quoteSnippet(reply),
       if (effect != null) 'effect': effect,
     };
     try {
@@ -228,11 +230,12 @@ extension _ChatActions on _ChatState {
         row.remove('effect');
         await _db.from('messages').insert(row);
       }
-    } on PostgrestException {
+    } on PostgrestException catch (e) {
+      if (e.code == '23505') return; // وصلت من قبل (إعادة إرسال)
       if (!mounted) return;
       _c.text = t;
       setState(() => _replyTo = reply);
-      _toast(context, 'تعذر الإرسال، حاول مرة ثانية.');
+      _toast(context, _friendlyError(e, fallback: 'تعذر الإرسال، حاول مرة ثانية.'));
     } catch (_) {
       // غالباً انقطع الإنترنت: تنحط بالصندوق وتنعاد لحالها
       if (mounted) _queueOutbox(row);
@@ -531,6 +534,12 @@ extension _ChatActions on _ChatState {
             title: Text(_stars.contains(m.id) ? 'إزالة من المفضلة' : 'نجمة (المفضلة)'),
             onTap: () => Navigator.pop(ctx, 'star'),
           ),
+          if (m.kind != 'call')
+            ListTile(
+              leading: Icon(_pinIds.contains(m.id) ? Icons.push_pin : Icons.push_pin_outlined),
+              title: Text(_pinIds.contains(m.id) ? 'فك التثبيت' : 'تثبيت'),
+              onTap: () => Navigator.pop(ctx, 'pin'),
+            ),
           if (_canEdit(m))
             ListTile(
               leading: const Icon(Icons.edit_rounded),
@@ -572,6 +581,8 @@ extension _ChatActions on _ChatState {
       await _toggleStar(m);
     } else if (act == 'edit') {
       await _editMsg(m);
+    } else if (act == 'pin') {
+      await _togglePin(m);
     }
   }
 

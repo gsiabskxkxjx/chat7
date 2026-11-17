@@ -215,14 +215,14 @@ extension _ChatUi on _ChatState {
                   o.at != null &&
                   m.at != null &&
                   o.at!.difference(m.at!).inMinutes.abs() < 3;
-              return _selectable(m, _Bubble(
+              return KeyedSubtree(key: _msgKey(m.id), child: _selectable(m, _Bubble(
                 key: ValueKey(m.id),
                 joinPrev: i + 1 < entries.length && same(entries[i + 1]),
                 joinNext: i > 0 && same(entries[i - 1]),
                 m: m,
                 onLongPress: () => _msgMenu(m),
                 t: _t,
-                quote: _quoteOf(msgs, m.replyToId),
+                quote: _quoteOf(msgs, m.replyToId, stored: m.replyQuote),
                 reactions: m.kind == 'text' && _parsePoll(m.text) != null
                     ? null
                     : _reactionChips(_reactions, m.id),
@@ -230,7 +230,7 @@ extension _ChatUi on _ChatState {
                 rx: _reactions[m.id],
                 onReact: (e) => unawaited(_react(m.id, e)),
                 onReply: () => setState(() => _replyTo = m),
-              ));
+              )));
             },
           );
   }
@@ -340,6 +340,12 @@ extension _ChatUi on _ChatState {
             tooltip: 'كاميرا',
             onPressed: () => unawaited(_attach(preset: 'photo_camera')),
             icon: Icon(Icons.photo_camera_rounded, color: _t.accent),
+          ),
+        if (!typing)
+          IconButton(
+            tooltip: 'أدوات المحادثة',
+            onPressed: _openR2Tools,
+            icon: Icon(Icons.more_horiz_rounded, color: _t.accent),
           ),
         if (!typing)
           IconButton(
@@ -636,10 +642,15 @@ class _SincePill extends StatelessWidget {
 
 // ---------- الرد على رسالة: نص الأصلية للاقتباس ----------
 
-String? _quoteOf(List<Msg> msgs, int? id) {
+String _quoteSnippet(Msg m) {
+  final q = _quoteOf([m], m.id) ?? '';
+  return q.length > 120 ? q.substring(0, 120) : q;
+}
+
+String? _quoteOf(List<Msg> msgs, int? id, {String? stored}) {
   if (id == null) return null;
   final found = msgs.where((x) => x.id == id).toList();
-  if (found.isEmpty) return 'رسالة';
+  if (found.isEmpty) return (stored != null && stored.isNotEmpty) ? stored : 'رسالة';
   final x = found.first;
   switch (x.kind) {
     case 'image':

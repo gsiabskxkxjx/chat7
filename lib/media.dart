@@ -48,7 +48,7 @@ class _MediaFiles {
       final dir = await _dir();
       if (!_cleaned) {
         _cleaned = true;
-        unawaited(_clean(dir));
+        unawaited(_clean(dir).then((_) => _trimMediaCache()));
       }
       final f = File('${dir.path}/${path.replaceAll('/', '_')}');
       if (await f.exists() && await f.length() > 0) return f;

@@ -1,7 +1,7 @@
 name: secure_chat
 description: Two-person end-to-end encrypted chat app
 publish_to: 'none'
-version: 0.13.0+13
+version: 0.14.0+14
 
 environment:
   sdk: ">=3.0.0 <4.0.0"
@@ -28,6 +28,7 @@ dependencies:
   timezone: ^0.9.4
   firebase_core: ^4.0.0
   firebase_messaging: ^16.0.0
+  device_info_plus: ^11.2.0
 
 flutter:
   uses-material-design: true

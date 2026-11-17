@@ -36,8 +36,15 @@ class _Crash {
       final body = await f.readAsString();
       await f.delete();
       if (!_Prefs.crashReports.value || _db.auth.currentUser == null) return;
-      await _db.rpc('send_feedback',
-          params: {'p_kind': 'problem', 'p_body': '[تقرير عطل تلقائي، بناء $_buildNo]\n$body'});
+      final lines = body.split('\n');
+      await _R2Store.set('last_error', lines.first.length > 140 ? lines.first.substring(0, 140) : lines.first);
+      await _db.rpc('log_error', params: {
+        'p_context': 'crash',
+        'p_message': lines.first,
+        'p_stack': lines.skip(1).join('\n'),
+        'p_version': _R2.verLabel(),
+        'p_platform': defaultTargetPlatform.name,
+      });
     } catch (_) {}
   }
 }

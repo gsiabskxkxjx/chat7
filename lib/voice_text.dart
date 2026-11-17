@@ -32,6 +32,19 @@ Future<void> _saveTranscript(int id, String text) async {
   } catch (_) {}
 }
 
+/// لوحة Supabase تسمّي الدالة أحياناً smart-transcribe: نجرّب الاسمين
+Future<dynamic> _callTranscribe(Map<String, dynamic> body) async {
+  for (final name in const ['smart-transcribe', 'transcribe']) {
+    try {
+      final r = await _db.functions.invoke(name, body: body);
+      return r.data;
+    } on FunctionException catch (e) {
+      if (e.status != 404) rethrow;
+    }
+  }
+  throw FunctionException(status: 404);
+}
+
 extension _ChatVoiceText on _ChatState {
   Future<void> _transcribe(Msg m) async {
     final path = m.mediaPath;
@@ -57,9 +70,8 @@ extension _ChatVoiceText on _ChatState {
     String? text;
     String? err;
     try {
-      final r = await _db.functions.invoke('transcribe',
-          body: {'chat_id': widget.chat.id, 'path': path, 'language': 'ar'});
-      final d = r.data;
+      final d = await _callTranscribe(
+          {'chat_id': widget.chat.id, 'path': path, 'language': 'ar'});
       if (d is Map && d['text'] is String) {
         text = d['text'] as String;
       } else {

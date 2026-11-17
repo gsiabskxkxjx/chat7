@@ -350,6 +350,9 @@ class _E2E {
         if (peer == null) return null;
       }
     }
+    if (noPeer.value.contains(chatId)) {
+      noPeer.value = Set<String>.of(noPeer.value)..remove(chatId);
+    }
     var k = _keys[chatId];
     if (k != null) return k;
     k = await _derive(chatId, peer!);

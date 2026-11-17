@@ -144,6 +144,7 @@ class _R2 {
   /// بعد تسجيل الدخول: نسجّل الجهاز، ونتأكد إن عندنا كود استعادة
   static Future<void> onAuth() async {
     if (!_configured || _db.auth.currentUser == null) return;
+    unawaited(_E2E.init()); // لو فشلت التهيئة (إنترنت ضعيف) نعيدها
     try {
       await _net(_db.rpc('register_device', params: {
         'p_device_id': await deviceId(),

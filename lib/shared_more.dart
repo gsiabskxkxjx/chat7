@@ -394,7 +394,7 @@ class _DiaryState extends State<DiaryScreen> {
         await _db.from('diary_entries').insert(
             {'chat_id': widget.chatId, 'body': t, 'mood': mood, 'day': _dayStr(_today())});
       } else {
-        await _db.from('diary_entries').update({'body': t, 'mood': mood}).eq('id', edit['id']);
+        await _db.from('diary_entries').update({'chat_id': widget.chatId, 'body': t, 'mood': mood}).eq('id', edit['id']);
       }
     } catch (_) {
       if (mounted) _toast(context, 'اليوميات $_needUpdate5');

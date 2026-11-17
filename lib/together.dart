@@ -228,6 +228,8 @@ class _CalendarState extends State<CalendarScreen> {
   Future<void> _add() async {
     final c = TextEditingController();
     DateTime? day;
+    var repeat = 'none';
+    int? remind;
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => StatefulBuilder(
@@ -257,6 +259,28 @@ class _CalendarState extends State<CalendarScreen> {
                 if (d != null) set(() => day = d);
               },
             ),
+            DropdownButtonFormField<String>(
+              initialValue: repeat,
+              decoration: const InputDecoration(labelText: 'التكرار'),
+              items: const [
+                DropdownMenuItem(value: 'none', child: Text('مرة وحدة')),
+                DropdownMenuItem(value: 'weekly', child: Text('كل أسبوع')),
+                DropdownMenuItem(value: 'monthly', child: Text('كل شهر')),
+                DropdownMenuItem(value: 'yearly', child: Text('كل سنة')),
+              ],
+              onChanged: (v) => set(() => repeat = v ?? 'none'),
+            ),
+            DropdownButtonFormField<int?>(
+              initialValue: remind,
+              decoration: const InputDecoration(labelText: 'ذكّرنا قبله'),
+              items: const [
+                DropdownMenuItem<int?>(value: null, child: Text('بدون تذكير')),
+                DropdownMenuItem<int?>(value: 1, child: Text('قبل ساعة')),
+                DropdownMenuItem<int?>(value: 24, child: Text('قبل يوم')),
+                DropdownMenuItem<int?>(value: 48, child: Text('قبل يومين')),
+              ],
+              onChanged: (v) => set(() => remind = v),
+            ),
           ]),
           actions: [
             TextButton(
@@ -274,8 +298,13 @@ class _CalendarState extends State<CalendarScreen> {
     final d = day;
     if (ok != true || t.isEmpty || d == null) return;
     try {
-      await _db.from('chat_events').insert(
-          {'chat_id': widget.chatId, 'title': t, 'on_date': _dayStr(d)});
+      await _db.from('chat_events').insert({
+        'chat_id': widget.chatId,
+        'title': t,
+        'on_date': _dayStr(d),
+        if (repeat != 'none') 'repeat_every': repeat,
+        if (remind != null) 'remind_before_h': remind,
+      });
       unawaited(_sendText(widget.chatId,
           '📅 ضفت موعد: $t (${d.day} ${_months[d.month - 1]})'));
     } catch (e) {
@@ -306,8 +335,9 @@ class _CalendarState extends State<CalendarScreen> {
   }
 
   Widget _tile(Map<String, dynamic> e) {
-    final d = DateTime.tryParse('${e['on_date']}');
+    final d = _effDate(e);
     final days = d == null ? 0 : d.difference(_today()).inDays;
+    final rep = '${e['repeat_every'] ?? 'none'}';
     final when = d == null
         ? ''
         : days == 0
@@ -345,7 +375,11 @@ class _CalendarState extends State<CalendarScreen> {
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text('${e['title']}',
                     style: const TextStyle(fontSize: _Fs.title, fontWeight: FontWeight.w600)),
-                Text(when, style: const TextStyle(fontSize: _Fs.small, color: Color(0xB3FFFFFF))),
+                Text(
+                    rep == 'none'
+                        ? when
+                        : '$when · ${rep == 'weekly' ? 'أسبوعي' : rep == 'monthly' ? 'شهري' : 'سنوي'}',
+                    style: const TextStyle(fontSize: _Fs.small, color: Color(0xB3FFFFFF))),
               ]),
             ),
           ]),
@@ -382,13 +416,10 @@ class _CalendarState extends State<CalendarScreen> {
                   return const Center(child: CircularProgressIndicator());
                 }
                 final today = _today();
-                final next = rows
-                    .where((e) => !(DateTime.tryParse('${e['on_date']}') ?? today)
-                        .isBefore(today))
-                    .toList();
+                final next = rows.where((e) => !(_effDate(e) ?? today).isBefore(today)).toList()
+                  ..sort((a, b) => (_effDate(a) ?? today).compareTo(_effDate(b) ?? today));
                 final past = rows
-                    .where((e) => (DateTime.tryParse('${e['on_date']}') ?? today)
-                        .isBefore(today))
+                    .where((e) => (_effDate(e) ?? today).isBefore(today))
                     .toList()
                     .reversed
                     .toList();

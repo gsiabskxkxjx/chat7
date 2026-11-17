@@ -238,6 +238,12 @@ void showGamesMenu(BuildContext context, String chatId) {
       (Icons.insights_rounded, 'إحصائياتنا', 'كم رسالة وصورة ومكالمة', () => push(() => StatsScreen(chatId: chatId))),
       (Icons.favorite_rounded, 'تاريخ بدايتنا', 'لعدّاد الأيام والاحتفالات', () => unawaited(_setStartDate(context, chatId))),
     ]),
+    ('🗓️ خطط', [
+      ..._r2PlanItems(context, chatId),
+      (Icons.event_repeat_rounded, '365 سؤال', 'سؤال لكل يوم، وأجوبتكم تنحفظ', () => push(() => YearQaScreen(chatId: chatId))),
+      (Icons.favorite_border_rounded, 'أسباب حبي لك', 'جمل تنحفظ وتطلع عشوائياً', () => push(() => PlansScreen(chatId: chatId, kind: 'reason'))),
+      (Icons.volunteer_activism_rounded, 'أشياء نحبها ببعض', 'تضيفون بالتناوب', () => push(() => PlansScreen(chatId: chatId, kind: 'wish'))),
+    ]),
     ('💬 سوالف', [
       (Icons.mail_rounded, 'بطاقات جاهزة', 'صباح الخير، تصبح على خير، تهاني', () => unawaited(showCardsSheet(context, chatId))),
       (Icons.forum_rounded, 'سؤال تعارف', 'أسئلة عميقة على مراحل', () => unawaited(showTalkCards(context, chatId, 'deep'))),

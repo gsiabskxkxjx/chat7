@@ -126,6 +126,7 @@ part 'phone_verify.dart';
 part 'r2_core.dart';
 part 'r2_settings.dart';
 part 'r2_chat.dart';
+part 'r2_plans.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

@@ -194,6 +194,7 @@ Future<void> main() async {
     }));
   }
   unawaited(Future.delayed(const Duration(seconds: 8), _checkForUpdate));
+  WidgetsBinding.instance.addObserver(_UpdateWatcher());
 }
 
 final bool _configured = !supabaseUrl.startsWith('PASTE');

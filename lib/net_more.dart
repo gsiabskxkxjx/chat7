@@ -509,20 +509,46 @@ Future<void> _showUpdateDialog(int n, String link) async {
   );
 }
 
-/// فحص يومي تلقائي (نسخة APK اللي من GitHub بس)
+/// تحديث متوفر (رقم البناء، رابط التنزيل)، يظهر كشريط بأعلى الإعدادات حتى لو سكّر المستخدم النافذة
+final _updateAvail = ValueNotifier<(int, String)?>(null);
+DateTime? _lastUpdateCheck;
+bool _updateChecking = false;
+
+/// فحص تلقائي لنسخة APK اللي من GitHub: عند التشغيل وكل ما يرجع التطبيق للواجهة بعد 6 ساعات على الأقل.
+/// النافذة ما تنعرض أكثر من مرة كل 12 ساعة، والشريط بالإعدادات يبقى لين يتحدّث.
 Future<void> _checkForUpdate() async {
-  if (!_sideload || _buildNo == 0) return;
+  if (!_sideload || _buildNo == 0 || _updateChecking) return;
+  final last = _lastUpdateCheck;
+  if (last != null && DateTime.now().difference(last) < const Duration(hours: 6)) return;
+  _updateChecking = true;
   try {
-    final dir = await getApplicationSupportDirectory();
-    final f = File('${dir.path}/update_check');
-    final today = _dayStr(DateTime.now());
-    if (await f.exists() && (await f.readAsString()) == today) return;
     final r = await _latestRelease();
-    if (r == null) return; // نعيد المحاولة لاحقاً، ما نسجّل اليوم كمفحوص
-    await f.writeAsString(today);
-    if (r.$1 <= _buildNo) return;
+    if (r == null) return; // تعذر الجلب: نعيد المحاولة عند الرجوع القادم
+    _lastUpdateCheck = DateTime.now();
+    if (r.$1 <= _buildNo) {
+      _updateAvail.value = null;
+      return;
+    }
+    _updateAvail.value = r;
+    final dir = await getApplicationSupportDirectory();
+    final f = File('${dir.path}/update_dialog');
+    final lastShown = int.tryParse(await f.exists() ? (await f.readAsString()).trim() : '') ?? 0;
+    final now = DateTime.now().millisecondsSinceEpoch;
+    if (now - lastShown < const Duration(hours: 12).inMilliseconds) return;
+    await f.writeAsString('$now');
     await _showUpdateDialog(r.$1, r.$2);
-  } catch (_) {}
+  } catch (_) {
+  } finally {
+    _updateChecking = false;
+  }
+}
+
+/// يراقب رجوع التطبيق للواجهة ويفحص التحديث
+class _UpdateWatcher with WidgetsBindingObserver {
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) unawaited(_checkForUpdate());
+  }
 }
 
 /// فحص يدوي (من شاشة التشخيص): يرجّع نص النتيجة، ويعرض النافذة لو في تحديث
@@ -530,7 +556,11 @@ Future<String> _checkUpdateNow() async {
   if (!_sideload || _buildNo == 0) return 'التحديثات تجي من المتجر.';
   final r = await _latestRelease();
   if (r == null) return 'تعذر فحص التحديثات، تأكد من الإنترنت.';
-  if (r.$1 <= _buildNo) return 'أنت على آخر نسخة ($_buildNo).';
+  if (r.$1 <= _buildNo) {
+    _updateAvail.value = null;
+    return 'أنت على آخر نسخة ($_buildNo).';
+  }
+  _updateAvail.value = r;
   await _showUpdateDialog(r.$1, r.$2);
   return 'فيه تحديث: ${r.$1}';
 }

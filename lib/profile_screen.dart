@@ -319,6 +319,26 @@ class _ProfileState extends State<ProfileScreen> {
     final searching = q.isNotEmpty;
     final all = _allItems(context, p);
     final out = <Widget>[
+      ValueListenableBuilder<(int, String)?>(
+        valueListenable: _updateAvail,
+        builder: (_, u, __) => u == null
+            ? const SizedBox.shrink()
+            : Padding(
+                padding: const EdgeInsets.only(bottom: _Sp.md),
+                child: Glass(
+                  radius: 24,
+                  tint: const Color(0x3334C759),
+                  padding: const EdgeInsets.symmetric(vertical: _Sp.xs),
+                  child: ListTile(
+                    leading: const Icon(Icons.system_update_rounded),
+                    title: Text('تحديث جديد متوفر (${u.$1})'),
+                    subtitle: const Text('ثبّته فوق النسخة الحالية، ولا تحذف التطبيق'),
+                    trailing: const Icon(Icons.chevron_left_rounded),
+                    onTap: () => unawaited(_showUpdateDialog(u.$1, u.$2)),
+                  ),
+                ),
+              ),
+      ),
       Padding(
         padding: const EdgeInsets.only(bottom: _Sp.md),
         child: TextField(

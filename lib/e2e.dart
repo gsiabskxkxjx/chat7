@@ -268,8 +268,18 @@ class _E2E {
   }
 
   static Future<void> _askRestore(String uid, Map<String, dynamic> row) async {
+    // لو انحذفت النافذة (مثلاً تنقّل التطبيق بعد تسجيل الدخول) نعيد عرضها
+    for (var i = 0; i < 4; i++) {
+      if (_seed != null || _uid != uid) return;
+      if (await _askRestoreOnce(uid, row)) return;
+      await Future<void>.delayed(const Duration(seconds: 2));
+    }
+    _initF = null;
+  }
+
+  static Future<bool> _askRestoreOnce(String uid, Map<String, dynamic> row) async {
     final ctx = await _ctx();
-    if (ctx == null) return;
+    if (ctx == null) return false;
     final bk = (row['backup'] as String?) ?? '';
     Uint8List salt;
     try {
@@ -297,10 +307,7 @@ class _E2E {
         },
       ),
     );
-    if (ok != true) {
-      // ما كمّل: نخلي التطبيق يسأل مرة ثانية بالمرة الجاية
-      _initF = null;
-    }
+    return ok == true;
   }
 
   // ---------- مفاتيح المحادثات ----------
@@ -413,7 +420,15 @@ class _E2E {
     return out;
   }
 
+  /// يعيد محاولة تهيئة المفاتيح (مثلاً لو المستخدم ما أكمل شاشة رمز الاسترجاع)
+  static Future<void> retrySetup() {
+    if (_seed != null) return Future<void>.value();
+    _initF = null;
+    return init();
+  }
+
   static Future<void> prepare(String chatId) async {
+    if (_seed == null && _initF == null) unawaited(init());
     await waitReady();
     final k = await keyFor(chatId);
     final s = Set<String>.of(noPeer.value);
@@ -797,8 +812,12 @@ class _E2EBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
-        listenable: Listenable.merge([_E2E.changed, _E2E.noPeer]),
+        listenable: Listenable.merge([_E2E.changed, _E2E.noPeer, _E2E.epoch]),
         builder: (c, _) {
+          if (!_E2E.isReady) {
+            return _r2Bar('🔐', 'التشفير ما اتفعّل على جهازك بعد. اضغط هنا لإكماله (رمز الاسترجاع أو مفاتيح جديدة) حتى تنرسل رسائلكم.',
+                onTap: () => unawaited(_E2E.retrySetup().then((_) => _E2E.prepare(chatId))));
+          }
           if (_E2E.noPeer.value.contains(chatId)) {
             return _r2Bar('⏳', 'التشفير ما اكتمل: الطرف الثاني لازم يفتح آخر نسخة من التطبيق حتى تنرسل رسائلكم.',
                 onTap: () => unawaited(_E2E.prepare(chatId)));

@@ -177,162 +177,26 @@ extension _R2Chat on _ChatState {
   void _openR2Tools() {
     final id = widget.chat.id;
     void push(Widget w) => Navigator.of(context).push(MaterialPageRoute(builder: (_) => w));
-    showModalBottomSheet<void>(
-      context: context,
-      builder: (ctx) => SafeArea(
-        child: SingleChildScrollView(
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            ListTile(
-              leading: const Icon(Icons.sports_esports_rounded),
-              title: const Text('الألعاب والمزيد'),
-              subtitle: const Text('إكس أو، كم تعرفني، تحديات'),
-              onTap: () {
-                Navigator.pop(ctx);
-                showGamesMenu(context, id);
-              },
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-              child: Text('أرسل',
-                  style: TextStyle(
-                      fontSize: _Fs.small,
-                      fontWeight: FontWeight.w700,
-                      color: Theme.of(ctx).colorScheme.primary)),
-            ),
-            ListTile(
-              leading: const Icon(Icons.my_location_rounded),
-              title: const Text('أرسل موقعي'),
-              onTap: () {
-                Navigator.pop(ctx);
-                unawaited(_sendLocation());
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.directions_car_rounded),
-              title: const Text('أنا بطريقي'),
-              subtitle: const Text('شارك موقعك المباشر لمدة محددة'),
-              onTap: () {
-                Navigator.pop(ctx);
-                unawaited(_omw());
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.sos_rounded),
-              title: const Text('أحتاجك'),
-              subtitle: const Text('تنبيه مهم يوصله فوراً'),
-              onTap: () {
-                Navigator.pop(ctx);
-                unawaited(_sendNeedYou());
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.bookmark_add_rounded),
-              title: const Text('بطاقة مرجع'),
-              subtitle: const Text('معلومة أو رابط تحتاجون ترجعون له'),
-              onTap: () {
-                Navigator.pop(ctx);
-                unawaited(_sendRef());
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.schedule_send_rounded),
-              title: const Text('رسالة مجدولة'),
-              subtitle: const Text('تنرسل بوقت تحدده'),
-              onTap: () {
-                Navigator.pop(ctx);
-                push(ScheduledScreen(chatId: id));
-              },
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-              child: Text('تنقّل',
-                  style: TextStyle(
-                      fontSize: _Fs.small,
-                      fontWeight: FontWeight.w700,
-                      color: Theme.of(ctx).colorScheme.primary)),
-            ),
-            ListTile(
-              leading: const Icon(Icons.photo_library_rounded),
-              title: const Text('معرض المحادثة'),
-              subtitle: const Text('صور، فيديو، ملفات، روابط'),
-              onTap: () {
-                Navigator.pop(ctx);
-                push(GalleryScreen(chatId: id));
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.event_rounded),
-              title: const Text('انتقل لتاريخ'),
-              onTap: () {
-                Navigator.pop(ctx);
-                unawaited(_jumpToDate());
-              },
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-              child: Text('ذكاء اصطناعي',
-                  style: TextStyle(
-                      fontSize: _Fs.small,
-                      fontWeight: FontWeight.w700,
-                      color: Theme.of(ctx).colorScheme.primary)),
-            ),
-            ListTile(
-              leading: const Icon(Icons.auto_awesome_rounded),
-              title: const Text('شنو فاتك؟'),
-              subtitle: const Text('ملخص بنقاط لآخر الرسائل'),
-              onTap: () {
-                Navigator.pop(ctx);
-                unawaited(_aiCatchUp());
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.spellcheck_rounded),
-              title: const Text('صحّح كتابتي'),
-              subtitle: const Text('يصحح النص اللي بمربع الكتابة'),
-              onTap: () {
-                Navigator.pop(ctx);
-                unawaited(_aiFixDraft());
-              },
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-              child: Text('خصوصية وأمان',
-                  style: TextStyle(
-                      fontSize: _Fs.small,
-                      fontWeight: FontWeight.w700,
-                      color: Theme.of(ctx).colorScheme.primary)),
-            ),
-            ListTile(
-              leading: const Icon(Icons.lock_rounded),
-              title: const Text('التشفير والأمان'),
-              subtitle: const Text('رقم الأمان ورمز الاسترجاع'),
-              onTap: () {
-                Navigator.pop(ctx);
-                push(_E2EScreen(chatId: id));
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.timer_outlined),
-              title: const Text('رسائل تختفي'),
-              subtitle: const Text('تنحذف تلقائياً بعد مدة'),
-              onTap: () {
-                Navigator.pop(ctx);
-                push(DisappearScreen(chatId: id));
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.ios_share_rounded),
-              title: const Text('صدّر المحادثة'),
-              subtitle: const Text('ملف نصي بالرسائل'),
-              onTap: () {
-                Navigator.pop(ctx);
-                unawaited(_exportChat(id));
-              },
-            ),
-          ]),
-        ),
-      ),
-    );
+    // إجراءات سريعة بأعلى صفحة «المزيد»
+    final quick = <_MenuItem>[
+      (Icons.my_location_rounded, 'موقعي', 'أرسل موقعك', () => unawaited(_sendLocation())),
+      (Icons.directions_car_rounded, 'أنا بطريقي', 'شارك موقعك المباشر لمدة محددة', () => unawaited(_omw())),
+      (Icons.schedule_send_rounded, 'رسالة مجدولة', 'تنرسل بوقت تحدده', () => push(ScheduledScreen(chatId: id))),
+      (Icons.auto_awesome_rounded, 'شنو فاتك؟', 'ملخص بنقاط لآخر الرسائل', () => unawaited(_aiCatchUp())),
+    ];
+    // أدوات المحادثة (كلها كانت بالقائمة القديمة، ولا شي انحذف)
+    final tools = <_MenuItem>[
+      (Icons.sos_rounded, 'أحتاجك', 'تنبيه مهم يوصله فوراً', () => unawaited(_sendNeedYou())),
+      (Icons.bookmark_add_rounded, 'بطاقة مرجع', 'معلومة أو رابط تحتاجون ترجعون له', () => unawaited(_sendRef())),
+      (Icons.event_rounded, 'انتقل لتاريخ', 'ينط لأول رسالة من يوم تختاره', () => unawaited(_jumpToDate())),
+      (Icons.spellcheck_rounded, 'صحّح كتابتي', 'يصحح النص اللي بمربع الكتابة', () => unawaited(_aiFixDraft())),
+      (Icons.lock_rounded, 'التشفير والأمان', 'حالة التشفير ورقم الأمان ورمز الاسترجاع', () => push(_E2EScreen(chatId: id))),
+      (Icons.timer_outlined, 'رسائل تختفي', 'تنحذف تلقائياً بعد مدة', () => push(DisappearScreen(chatId: id))),
+      (Icons.ios_share_rounded, 'صدّر المحادثة', 'ملف نصي بالرسائل', () => unawaited(_exportChat(id))),
+      (Icons.palette_rounded, 'مظهر المحادثة', 'الثيم والخلفية', () => push(ThemeSettingsScreen(chatId: id))),
+      (Icons.settings_rounded, 'الإعدادات', 'الحساب والإشعارات والخصوصية والوضع البسيط', () => unawaited(_openProfile())),
+    ];
+    push(MoreHubScreen(chatId: id, chatContext: context, quick: quick, tools: tools));
   }
 
   Future<void> _exportChat(String chatId) async {

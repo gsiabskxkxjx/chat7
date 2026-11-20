@@ -76,6 +76,8 @@ class _ProfileState extends State<ProfileScreen> {
   Profile? _p;
   String? _err;
   bool _busy = false;
+  final _q = TextEditingController();
+  final _open = <String>{'account'};
 
   String get _uid => _db.auth.currentUser!.id;
 
@@ -88,6 +90,7 @@ class _ProfileState extends State<ProfileScreen> {
   @override
   void dispose() {
     _name.dispose();
+    _q.dispose();
     super.dispose();
   }
 
@@ -105,6 +108,260 @@ class _ProfileState extends State<ProfileScreen> {
     }
   }
 
+  /// كل بنود الإعدادات بمجموعاتها (القسم الي تنتمي له) وكلمات بحثها
+  List<_SItem> _allItems(BuildContext context, Profile p) {
+    void refresh() {
+      if (mounted) setState(() {});
+    }
+
+    const red = Color(0xFFFF6B60);
+    return [
+      ('account', 'تحقق رقم الهاتف تيليجرام', const _PhoneVerifyTile()),
+      ('account', 'تغيير اسم المستخدم',
+          ListTile(
+            leading: const Icon(Icons.alternate_email_rounded),
+            title: const Text('تغيير اسم المستخدم'),
+            subtitle: Text('@${p.username} (مرة كل 30 يوم)'),
+            onTap: _busy ? null : _changeUsername,
+          )),
+      ('account', 'اهتماماتي شريك',
+          ListTile(
+            leading: const Icon(Icons.interests_rounded),
+            title: const Text('اهتماماتي'),
+            subtitle: const Text('تظهر لما تبحث عن شريك'),
+            onTap: () => _editInterests(context),
+          )),
+      ('account', 'تغيير كلمة السر',
+          ListTile(
+            leading: const Icon(Icons.key_rounded),
+            title: const Text('تغيير كلمة السر'),
+            onTap: () => Navigator.of(context)
+                .push(MaterialPageRoute(builder: (_) => const ChangePasswordScreen())),
+          )),
+      ('account', 'رمز استرجاع الحساب نسيت كلمة السر',
+          ListTile(
+            leading: const Icon(Icons.vpn_key_rounded),
+            title: const Text('رمز استرجاع الحساب'),
+            subtitle: const Text('ينشئ رمز جديد ويلغي القديم'),
+            onTap: _busy ? null : _newRecovery,
+          )),
+      ('account', 'تسجيل الخروج',
+          ListTile(
+            leading: const Icon(Icons.logout_rounded),
+            title: const Text('تسجيل الخروج'),
+            onTap: _busy ? null : _logout,
+          )),
+      ('notify', 'الإشعارات حالة',
+          ListTile(
+            leading: const Icon(Icons.notifications_rounded),
+            title: const Text('الإشعارات'),
+            subtitle: Text(Push.status),
+            trailing: const Icon(Icons.refresh_rounded),
+            onTap: () async {
+              await Push.start();
+              refresh();
+            },
+          )),
+      ('notify', 'كتم إشعارات الرسائل',
+          SwitchListTile(
+            value: p.muteMessages,
+            onChanged: (v) => _toggle('mute_messages', v),
+            title: const Text('كتم إشعارات الرسائل'),
+            subtitle: const Text('ما توصلك إشعارات الرسائل، والمحادثة تبقى شغالة عادي'),
+          )),
+      ('notify', 'كتم إشعارات المكالمات',
+          SwitchListTile(
+            value: p.muteCalls,
+            onChanged: (v) => _toggle('mute_calls', v),
+            title: const Text('كتم إشعارات المكالمات'),
+            subtitle: const Text(
+                'ما توصلك إشعارات المكالمات والتطبيق مسكّر (المكالمات داخل التطبيق ما تتأثر)'),
+          )),
+      ('notify', 'نبّهني لما يصير متصل', const _OnlineAlertTile()),
+      ('privacy', 'قفل التطبيق بالبصمة أو الوجه',
+          ValueListenableBuilder<bool>(
+            valueListenable: _lockNotifier,
+            builder: (_, on, __) => SwitchListTile(
+              value: on,
+              onChanged: (_) => _toggleLockAuth(context),
+              title: const Text('قفل التطبيق بالبصمة أو الوجه'),
+              subtitle: const Text('المدة تختارها من «القفل بعد الخروج» تحت'),
+            ),
+          )),
+      ('privacy', 'إظهار حالة الاتصال آخر ظهور',
+          SwitchListTile(
+            value: p.showOnline,
+            onChanged: (v) => _toggle('show_online', v),
+            title: const Text('إظهار حالة الاتصال'),
+            subtitle: const Text('الطرف الثاني يشوف إذا كنت متصل وآخر ظهور'),
+          )),
+      ('privacy', 'علامات القراءة',
+          SwitchListTile(
+            value: p.readReceipts,
+            onChanged: (v) => _toggle('read_receipts', v),
+            title: const Text('علامات القراءة'),
+            subtitle: const Text('يعرف الطرف الثاني إنك قرأت رسالته'),
+          )),
+      ('look', 'الوضع البسيط محادثة نظيفة بدون ألعاب أزرار',
+          SwitchListTile(
+            secondary: const Icon(Icons.spa_rounded),
+            title: const Text('الوضع البسيط'),
+            subtitle: const Text(
+                'محادثة نظيفة: بدون أزرار وتنبيهات إضافية. كل الميزات تبقى بزر ⋯'),
+            value: _Prefs.simpleMode.value,
+            onChanged: (v) {
+              _Prefs.simpleMode.value = v;
+              unawaited(_Prefs.save());
+              refresh();
+            },
+          )),
+      if (widget.chat != null)
+        ('look', 'مظهر التطبيق الثيم الخلفية',
+            ListTile(
+              leading: const Icon(Icons.palette_rounded),
+              title: const Text('مظهر التطبيق'),
+              subtitle: const Text('الثيم والخلفية للتطبيق كله، يشوفها الطرفين'),
+              onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => ThemeSettingsScreen(chatId: widget.chat!.id))),
+            )),
+      ..._prefsItems(context, refresh),
+      ..._r2Items(context, chatId: widget.chat?.id),
+      ('help', 'إرسال ملاحظة مشكلة اقتراح الدعم',
+          ListTile(
+            leading: const Icon(Icons.feedback_rounded),
+            title: const Text('إرسال ملاحظة'),
+            subtitle: const Text('مشكلة أو اقتراح يوصل للمطوّر'),
+            onTap: () => Navigator.of(context)
+                .push(MaterialPageRoute(builder: (_) => const FeedbackScreen())),
+          )),
+      ('help', 'حول بيناتنا الإصدار سياسة الخصوصية',
+          ListTile(
+            leading: const Icon(Icons.info_rounded),
+            title: const Text('حول بيناتنا'),
+            subtitle: const Text('الإصدار وسياسة الخصوصية'),
+            onTap: () => _showAbout(context),
+          )),
+      if (widget.chat != null)
+        ('danger', 'مسح سجل المحادثة حذف الرسائل',
+            ListTile(
+              leading: const Icon(Icons.delete_sweep_rounded, color: red),
+              title: const Text('مسح سجل المحادثة', style: TextStyle(color: red)),
+              subtitle: const Text('يحذف الرسائل والوسائط عند الطرفين، والربط يبقى'),
+              onTap: _busy ? null : _clearHistory,
+            )),
+      if (widget.chat != null)
+        ('danger', 'إلغاء الارتباط',
+            ListTile(
+              leading: const Icon(Icons.link_off_rounded, color: red),
+              title: const Text('إلغاء الارتباط', style: TextStyle(color: red)),
+              subtitle: Text('مع @${widget.chat!.partner} وحذف المحادثة'),
+              onTap: _busy ? null : _unlink,
+            )),
+      ('danger', 'حذف الحساب',
+          ListTile(
+            leading: const Icon(Icons.delete_forever_rounded, color: red),
+            title: const Text('حذف الحساب', style: TextStyle(color: red)),
+            onTap: _busy ? null : _deleteAccount,
+          )),
+    ];
+  }
+
+  static const _sections = <(String, IconData, String, List<String>)>[
+    ('account', Icons.person_rounded, 'الحساب', ['account']),
+    ('notify', Icons.notifications_rounded, 'الإشعارات', ['notify']),
+    ('privacy', Icons.shield_rounded, 'الخصوصية والأمان', ['privacy']),
+    ('look', Icons.palette_rounded, 'المظهر والمحادثة', ['look', 'chat']),
+    ('help', Icons.help_outline_rounded, 'المساعدة والدعم', ['help']),
+    ('danger', Icons.warning_amber_rounded, 'منطقة الخطر', ['danger']),
+  ];
+
+  Widget _sectionCard(BuildContext context, (String, IconData, String, List<String>) sec,
+      List<Widget> tiles, bool open, bool searching) {
+    final danger = sec.$1 == 'danger';
+    final color = danger ? const Color(0xFFFF6B60) : null;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: _Sp.md),
+      child: Glass(
+        radius: 28,
+        padding: const EdgeInsets.symmetric(vertical: _Sp.xs),
+        child: Column(children: [
+          ListTile(
+            leading: Icon(sec.$2, color: color),
+            title: Text(sec.$3,
+                style: TextStyle(fontWeight: FontWeight.w700, color: color)),
+            subtitle: searching ? null : Text('${tiles.length} ${tiles.length == 1 ? 'خيار' : 'خيارات'}',
+                style: const TextStyle(fontSize: _Fs.small)),
+            trailing: searching
+                ? null
+                : AnimatedRotation(
+                    turns: open ? 0.5 : 0,
+                    duration: const Duration(milliseconds: 200),
+                    child: const Icon(Icons.keyboard_arrow_down_rounded)),
+            onTap: searching
+                ? null
+                : () => setState(() {
+                      if (!_open.remove(sec.$1)) _open.add(sec.$1);
+                    }),
+          ),
+          AnimatedSize(
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeOut,
+            alignment: Alignment.topCenter,
+            child: open ? Column(children: tiles) : const SizedBox(width: double.infinity),
+          ),
+        ]),
+      ),
+    );
+  }
+
+  List<Widget> _settingsBody(BuildContext context, Profile p) {
+    final q = _q.text.trim();
+    final searching = q.isNotEmpty;
+    final all = _allItems(context, p);
+    final out = <Widget>[
+      Padding(
+        padding: const EdgeInsets.only(bottom: _Sp.md),
+        child: TextField(
+          controller: _q,
+          onChanged: (_) => setState(() {}),
+          decoration: InputDecoration(
+            hintText: 'ابحث بالإعدادات',
+            prefixIcon: const Icon(Icons.search_rounded),
+            suffixIcon: searching
+                ? IconButton(
+                    tooltip: 'مسح',
+                    icon: const Icon(Icons.close_rounded),
+                    onPressed: () => setState(_q.clear))
+                : null,
+            filled: true,
+            fillColor: const Color(0x1FFFFFFF),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(18),
+              borderSide: const BorderSide(color: _edge),
+            ),
+          ),
+        ),
+      ),
+    ];
+    var any = false;
+    for (final sec in _sections) {
+      final tiles = <Widget>[
+        for (final it in all)
+          if (sec.$4.contains(it.$1) && (!searching || it.$2.contains(q))) it.$3,
+      ];
+      if (tiles.isEmpty) continue;
+      any = true;
+      out.add(_sectionCard(context, sec, tiles, searching || _open.contains(sec.$1), searching));
+    }
+    if (!any) {
+      out.add(const Padding(
+        padding: EdgeInsets.all(_Sp.xl),
+        child: Center(child: Text('ما لقينا إعداد بهالاسم.')),
+      ));
+    }
+    return out;
+  }
+
   @override
   Widget build(BuildContext context) {
     final p = _p;
@@ -119,7 +376,7 @@ class _ProfileState extends State<ProfileScreen> {
                     tooltip: 'رجوع',
                     onPressed: () => Navigator.of(context).pop(),
                     icon: const Icon(Icons.arrow_back_rounded)),
-                const Text('ملفي الشخصي',
+                const Text('الإعدادات',
                     style:
                         TextStyle(fontSize: _Fs.display, fontWeight: FontWeight.w700)),
               ]),
@@ -131,6 +388,7 @@ class _ProfileState extends State<ProfileScreen> {
                           ? const CircularProgressIndicator()
                           : Text(_err!))
                   : SingleChildScrollView(
+                      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
                       padding: const EdgeInsets.all(_Sp.lg),
                       child: Column(children: [
                         Glass(
@@ -217,193 +475,7 @@ class _ProfileState extends State<ProfileScreen> {
                           ]),
                         ),
                         const SizedBox(height: _Sp.lg),
-                        _secTitle('الخصوصية والأمان'),
-                        Glass(
-                          radius: 28,
-                          padding: const EdgeInsets.symmetric(vertical: _Sp.xs),
-                          child: ValueListenableBuilder<bool>(
-                            valueListenable: _lockNotifier,
-                            builder: (_, on, __) => SwitchListTile(
-                              value: on,
-                              onChanged: (_) => _toggleLockAuth(context),
-                              title: const Text('قفل التطبيق بالبصمة أو الوجه'),
-                              subtitle: const Text(
-                                  'المدة تختارها من «القفل بعد الخروج» تحت'),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: _Sp.lg),
-                        Glass(
-                          radius: 28,
-                          padding: const EdgeInsets.symmetric(vertical: _Sp.xs),
-                          child: Column(children: [
-                            SwitchListTile(
-                              value: p.showOnline,
-                              onChanged: (v) => _toggle('show_online', v),
-                              title: const Text('إظهار حالة الاتصال'),
-                              subtitle: const Text(
-                                  'الطرف الثاني يشوف إذا كنت متصل وآخر ظهور'),
-                            ),
-                            SwitchListTile(
-                              value: p.readReceipts,
-                              onChanged: (v) => _toggle('read_receipts', v),
-                              title: const Text('علامات القراءة'),
-                              subtitle: const Text(
-                                  'يعرف الطرف الثاني إنك قرأت رسالته'),
-                            ),
-                            SwitchListTile(
-                              value: p.muteMessages,
-                              onChanged: (v) => _toggle('mute_messages', v),
-                              title: const Text('كتم إشعارات الرسائل'),
-                              subtitle: const Text(
-                                  'ما توصلك إشعارات الرسائل، والمحادثة تبقى شغالة عادي'),
-                            ),
-                            SwitchListTile(
-                              value: p.muteCalls,
-                              onChanged: (v) => _toggle('mute_calls', v),
-                              title: const Text('كتم إشعارات المكالمات'),
-                              subtitle: const Text(
-                                  'ما توصلك إشعارات المكالمات والتطبيق مسكّر (المكالمات داخل التطبيق ما تتأثر)'),
-                            ),
-                            const _OnlineAlertTile(),
-                          ]),
-                        ),
-                        const SizedBox(height: _Sp.lg),
-                        _secTitle('الإشعارات'),
-                        Glass(
-                          radius: 28,
-                          padding: const EdgeInsets.symmetric(vertical: _Sp.xs),
-                          child: ListTile(
-                            leading: const Icon(Icons.notifications_rounded),
-                            title: const Text('الإشعارات'),
-                            subtitle: Text(Push.status),
-                            trailing: const Icon(Icons.refresh_rounded),
-                            onTap: () async {
-                              await Push.start();
-                              if (mounted) setState(() {});
-                            },
-                          ),
-                        ),
-                        const SizedBox(height: _Sp.lg),
-                        _secTitle('الحساب'),
-                        Glass(
-                          radius: 28,
-                          padding: const EdgeInsets.symmetric(vertical: _Sp.xs),
-                          child: Column(children: [
-                            const _PhoneVerifyTile(),
-                            ListTile(
-                              leading: const Icon(Icons.feedback_rounded),
-                              title: const Text('إرسال ملاحظة'),
-                              subtitle: const Text('مشكلة أو اقتراح يوصل للمطوّر'),
-                              onTap: () => Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                      builder: (_) => const FeedbackScreen())),
-                            ),
-                            ListTile(
-                              leading: const Icon(Icons.alternate_email_rounded),
-                              title: const Text('تغيير اسم المستخدم'),
-                              subtitle: Text('@${p.username} (مرة كل 30 يوم)'),
-                              onTap: _busy ? null : _changeUsername,
-                            ),
-                            ListTile(
-                              leading: const Icon(Icons.interests_rounded),
-                              title: const Text('اهتماماتي'),
-                              subtitle: const Text('تظهر لما تبحث عن شريك'),
-                              onTap: () => _editInterests(context),
-                            ),
-                            ListTile(
-                              leading: const Icon(Icons.key_rounded),
-                              title: const Text('تغيير كلمة السر'),
-                              onTap: () => Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                      builder: (_) =>
-                                          const ChangePasswordScreen())),
-                            ),
-                            ListTile(
-                              leading: const Icon(Icons.vpn_key_rounded),
-                              title: const Text('رمز استرجاع الحساب'),
-                              subtitle:
-                                  const Text('ينشئ رمز جديد ويلغي القديم'),
-                              onTap: _busy ? null : _newRecovery,
-                            ),
-                            ListTile(
-                              leading: const Icon(Icons.logout_rounded),
-                              title: const Text('تسجيل الخروج'),
-                              onTap: _busy ? null : _logout,
-                            ),
-                            ListTile(
-                              leading: const Icon(Icons.delete_forever_rounded,
-                                  color: Color(0xFFFF6B60)),
-                              title: const Text('حذف الحساب',
-                                  style: TextStyle(color: Color(0xFFFF6B60))),
-                              onTap: _busy ? null : _deleteAccount,
-                            ),
-                          ]),
-                        ),
-                        if (widget.chat != null) ...[
-                          const SizedBox(height: _Sp.lg),
-                          _secTitle('المحادثة'),
-                          Glass(
-                            radius: 28,
-                            padding: const EdgeInsets.symmetric(vertical: _Sp.xs),
-                            child: ListTile(
-                              leading: const Icon(Icons.delete_sweep_rounded,
-                                  color: Color(0xFFFF6B60)),
-                              title: const Text('مسح سجل المحادثة',
-                                  style: TextStyle(color: Color(0xFFFF6B60))),
-                              subtitle: const Text(
-                                  'يحذف الرسائل والوسائط عند الطرفين، والربط يبقى'),
-                              onTap: _busy ? null : _clearHistory,
-                            ),
-                          ),
-                          const SizedBox(height: _Sp.lg),
-                          Glass(
-                            radius: 28,
-                            padding: const EdgeInsets.symmetric(vertical: _Sp.xs),
-                            child: ListTile(
-                              leading: const Icon(Icons.palette_rounded),
-                              title: const Text('مظهر التطبيق'),
-                              subtitle: const Text(
-                                  'الثيم والخلفية للتطبيق كله، يشوفها الطرفين'),
-                              onTap: () => Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                      builder: (_) => ThemeSettingsScreen(
-                                          chatId: widget.chat!.id))),
-                            ),
-                          ),
-                          const SizedBox(height: _Sp.lg),
-                          Glass(
-                            radius: 28,
-                            padding: const EdgeInsets.symmetric(vertical: _Sp.xs),
-                            child: ListTile(
-                              leading: const Icon(Icons.link_off_rounded,
-                                  color: Color(0xFFFF6B60)),
-                              title: const Text('إلغاء الارتباط',
-                                  style: TextStyle(color: Color(0xFFFF6B60))),
-                              subtitle: Text(
-                                  'مع @${widget.chat!.partner} وحذف المحادثة'),
-                              onTap: _busy ? null : _unlink,
-                            ),
-                          ),
-                        ],
-                        const SizedBox(height: _Sp.lg),
-                        _secTitle('تخصيص'),
-                        const _PrefsCard(),
-                        const SizedBox(height: _Sp.lg),
-                        _secTitle('الأجهزة والبيانات'),
-                        const _R2Tiles(),
-                        const SizedBox(height: _Sp.lg),
-                        _secTitle('عن التطبيق'),
-                        Glass(
-                          radius: 28,
-                          padding: const EdgeInsets.symmetric(vertical: _Sp.xs),
-                          child: ListTile(
-                            leading: const Icon(Icons.info_rounded),
-                            title: const Text('حول بيناتنا'),
-                            subtitle: const Text('الإصدار وسياسة الخصوصية'),
-                            onTap: () => _showAbout(context),
-                          ),
-                        ),
+                        ..._settingsBody(context, p),
                       ]),
                     ),
             ),

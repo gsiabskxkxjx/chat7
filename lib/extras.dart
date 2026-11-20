@@ -621,6 +621,14 @@ extension _ChatExtras on _ChatState {
 
   List<Widget> _extraBars() {
     final out = <Widget>[];
+    if (_Prefs.simpleMode.value) {
+      // الوضع البسيط: بس الأهم (مثبّتات، حالة الشريك، تنبيه الإشعارات)، بدون مناسبات وذكريات وعدّ تنازلي
+      if (!_pushDismissed && Push.status.startsWith('مرفوضة')) {
+        out.add(_r2Bar('🔕', 'الإشعارات مطفية، ما راح تعرف لما يرسل لك. فعّلها من إعدادات الجوال ثم التطبيقات ثم بيناتنا.',
+            onClose: () => setState(() => _pushDismissed = true)));
+      }
+      return [..._r2Bars(), ...out];
+    }
     Widget bar(String emoji, String text, VoidCallback onClose) => Padding(
           padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
           child: Glass(

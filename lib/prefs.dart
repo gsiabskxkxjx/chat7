@@ -20,6 +20,7 @@ class _Prefs {
   static final animBg = ValueNotifier<int>(0); // خلفية متحركة بالمحادثة
   static final autoDayNight = ValueNotifier<bool>(false); // ثيم فاتح بالنهار وغامق بالليل
   static final dailyReminder = ValueNotifier<int>(-1); // ساعة تذكير سؤال اليوم، -1 مطفي
+  static final simpleMode = ValueNotifier<bool>(false); // الوضع البسيط: محادثة نظيفة بدون أزرار وتنبيهات إضافية
 
   /// داخل ساعات وضع النوم؟
   static bool inQuiet([DateTime? at]) {
@@ -58,6 +59,7 @@ class _Prefs {
       animBg.value = (m['animBg'] as num?)?.toInt() ?? 0;
       autoDayNight.value = m['autoDayNight'] as bool? ?? false;
       dailyReminder.value = (m['dailyReminder'] as num?)?.toInt() ?? -1;
+      simpleMode.value = m['simpleMode'] as bool? ?? false;
       final r = (m['reactions'] as List?)?.map((e) => '$e').toList();
       if (r != null && r.length >= 3 && r.length <= 6) reactions.value = r;
     } catch (_) {}
@@ -84,223 +86,178 @@ class _Prefs {
         'animBg': animBg.value,
         'autoDayNight': autoDayNight.value,
         'dailyReminder': dailyReminder.value,
+        'simpleMode': simpleMode.value,
         'reactions': reactions.value,
       }));
     } catch (_) {}
   }
 }
 
-/// قسم "تخصيص" بشاشة الملف الشخصي
-class _PrefsCard extends StatefulWidget {
-  const _PrefsCard();
+/// عنصر إعداد قابل للبحث: (القسم، كلمات البحث، الودجت)
+typedef _SItem = (String group, String kw, Widget w);
 
-  @override
-  State<_PrefsCard> createState() => _PrefsCardState();
-}
+Widget _prefChoice<T>(String title, IconData icon, ValueNotifier<T> v,
+        List<(T, String)> options, VoidCallback refresh) =>
+    ListTile(
+      leading: Icon(icon),
+      title: Text(title),
+      trailing: DropdownButton<T>(
+        value: v.value,
+        underline: const SizedBox.shrink(),
+        borderRadius: BorderRadius.circular(16),
+        items: [
+          for (final o in options)
+            DropdownMenuItem<T>(value: o.$1, child: Text(o.$2)),
+        ],
+        onChanged: (x) {
+          if (x == null) return;
+          v.value = x;
+          refresh();
+          unawaited(_Prefs.save());
+        },
+      ),
+    );
 
-class _PrefsCardState extends State<_PrefsCard> {
-  Widget _choice<T>(String title, IconData icon, ValueNotifier<T> v,
-          List<(T, String)> options) =>
-      ListTile(
-        leading: Icon(icon),
-        title: Text(title),
-        trailing: DropdownButton<T>(
-          value: v.value,
-          underline: const SizedBox.shrink(),
-          borderRadius: BorderRadius.circular(16),
-          items: [
-            for (final o in options)
-              DropdownMenuItem<T>(value: o.$1, child: Text(o.$2)),
-          ],
-          onChanged: (x) {
-            if (x == null) return;
-            setState(() => v.value = x);
-            unawaited(_Prefs.save());
+Widget _prefSwitch(String title, String sub, IconData icon, ValueNotifier<bool> v,
+        VoidCallback refresh, {VoidCallback? after}) =>
+    SwitchListTile(
+      secondary: Icon(icon),
+      title: Text(title),
+      subtitle: Text(sub),
+      value: v.value,
+      onChanged: (x) {
+        v.value = x;
+        refresh();
+        unawaited(_Prefs.save());
+        after?.call();
+      },
+    );
+
+/// إعدادات الجوال المحلية، مقسّمة على مجموعات (look/notify/privacy/chat) لتوزّع على أقسام الإعدادات
+List<_SItem> _prefsItems(BuildContext context, VoidCallback refresh) {
+  Widget choice<T>(String title, IconData icon, ValueNotifier<T> v, List<(T, String)> o) =>
+      _prefChoice<T>(title, icon, v, o, refresh);
+  return [
+    ('look', 'حجم خط المحادثة الخط كبير صغير',
+        choice<double>('حجم خط المحادثة', Icons.format_size_rounded, _Prefs.fontScale,
+            const [(0.9, 'صغير'), (1.0, 'عادي'), (1.15, 'كبير'), (1.3, 'أكبر')])),
+    ('look', 'شكل الفقاعات مدوّرة حادة كبسولة',
+        choice<int>('شكل الفقاعات', Icons.chat_bubble_outline_rounded, _Prefs.bubbleShape,
+            const [(0, 'مدوّرة'), (1, 'حادة'), (2, 'كبسولة')])),
+    ('look', 'لون فقاعاتي وفقاعاته',
+        ListTile(
+          leading: const Icon(Icons.format_color_fill_rounded),
+          title: const Text('لون فقاعاتي وفقاعاته'),
+          subtitle: const Text('يتغير عندك بس'),
+          trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+            _dot(_Prefs.myBubble.value),
+            const SizedBox(width: _Sp.xs),
+            _dot(_Prefs.theirBubble.value),
+          ]),
+          onTap: () async {
+            await _pickBubbleColors(context);
+            refresh();
           },
-        ),
-      );
-
-  @override
-  Widget build(BuildContext context) => Glass(
-        radius: 28,
-        padding: const EdgeInsets.symmetric(vertical: _Sp.xs),
-        child: Column(children: [
-          _choice<double>('حجم خط المحادثة', Icons.format_size_rounded,
-              _Prefs.fontScale, const [
-            (0.9, 'صغير'),
-            (1.0, 'عادي'),
-            (1.15, 'كبير'),
-            (1.3, 'أكبر'),
-          ]),
-          _choice<int>('شكل الفقاعات', Icons.chat_bubble_outline_rounded,
-              _Prefs.bubbleShape, const [
-            (0, 'مدوّرة'),
-            (1, 'حادة'),
-            (2, 'كبسولة'),
-          ]),
-          ListTile(
-            leading: const Icon(Icons.format_color_fill_rounded),
-            title: const Text('لون فقاعاتي وفقاعاته'),
-            subtitle: const Text('يتغير عندك بس'),
-            trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-              _dot(_Prefs.myBubble.value),
-              const SizedBox(width: _Sp.xs),
-              _dot(_Prefs.theirBubble.value),
-            ]),
-            onTap: () async {
-              await _pickBubbleColors(context);
-              if (mounted) setState(() {});
-            },
-          ),
-          SwitchListTile(
-            secondary: const Icon(Icons.brightness_6_rounded),
-            title: const Text('نهار وليل تلقائي'),
-            subtitle: const Text('ثيم فاتح بالنهار وغامق بالليل (عندك بس)'),
-            value: _Prefs.autoDayNight.value,
-            onChanged: (x) {
-              setState(() => _Prefs.autoDayNight.value = x);
-              unawaited(_Prefs.save());
-              _startAppLook();
-            },
-          ),
-          SwitchListTile(
-            secondary: const Icon(Icons.phone_android_rounded),
-            title: const Text('يتبع وضع الجوال'),
-            subtitle: const Text('فاتح أو غامق حسب إعداد أندرويد (يتفوق على النهار والليل)'),
-            value: _R2Store.get<bool>('followSystem') == true,
+        )),
+    ('look', 'نهار وليل تلقائي ثيم فاتح غامق',
+        _prefSwitch('نهار وليل تلقائي', 'ثيم فاتح بالنهار وغامق بالليل (عندك بس)',
+            Icons.brightness_6_rounded, _Prefs.autoDayNight, refresh, after: _startAppLook)),
+    ('look', 'يتبع وضع الجوال فاتح غامق أندرويد',
+        SwitchListTile(
+          secondary: const Icon(Icons.phone_android_rounded),
+          title: const Text('يتبع وضع الجوال'),
+          subtitle: const Text('فاتح أو غامق حسب إعداد أندرويد (يتفوق على النهار والليل)'),
+          value: _R2Store.get<bool>('followSystem') == true,
+          onChanged: (x) async {
+            await _R2Store.set('followSystem', x);
+            refresh();
+            _startAppLook();
+          },
+        )),
+    ('look', 'خلفية متحركة بالمحادثة جزيئات',
+        choice<int>('خلفية متحركة بالمحادثة', Icons.auto_awesome_rounded, _Prefs.animBg, [
+          for (var i = 0; i < _particleNames.length; i++) (i, _particleNames[i]),
+        ])),
+    ('look', 'إطار صورته بالمحادثة',
+        choice<int>('إطار صورته بالمحادثة', Icons.account_circle_rounded, _Prefs.ring, [
+          for (var i = 0; i < _ringStyles.length; i++) (i, _ringStyles[i]),
+        ])),
+    ('look', 'الخط العربي الحديث',
+        _prefSwitch('الخط العربي الحديث', 'يتحمّل من الإنترنت أول مرة',
+            Icons.font_download_rounded, _Prefs.arabicFont, refresh)),
+    ('look', 'تخفيف المؤثرات البطارية أسرع',
+        _prefSwitch('تخفيف المؤثرات', 'أسرع وأوفر للبطارية بالأجهزة القديمة',
+            Icons.speed_rounded, _Prefs.lowFx, refresh)),
+    ('look', 'أيقونة التطبيق', const _AppIconTile()),
+    ('notify', 'تذكير سؤال اليوم',
+        ListTile(
+          leading: const Icon(Icons.alarm_rounded),
+          title: const Text('تذكير سؤال اليوم'),
+          trailing: DropdownButton<int>(
+            value: _Prefs.dailyReminder.value,
+            underline: const SizedBox.shrink(),
+            borderRadius: BorderRadius.circular(16),
+            items: const [
+              DropdownMenuItem(value: -1, child: Text('مطفي')),
+              DropdownMenuItem(value: 10, child: Text('10 الصبح')),
+              DropdownMenuItem(value: 14, child: Text('2 الظهر')),
+              DropdownMenuItem(value: 20, child: Text('8 بالليل')),
+              DropdownMenuItem(value: 22, child: Text('10 بالليل')),
+            ],
             onChanged: (x) async {
-              await _R2Store.set('followSystem', x);
-              if (mounted) setState(() {});
-              _startAppLook();
+              if (x == null) return;
+              _Prefs.dailyReminder.value = x;
+              refresh();
+              await _Prefs.save();
+              await _scheduleDailyReminder();
             },
           ),
-          ListTile(
-            leading: const Icon(Icons.alarm_rounded),
-            title: const Text('تذكير سؤال اليوم'),
-            trailing: DropdownButton<int>(
-              value: _Prefs.dailyReminder.value,
-              underline: const SizedBox.shrink(),
-              borderRadius: BorderRadius.circular(16),
-              items: const [
-                DropdownMenuItem(value: -1, child: Text('مطفي')),
-                DropdownMenuItem(value: 10, child: Text('10 الصبح')),
-                DropdownMenuItem(value: 14, child: Text('2 الظهر')),
-                DropdownMenuItem(value: 20, child: Text('8 بالليل')),
-                DropdownMenuItem(value: 22, child: Text('10 بالليل')),
-              ],
-              onChanged: (x) async {
-                if (x == null) return;
-                setState(() => _Prefs.dailyReminder.value = x);
-                await _Prefs.save();
-                await _scheduleDailyReminder();
-              },
-            ),
-          ),
-          _choice<int>('خلفية متحركة بالمحادثة', Icons.auto_awesome_rounded,
-              _Prefs.animBg, [
-            for (var i = 0; i < _particleNames.length; i++) (i, _particleNames[i]),
-          ]),
-          _choice<int>('إطار صورته بالمحادثة', Icons.account_circle_rounded,
-              _Prefs.ring, [
-            for (var i = 0; i < _ringStyles.length; i++) (i, _ringStyles[i]),
-          ]),
-          _choice<int>('تذكير «ما رديت»', Icons.notifications_active_rounded,
-              _Prefs.remindHours, const [
-            (0, 'مطفي'),
-            (1, 'بعد ساعة'),
-            (2, 'بعد ساعتين'),
-            (6, 'بعد 6 ساعات'),
-          ]),
-          _choice<int>('وضع النوم (إشعارات بدون صوت)', Icons.bedtime_rounded,
-              _Prefs.quiet, const [
-            (-1, 'مطفي'),
-            (2207, '10م إلى 7ص'),
-            (2308, '11م إلى 8ص'),
-            (8, '12ص إلى 8ص'),
-            (109, '1ص إلى 9ص'),
-          ]),
-          SwitchListTile(
-            secondary: const Icon(Icons.vibration_rounded),
-            title: const Text('اهتزاز مميز لرسائله'),
-            subtitle: const Text('تعرف إنها منه بدون ما تشوف الجوال'),
-            value: _Prefs.buzz.value,
-            onChanged: (x) {
-              setState(() => _Prefs.buzz.value = x);
-              unawaited(_Prefs.save());
-            },
-          ),
-          SwitchListTile(
-            secondary: const Icon(Icons.save_alt_rounded),
-            title: const Text('حفظ صوره بالمعرض تلقائياً'),
-            subtitle: const Text('الصور اللي توصلك وأنت فاتح المحادثة'),
-            value: _Prefs.autoSave.value,
-            onChanged: (x) {
-              setState(() => _Prefs.autoSave.value = x);
-              unawaited(_Prefs.save());
-            },
-          ),
-          _choice<int>('القفل بعد الخروج', Icons.lock_clock_rounded,
-              _Prefs.lockAfterSec, const [
-            (0, 'فوراً'),
-            (30, '30 ثانية'),
-            (60, 'دقيقة'),
-            (300, '5 دقايق'),
-            (900, '15 دقيقة'),
-          ]),
-          SwitchListTile(
-            secondary: const Icon(Icons.speed_rounded),
-            title: const Text('تخفيف المؤثرات'),
-            subtitle: const Text('أسرع وأوفر للبطارية بالأجهزة القديمة'),
-            value: _Prefs.lowFx.value,
-            onChanged: (x) {
-              setState(() => _Prefs.lowFx.value = x);
-              unawaited(_Prefs.save());
-            },
-          ),
-          SwitchListTile(
-            secondary: const Icon(Icons.link_rounded),
-            title: const Text('معاينة الروابط'),
-            subtitle: const Text('يجيب عنوان وصورة الرابط من موقعه'),
-            value: _Prefs.linkPreviews.value,
-            onChanged: (x) {
-              setState(() => _Prefs.linkPreviews.value = x);
-              _linkCache.clear();
-              unawaited(_Prefs.save());
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.add_reaction_rounded),
-            title: const Text('التفاعلات السريعة'),
-            subtitle: Text(_Prefs.reactions.value.join('  '),
-                style: const TextStyle(fontSize: _Fs.heading)),
-            onTap: () async {
-              await _pickReactions(context);
-              if (mounted) setState(() {});
-            },
-          ),
-          SwitchListTile(
-            secondary: const Icon(Icons.bug_report_rounded),
-            title: const Text('إرسال تقارير الأعطال'),
-            subtitle: const Text('نوع الخطأ بس، بدون رسائلك'),
-            value: _Prefs.crashReports.value,
-            onChanged: (x) {
-              setState(() => _Prefs.crashReports.value = x);
-              unawaited(_Prefs.save());
-            },
-          ),
-          SwitchListTile(
-            secondary: const Icon(Icons.font_download_rounded),
-            title: const Text('الخط العربي الحديث'),
-            subtitle: const Text('يتحمّل من الإنترنت أول مرة'),
-            value: _Prefs.arabicFont.value,
-            onChanged: (x) {
-              setState(() => _Prefs.arabicFont.value = x);
-              unawaited(_Prefs.save());
-            },
-          ),
-          const _AppIconTile(),
-        ]),
-      );
+        )),
+    ('notify', 'تذكير ما رديت',
+        choice<int>('تذكير «ما رديت»', Icons.notifications_active_rounded,
+            _Prefs.remindHours, const [
+          (0, 'مطفي'),
+          (1, 'بعد ساعة'),
+          (2, 'بعد ساعتين'),
+          (6, 'بعد 6 ساعات'),
+        ])),
+    ('notify', 'وضع النوم إشعارات بدون صوت',
+        choice<int>('وضع النوم (إشعارات بدون صوت)', Icons.bedtime_rounded, _Prefs.quiet,
+            const [
+          (-1, 'مطفي'),
+          (2207, '10م إلى 7ص'),
+          (2308, '11م إلى 8ص'),
+          (8, '12ص إلى 8ص'),
+          (109, '1ص إلى 9ص'),
+        ])),
+    ('notify', 'اهتزاز مميز لرسائله',
+        _prefSwitch('اهتزاز مميز لرسائله', 'تعرف إنها منه بدون ما تشوف الجوال',
+            Icons.vibration_rounded, _Prefs.buzz, refresh)),
+    ('privacy', 'القفل بعد الخروج مدة',
+        choice<int>('القفل بعد الخروج', Icons.lock_clock_rounded, _Prefs.lockAfterSec,
+            const [(0, 'فوراً'), (30, '30 ثانية'), (60, 'دقيقة'), (300, '5 دقايق'), (900, '15 دقيقة')])),
+    ('privacy', 'معاينة الروابط',
+        _prefSwitch('معاينة الروابط', 'يجيب عنوان وصورة الرابط من موقعه',
+            Icons.link_rounded, _Prefs.linkPreviews, refresh,
+            after: () => _linkCache.clear())),
+    ('privacy', 'إرسال تقارير الأعطال',
+        _prefSwitch('إرسال تقارير الأعطال', 'نوع الخطأ بس، بدون رسائلك',
+            Icons.bug_report_rounded, _Prefs.crashReports, refresh)),
+    ('chat', 'حفظ صوره بالمعرض تلقائياً',
+        _prefSwitch('حفظ صوره بالمعرض تلقائياً', 'الصور اللي توصلك وأنت فاتح المحادثة',
+            Icons.save_alt_rounded, _Prefs.autoSave, refresh)),
+    ('chat', 'التفاعلات السريعة إيموجي',
+        ListTile(
+          leading: const Icon(Icons.add_reaction_rounded),
+          title: const Text('التفاعلات السريعة'),
+          subtitle: Text(_Prefs.reactions.value.join('  '),
+              style: const TextStyle(fontSize: _Fs.heading)),
+          onTap: () async {
+            await _pickReactions(context);
+            refresh();
+          },
+        )),
+  ];
 }
 
 const _reactionPool = [

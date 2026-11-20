@@ -150,6 +150,7 @@ part 'r2_albums.dart';
 part 'r2_native.dart';
 part 'r2_ui.dart';
 part 'e2e.dart';
+part 'more_hub.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

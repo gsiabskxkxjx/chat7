@@ -440,6 +440,76 @@ const _buildNo = int.fromEnvironment('BUILD_NO');
 const _sideload = bool.fromEnvironment('SIDELOAD');
 final _messengerKey = GlobalKey<ScaffoldMessengerState>();
 
+/// آخر إصدار منشور على GitHub: (رقم البناء، رابط التنزيل) أو null إذا تعذر الجلب
+Future<(int, String)?> _latestRelease() async {
+  final client = HttpClient()..connectionTimeout = const Duration(seconds: 6);
+  try {
+    final req = await client
+        .getUrl(Uri.parse('https://api.github.com/repos/gsiabskxkxjx/chat7/releases/latest'))
+        .timeout(const Duration(seconds: 8));
+    req.headers.set('Accept', 'application/vnd.github+json');
+    final res = await req.close().timeout(const Duration(seconds: 8));
+    if (res.statusCode != 200) return null;
+    final body = await res.transform(utf8.decoder).join();
+    final j = jsonDecode(body) as Map<String, dynamic>;
+    final tag = '${j['tag_name'] ?? ''}';
+    final n = int.tryParse(tag.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
+    String? apk;
+    for (final a in (j['assets'] as List? ?? const [])) {
+      final name = '${(a as Map)['name']}';
+      if (name.endsWith('.apk')) apk = '${a['browser_download_url']}';
+    }
+    final link = apk ?? '${j['html_url'] ?? ''}';
+    if (n == 0 || link.isEmpty) return null;
+    return (n, link);
+  } catch (_) {
+    return null;
+  } finally {
+    client.close(force: true);
+  }
+}
+
+/// نافذة التحديث: تحذّر من حذف التطبيق (الحذف يمسح مفتاح التشفير) وتفتح التنزيل
+Future<void> _showUpdateDialog(int n, String link) async {
+  final ctx = _navKey.currentContext;
+  if (ctx == null || !ctx.mounted) return;
+  await showDialog<void>(
+    context: ctx,
+    builder: (d) => AlertDialog(
+      icon: const Icon(Icons.system_update_rounded, size: 34),
+      title: Text('تحديث جديد ($n)'),
+      content: SingleChildScrollView(
+        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text('نسختك الحالية $_buildNo، والأحدث $n فيها تحسينات وإصلاحات.'),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0x33FFB300),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0x66FFB300)),
+            ),
+            child: const Text(
+                '⚠️ ثبّت التحديث فوق النسخة القديمة. لا تحذف التطبيق قبل التثبيت، لأن الحذف يمسح مفتاح التشفير من جهازك وتحتاج رمز الاسترجاع حتى ترجّع محادثاتك.',
+                style: TextStyle(height: 1.6)),
+          ),
+        ]),
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(d), child: const Text('لاحقاً')),
+        FilledButton(
+          onPressed: () {
+            Navigator.pop(d);
+            unawaited(_openUrl(null, link));
+          },
+          child: const Text('تنزيل التحديث'),
+        ),
+      ],
+    ),
+  );
+}
+
+/// فحص يومي تلقائي (نسخة APK اللي من GitHub بس)
 Future<void> _checkForUpdate() async {
   if (!_sideload || _buildNo == 0) return;
   try {
@@ -447,38 +517,22 @@ Future<void> _checkForUpdate() async {
     final f = File('${dir.path}/update_check');
     final today = _dayStr(DateTime.now());
     if (await f.exists() && (await f.readAsString()) == today) return;
+    final r = await _latestRelease();
+    if (r == null) return; // نعيد المحاولة لاحقاً، ما نسجّل اليوم كمفحوص
     await f.writeAsString(today);
-    final client = HttpClient()..connectionTimeout = const Duration(seconds: 6);
-    try {
-      final req = await client
-          .getUrl(Uri.parse(
-              'https://api.github.com/repos/gsiabskxkxjx/chat7/releases/latest'))
-          .timeout(const Duration(seconds: 8));
-      req.headers.set('Accept', 'application/vnd.github+json');
-      final res = await req.close().timeout(const Duration(seconds: 8));
-      if (res.statusCode != 200) return;
-      final body = await res.transform(utf8.decoder).join();
-      final j = jsonDecode(body) as Map<String, dynamic>;
-      final tag = '${j['tag_name'] ?? ''}';
-      final n = int.tryParse(tag.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
-      if (n <= _buildNo) return;
-      String? apk;
-      for (final a in (j['assets'] as List? ?? const [])) {
-        final name = '${(a as Map)['name']}';
-        if (name.endsWith('.apk')) apk = '${a['browser_download_url']}';
-      }
-      final link = apk ?? '${j['html_url'] ?? ''}';
-      if (link.isEmpty) return;
-      _messengerKey.currentState?.showSnackBar(SnackBar(
-        content: const Text('نسخة جديدة من بيناتنا متوفرة'),
-        duration: const Duration(seconds: 12),
-        action: SnackBarAction(
-            label: 'تنزيل', onPressed: () => unawaited(_openUrl(null, link))),
-      ));
-    } finally {
-      client.close(force: true);
-    }
+    if (r.$1 <= _buildNo) return;
+    await _showUpdateDialog(r.$1, r.$2);
   } catch (_) {}
+}
+
+/// فحص يدوي (من شاشة التشخيص): يرجّع نص النتيجة، ويعرض النافذة لو في تحديث
+Future<String> _checkUpdateNow() async {
+  if (!_sideload || _buildNo == 0) return 'التحديثات تجي من المتجر.';
+  final r = await _latestRelease();
+  if (r == null) return 'تعذر فحص التحديثات، تأكد من الإنترنت.';
+  if (r.$1 <= _buildNo) return 'أنت على آخر نسخة ($_buildNo).';
+  await _showUpdateDialog(r.$1, r.$2);
+  return 'فيه تحديث: ${r.$1}';
 }
 
 

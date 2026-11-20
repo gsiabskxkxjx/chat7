@@ -437,7 +437,7 @@ class _ChatState extends State<ChatScreen> {
                           if (_offline) _offlineBar(),
                           if (_selected.isEmpty) _header() else _selectionBar(),
                           if (_mediaLocked) _trustBar(),
-                          if (_showDailyBar) _dailyBar(),
+                          if (_showDailyBar && !_Prefs.simpleMode.value) _dailyBar(),
                           if (_askContinue) _continueBar(),
                           _E2EBar(chatId: widget.chat.id),
                           _BarStack(bars: _extraBars()),

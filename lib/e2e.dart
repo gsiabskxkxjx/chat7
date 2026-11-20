@@ -210,6 +210,7 @@ class _E2E {
     final bk = await _wrap(seed, code, salt);
     await _store.write(key: 'e2e_seed_$uid', value: base64Encode(seed));
     await _store.write(key: 'e2e_codepending_$uid', value: code);
+    await _store.write(key: 'e2e_codeok_$uid', value: '0');
     await _db.rpc('e2e_publish', params: {
       'p_pub': base64Encode(pub),
       'p_backup': bk,
@@ -236,7 +237,27 @@ class _E2E {
       'p_replace': false,
     });
     await _store.write(key: 'e2e_codepending_$uid', value: code);
+    await _store.write(key: 'e2e_codeok_$uid', value: '0');
     unawaited(_showCode(uid));
+  }
+
+  /// هل أكّد المستخدم إنه حفظ رمز الاسترجاع؟ (الرمز ما ينعرض بعد التأكيد، فما نقدر نعرضه ثانية)
+  static Future<bool> codeConfirmed() async {
+    final uid = _uid;
+    if (uid == null) return false;
+    try {
+      final pending = await _store.read(key: 'e2e_codepending_$uid');
+      final ok = await _store.read(key: 'e2e_codeok_$uid');
+      return pending == null && ok != '0';
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// يعيد عرض رمز مؤجَّل (ما انكتب بعد) إن وُجد
+  static Future<void> showPendingCode() async {
+    final uid = _uid;
+    if (uid != null) await _showCode(uid);
   }
 
   static Future<BuildContext?> _ctx() async {
@@ -262,6 +283,7 @@ class _E2E {
         builder: (_) => _CodeDialog(code: fmtCode(code)),
       );
       await _store.delete(key: 'e2e_codepending_$uid');
+      await _store.write(key: 'e2e_codeok_$uid', value: '1');
     } finally {
       _codeShowing = false;
     }
@@ -297,6 +319,7 @@ class _E2E {
           final pub = await _pubOf(seed);
           if (row['pub'] != base64Encode(pub)) return false;
           await _store.write(key: 'e2e_seed_$uid', value: base64Encode(seed));
+          await _store.write(key: 'e2e_codeok_$uid', value: '1');
           _setSeed(seed, pub);
           return true;
         },
@@ -815,18 +838,34 @@ class _E2EBar extends StatelessWidget {
         listenable: Listenable.merge([_E2E.changed, _E2E.noPeer, _E2E.epoch]),
         builder: (c, _) {
           if (!_E2E.isReady && _E2E._initF == null) {
-            return _r2Bar('🔐', 'التشفير ما اتفعّل على جهازك بعد. اضغط هنا لإكماله (رمز الاسترجاع أو مفاتيح جديدة) حتى تنرسل رسائلكم.',
+            return _r2Bar('🔐', 'التشفير ما اتفعّل على جهازك بعد، فرسائلك ما راح تنرسل. اضغط هنا لإكماله.',
                 onTap: () => unawaited(_E2E.retrySetup().then((_) => _E2E.prepare(chatId))));
           }
           if (_E2E.noPeer.value.contains(chatId)) {
-            return _r2Bar('⏳', 'التشفير ما اكتمل: الطرف الثاني لازم يفتح آخر نسخة من التطبيق حتى تنرسل رسائلكم.',
-                onTap: () => unawaited(_E2E.prepare(chatId)));
+            return _r2Bar('⏳', 'ننتظر الطرف الثاني: لازم يحدّث التطبيق لآخر نسخة حتى يكتمل التشفير وتنرسل رسائلكم. اضغط لتذكيره.',
+                onTap: () {
+                  unawaited(_E2E.prepare(chatId));
+                  unawaited(_remindPartnerUpdate());
+                });
           }
           if (_E2E.changed.value.contains(chatId)) {
             return _r2Bar('⚠️', 'مفتاح الأمان للطرف الثاني تغيّر (ممكن غيّر جهازه). قارن رقم الأمان قبل لا تثق.',
                 onTap: () => _r2Push(c, _E2EScreen(chatId: chatId)));
           }
-          return const SizedBox.shrink();
+          if (!_E2E.isReady) return const SizedBox.shrink();
+          // كل شي تمام: علامة صغيرة هادية تطمّن
+          return Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(12),
+              onTap: () => _r2Push(c, _E2EScreen(chatId: chatId)),
+              child: const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 3),
+                child: Text('🔒 مشفّرة من طرف لطرف',
+                    style: TextStyle(fontSize: _Fs.caption, color: Color(0x99FFFFFF))),
+              ),
+            ),
+          );
         },
       );
 }
@@ -850,7 +889,7 @@ class _CodeDialogState extends State<_CodeDialog> {
           content: SingleChildScrollView(
             child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
               const Text(
-                  'محادثاتكم مشفّرة، والسيرفر ما يقدر يقراها. هذا الرمز الوحيد اللي يرجّعها لو غيّرت جهازك أو مسحت التطبيق. اكتبه بمكان آمن، وما ننعرضه مرة ثانية.'),
+                  'محادثاتكم مشفّرة، والسيرفر ما يقدر يقراها. هذا الرمز الوحيد اللي يرجّعها لو غيّرت جهازك أو مسحت التطبيق. انسخه واحفظه بمكان آمن (ملاحظات جوالك أو رسائلك المحفوظة)، وما ننعرضه مرة ثانية. لا ترسله لأحد.'),
               const SizedBox(height: 14),
               Directionality(
                 textDirection: TextDirection.ltr,
@@ -862,16 +901,22 @@ class _CodeDialogState extends State<_CodeDialog> {
                 ),
               ),
               const SizedBox(height: 8),
-              Center(
-                child: TextButton.icon(
+              Wrap(alignment: WrapAlignment.center, spacing: 8, children: [
+                TextButton.icon(
                   onPressed: () async {
                     await Clipboard.setData(ClipboardData(text: widget.code));
-                    if (context.mounted) _toast(context, 'انسخ. الصقه بمكان آمن وامسحه من الحافظة.');
+                    if (context.mounted) _toast(context, 'تم نسخ الرمز. الصقه بمكان آمن.');
                   },
                   icon: const Icon(Icons.copy_rounded, size: 18),
-                  label: const Text('نسخ'),
+                  label: const Text('نسخ الرمز'),
                 ),
-              ),
+                TextButton.icon(
+                  onPressed: () => unawaited(SharePlus.instance
+                      .share(ShareParams(text: 'رمز استرجاع بيناتنا: ${widget.code}'))),
+                  icon: const Icon(Icons.ios_share_rounded, size: 18),
+                  label: const Text('مشاركته لنفسي'),
+                ),
+              ]),
               CheckboxListTile(
                 contentPadding: EdgeInsets.zero,
                 value: _saved,
@@ -998,7 +1043,19 @@ class _RestoreDialogState extends State<_RestoreDialog> {
       );
 }
 
-/// شاشة التشفير والأمان (رقم الأمان للمحادثة + الرمز + تشفير القديم)
+const _releaseUrl = 'https://github.com/gsiabskxkxjx/chat7/releases/latest';
+
+/// «ذكّره»: يفتح المشاركة بنص جاهز يطلب من الطرف الثاني يحدّث التطبيق
+Future<void> _remindPartnerUpdate() async {
+  try {
+    await SharePlus.instance.share(ShareParams(
+        text: _sideload
+            ? 'حدّث تطبيق بيناتنا لآخر نسخة حتى يشتغل التشفير بيننا: $_releaseUrl\nثبّتها فوق القديمة ولا تحذف التطبيق.'
+            : 'حدّث تطبيق بيناتنا لآخر نسخة من المتجر حتى يشتغل التشفير بيننا.'));
+  } catch (_) {}
+}
+
+/// شاشة التشفير والأمان: ثلاث إشارات واضحة + رمز الاسترجاع + رقم الأمان
 class _E2EScreen extends StatefulWidget {
   const _E2EScreen({this.chatId});
   final String? chatId;
@@ -1011,6 +1068,7 @@ class _E2EScreenState extends State<_E2EScreen> {
   String? _safety;
   bool _loading = true;
   bool _busy = false;
+  bool _codeOk = false;
 
   @override
   void initState() {
@@ -1027,9 +1085,11 @@ class _E2EScreenState extends State<_E2EScreen> {
     } else {
       await _E2E.waitReady();
     }
+    final ok = await _E2E.codeConfirmed();
     if (!mounted) return;
     setState(() {
       _safety = s;
+      _codeOk = ok;
       _loading = false;
     });
   }
@@ -1040,7 +1100,7 @@ class _E2EScreenState extends State<_E2EScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('رمز جديد؟'),
-        content: const Text('الرمز القديم يبطل. اكتب الجديد بمكان آمن.'),
+        content: const Text('الرمز القديم يبطل. بعد الإنشاء انسخ الرمز الجديد واحفظه بمكان آمن.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('إلغاء')),
           FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('إنشاء')),
@@ -1055,6 +1115,19 @@ class _E2EScreenState extends State<_E2EScreen> {
       if (mounted) _toast(context, _friendlyError(e));
     }
     if (mounted) setState(() => _busy = false);
+    unawaited(_waitCodeOk());
+  }
+
+  /// بعد إنشاء رمز جديد: نراقب لين المستخدم يأكد حفظه من النافذة، وبعدها نحدّث الإشارة
+  Future<void> _waitCodeOk() async {
+    for (var i = 0; i < 400; i++) {
+      await Future<void>.delayed(const Duration(milliseconds: 700));
+      if (!mounted) return;
+      if (await _E2E.codeConfirmed()) {
+        if (mounted) setState(() => _codeOk = true);
+        return;
+      }
+    }
   }
 
   Future<void> _migrate() async {
@@ -1066,9 +1139,54 @@ class _E2EScreenState extends State<_E2EScreen> {
     _toast(context, n > 0 ? 'تشفّرت $n من رسائلك القديمة.' : 'ماكو رسائل قديمة تحتاج تشفير من عندك.');
   }
 
+  Future<void> _finishSetup() async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    try {
+      await _E2E.retrySetup();
+      final id = widget.chatId;
+      if (id != null) await _E2E.prepare(id);
+    } catch (e) {
+      if (mounted) _toast(context, _friendlyError(e));
+    }
+    if (mounted) setState(() => _busy = false);
+    await _load();
+  }
+
+  static const _green = Color(0xFF34C759);
+  static const _amber = Color(0xFFFFB300);
+  static const _red = Color(0xFFFF453A);
+
+  Widget _light(Color c, String title, String sub, {Widget? action}) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Container(
+            width: 14,
+            height: 14,
+            margin: const EdgeInsetsDirectional.only(top: 4, end: 12),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: c,
+              boxShadow: [BoxShadow(color: c.withValues(alpha: 0.5), blurRadius: 8)],
+            ),
+          ),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
+              const SizedBox(height: 2),
+              Text(sub, style: const TextStyle(fontSize: _Fs.meta, height: 1.5, color: Color(0xCCFFFFFF))),
+            ]),
+          ),
+          if (action != null) action,
+        ]),
+      );
+
   @override
   Widget build(BuildContext context) {
     final id = widget.chatId;
+    final mine = _E2E.isReady;
+    final partnerOk = id == null ? null : (_safety != null && !_E2E.noPeer.value.contains(id));
+    final allGood = mine && _codeOk && (partnerOk ?? true);
     return _R2Page(
       title: 'التشفير والأمان',
       child: _loading
@@ -1078,14 +1196,56 @@ class _E2EScreenState extends State<_E2EScreen> {
                 radius: 24,
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Row(children: [
-                    Icon(_E2E.isReady ? Icons.lock_rounded : Icons.lock_open_rounded),
+                    Icon(allGood ? Icons.lock_rounded : Icons.lock_clock_rounded,
+                        color: allGood ? _green : _amber),
                     const SizedBox(width: 10),
-                    Text(_E2E.isReady ? 'محادثاتكم مشفّرة بين الطرفين' : 'التشفير غير جاهز بعد',
-                        style: const TextStyle(fontWeight: FontWeight.w700, fontSize: _Fs.title)),
+                    Expanded(
+                      child: Text(
+                          allGood
+                              ? 'محادثتكم مشفّرة من طرف لطرف'
+                              : mine
+                                  ? 'التشفير شغّال، وباقي خطوة وحدة'
+                                  : 'التشفير ما اكتمل على جهازك',
+                          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: _Fs.title)),
+                    ),
                   ]),
                   const SizedBox(height: 8),
                   const Text(
-                      'الرسائل والصور والفيديوهات والصوتيات والملفات والمكالمات تتشفّر بجوالك قبل ما تطلع. السيرفر وصاحب التطبيق يشوفون بايتات غير مفهومة، وبس إنت والطرف الثاني تفكونها.'),
+                      'الرسائل والصور والفيديوهات والصوتيات والملفات تتشفّر بجوالك قبل ما تطلع. السيرفر وصاحب التطبيق يشوفون بايتات غير مفهومة، وبس إنت والطرف الثاني تفكونها.'),
+                  const SizedBox(height: 6),
+                  _light(
+                    mine ? _green : _red,
+                    'مفتاح التشفير على جهازك',
+                    mine ? 'جاهز.' : 'غير مفعّل، فالرسائل ما راح تنرسل.',
+                    action: mine
+                        ? null
+                        : TextButton(
+                            onPressed: _busy ? null : _finishSetup, child: const Text('إكمال')),
+                  ),
+                  if (partnerOk != null)
+                    _light(
+                      partnerOk ? _green : _amber,
+                      'جاهزية الطرف الثاني',
+                      partnerOk
+                          ? 'جاهز.'
+                          : 'لسه ما فعّل التشفير. لازم يفتح آخر نسخة من التطبيق.',
+                      action: partnerOk
+                          ? null
+                          : TextButton(
+                              onPressed: () => unawaited(_remindPartnerUpdate()),
+                              child: const Text('ذكّره')),
+                    ),
+                  _light(
+                    _codeOk ? _green : _amber,
+                    'رمز الاسترجاع',
+                    _codeOk
+                        ? 'تأكدت إنك حفظته. الرمز ما ينعرض مرة ثانية، ولو ضاع سوّي رمز جديد.'
+                        : 'ما أكدت إنك حفظته. بدونه تضيع محادثاتك لو غيّرت الجهاز أو مسحت التطبيق.',
+                    action: _codeOk
+                        ? null
+                        : TextButton(
+                            onPressed: _busy ? null : _renew, child: const Text('رمز جديد')),
+                  ),
                 ]),
               ),
               if (id != null) ...[
@@ -1121,7 +1281,7 @@ class _E2EScreenState extends State<_E2EScreen> {
                     const Text('رقم الأمان', style: TextStyle(fontWeight: FontWeight.w700)),
                     const SizedBox(height: 8),
                     if (_safety == null)
-                      const Text('الطرف الثاني لسه ما فعّل التشفير. لازم يفتح آخر نسخة من التطبيق.')
+                      const Text('يظهر هنا لما الطرف الثاني يفعّل التشفير.')
                     else ...[
                       Directionality(
                         textDirection: TextDirection.ltr,
@@ -1147,8 +1307,8 @@ class _E2EScreenState extends State<_E2EScreen> {
                 child: Column(children: [
                   ListTile(
                     leading: const Icon(Icons.key_rounded),
-                    title: const Text('رمز الاسترجاع'),
-                    subtitle: const Text('أنشئ رمز جديد (القديم يبطل)'),
+                    title: const Text('رمز استرجاع جديد'),
+                    subtitle: const Text('ينشئ رمز جديد (القديم يبطل)، وتقدر تنسخه وتشاركه لنفسك'),
                     onTap: _busy ? null : _renew,
                   ),
                   ListTile(
@@ -1156,6 +1316,11 @@ class _E2EScreenState extends State<_E2EScreen> {
                     title: const Text('تشفير رسائلي القديمة'),
                     subtitle: const Text('الرسائل اللي انرسلت قبل التشفير تتحول لمشفّرة'),
                     onTap: _busy ? null : _migrate,
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.refresh_rounded),
+                    title: const Text('حدّث الحالة'),
+                    onTap: _busy ? null : _load,
                   ),
                 ]),
               ),

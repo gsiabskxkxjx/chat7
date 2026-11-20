@@ -21,35 +21,39 @@ class _R2Page extends StatelessWidget {
 void _r2Push(BuildContext c, Widget w) =>
     Navigator.of(c).push(MaterialPageRoute(builder: (_) => w));
 
-/// بطاقة الإعدادات الجديدة بشاشة الملف الشخصي
-class _R2Tiles extends StatelessWidget {
-  const _R2Tiles();
-
-  @override
-  Widget build(BuildContext context) {
-    Widget tile(IconData i, String t, String s, Widget page) => ListTile(
-          leading: Icon(i),
-          title: Text(t),
-          subtitle: Text(s),
-          trailing: const Icon(Icons.chevron_left_rounded),
-          onTap: () => _r2Push(context, page),
-        );
-    return Glass(
-      radius: 28,
-      padding: const EdgeInsets.symmetric(vertical: _Sp.xs),
-      child: Column(children: [
-        tile(Icons.lock_rounded, 'التشفير والأمان', 'رمز الاسترجاع وتشفير الرسائل القديمة', const _E2EScreen()),
-        const _SecureTile(),
-        const _CountdownTile(),
-        tile(Icons.devices_rounded, 'أجهزتي', 'الأجهزة المسجّلة بحسابك وتسجيل الخروج من الباقي', const DevicesScreen()),
-        tile(Icons.notifications_paused_rounded, 'لا تزعج', 'كتم الإشعارات لساعة أو لين الصبح', const DndScreen()),
-        tile(Icons.storage_rounded, 'التخزين', 'حجم الكاش وحده الأعلى', const CacheScreen()),
-        tile(Icons.format_list_numbered_rounded, 'الأرقام والوقت', 'أرقام عربية، 12 أو 24 ساعة، أسماء الأشهر', const FormatScreen()),
-        tile(Icons.download_rounded, 'بياناتي', 'شنو نخزّن عنك، ونزّل نسخة منها', const MyDataScreen()),
-        tile(Icons.troubleshoot_rounded, 'تشخيص', 'حالة الاتصال والإصدار لإرسالها للدعم', const DiagnosticsScreen()),
-      ]),
-    );
-  }
+/// إعدادات الجولة الثانية، موزّعة على أقسام شاشة الإعدادات
+List<_SItem> _r2Items(BuildContext context, {String? chatId}) {
+  Widget tile(IconData i, String t, String s, Widget page) => ListTile(
+        leading: Icon(i),
+        title: Text(t),
+        subtitle: Text(s),
+        trailing: const Icon(Icons.chevron_left_rounded),
+        onTap: () => _r2Push(context, page),
+      );
+  return [
+    ('privacy', 'التشفير والأمان رمز الاسترجاع مفتاح رقم الأمان',
+        tile(Icons.lock_rounded, 'التشفير والأمان', 'حالة التشفير ورمز الاسترجاع',
+            _E2EScreen(chatId: chatId))),
+    ('privacy', 'منع لقطات الشاشة التصوير', const _SecureTile()),
+    ('notify', 'إشعار ثابت لموعد قريب عدّ تنازلي', const _CountdownTile()),
+    ('account', 'أجهزتي الأجهزة المسجّلة تسجيل الخروج من الباقي',
+        tile(Icons.devices_rounded, 'أجهزتي', 'الأجهزة المسجّلة بحسابك وتسجيل الخروج من الباقي',
+            const DevicesScreen())),
+    ('notify', 'لا تزعج كتم الإشعارات',
+        tile(Icons.notifications_paused_rounded, 'لا تزعج', 'كتم الإشعارات لساعة أو لين الصبح',
+            const DndScreen())),
+    ('chat', 'التخزين الكاش المساحة',
+        tile(Icons.storage_rounded, 'التخزين', 'حجم الكاش وحده الأعلى', const CacheScreen())),
+    ('chat', 'الأرقام والوقت أرقام عربية ساعة أسماء الأشهر',
+        tile(Icons.format_list_numbered_rounded, 'الأرقام والوقت',
+            'أرقام عربية، 12 أو 24 ساعة، أسماء الأشهر', const FormatScreen())),
+    ('account', 'بياناتي نسخة من بياناتي تنزيل',
+        tile(Icons.download_rounded, 'بياناتي', 'شنو نخزّن عنك، ونزّل نسخة منها',
+            const MyDataScreen())),
+    ('help', 'تشخيص حالة الاتصال الإصدار فحص المشاكل',
+        tile(Icons.troubleshoot_rounded, 'تشخيص ومعلومات الدعم',
+            'فحص الاتصال والتشفير وإرسال تقرير للمطوّر', DiagnosticsScreen(chatId: chatId))),
+  ];
 }
 
 // ===== الأجهزة المسجّلة =====
@@ -452,17 +456,26 @@ class _FormatState extends State<FormatScreen> {
 }
 
 // ===== التشخيص =====
+// فحص بإشارات (أخضر/أصفر/أحمر) للاتصال والتشفير والرسائل المعلّقة، مع تقرير للمطوّر بدون أي محتوى رسائل.
 
 class DiagnosticsScreen extends StatefulWidget {
-  const DiagnosticsScreen({super.key});
+  const DiagnosticsScreen({super.key, this.chatId});
+  final String? chatId;
 
   @override
   State<DiagnosticsScreen> createState() => _DiagState();
 }
 
 class _DiagState extends State<DiagnosticsScreen> {
-  String _net1 = 'نفحص...';
-  String _text = '';
+  static const _g = Color(0xFF34C759);
+  static const _a = Color(0xFFFFB300);
+  static const _r = Color(0xFFFF453A);
+  static const _n = Color(0x99FFFFFF);
+
+  final _rows = <(Color, String, String)>[];
+  String _report = '';
+  bool _running = true;
+  bool _sending = false;
 
   @override
   void initState() {
@@ -471,31 +484,104 @@ class _DiagState extends State<DiagnosticsScreen> {
   }
 
   Future<void> _run() async {
+    if (mounted) setState(() => _running = true);
+    final rows = <(Color, String, String)>[];
+    void add(Color c, String title, String detail) => rows.add((c, title, detail));
+
     final sw = Stopwatch()..start();
+    var serverOk = false;
     var conn = '';
     try {
       await _net(_db.from('profiles').select('id').limit(1));
+      serverOk = true;
       conn = 'شغّال (${sw.elapsedMilliseconds} ms)';
     } catch (e) {
       conn = 'فشل: ${_friendlyError(e)}';
     }
+    add(serverOk ? _g : _r, 'الاتصال بالسيرفر', conn);
+
+    final ready = _E2E.isReady;
+    add(ready ? _g : _r, 'مفتاح التشفير على جهازك',
+        ready ? 'موجود' : 'غير موجود، فالرسائل ما تنرسل');
+
+    try {
+      final uid = _db.auth.currentUser?.id;
+      final r = uid == null
+          ? null
+          : await _net(_db.from('e2e_keys').select('pub').eq('user_id', uid).maybeSingle());
+      final mine = _E2E.myPub;
+      if (r == null) {
+        add(_r, 'مفتاحك على السيرفر', 'غير منشور');
+      } else if (mine != null && r['pub'] == base64Encode(mine)) {
+        add(_g, 'مفتاحك على السيرفر', 'منشور ومطابق لجهازك');
+      } else {
+        add(_a, 'مفتاحك على السيرفر', 'يختلف عن مفتاح هالجهاز');
+      }
+    } catch (_) {
+      add(_a, 'مفتاحك على السيرفر', 'تعذر الفحص');
+    }
+
+    final cid = widget.chatId;
+    if (cid != null) {
+      try {
+        await _E2E.prepare(cid);
+        final sn = await _E2E.safetyNumber(cid);
+        final waiting = _E2E.noPeer.value.contains(cid);
+        add(sn != null && !waiting ? _g : _a, 'مفتاح الطرف الثاني',
+            sn != null && !waiting ? 'جاهز' : 'لسه ما فعّل التشفير (لازم يحدّث التطبيق)');
+      } catch (_) {
+        add(_a, 'مفتاح الطرف الثاني', 'تعذر الفحص');
+      }
+    }
+
+    final codeOk = await _E2E.codeConfirmed();
+    add(codeOk ? _g : _a, 'رمز الاسترجاع', codeOk ? 'مؤكد' : 'ما تأكد حفظه');
+
+    final pend = _outboxes.values.fold<int>(0, (a, b) => a + b.length);
+    add(pend == 0 ? _g : _a, 'رسائل بانتظار الإرسال', pend == 0 ? 'ماكو' : '$pend (تنعاد المحاولة تلقائياً)');
+
+    add(Push.status.startsWith('مرفوضة') ? _a : _g, 'الإشعارات', Push.status);
+
     await _R2.checkClock();
     final skew = _R2.clockOff.value;
-    final lastErr = _R2Store.get<String>('last_error') ?? 'ما في';
-    final t = StringBuffer()
-      ..writeln('الإصدار: ${_R2.verLabel()}')
-      ..writeln('المنصة: ${defaultTargetPlatform.name}')
-      ..writeln('الاتصال بالسيرفر: $conn')
-      ..writeln('الإشعارات: ${Push.status}')
-      ..writeln('ساعة الجهاز: ${skew == null ? 'سليمة' : 'تختلف ${skew.inMinutes} دقيقة عن السيرفر'}')
-      ..writeln('الجهاز: ${(await _R2.deviceId()).substring(0, 8)}')
-      ..writeln('آخر خطأ: $lastErr');
-    if (mounted) {
-      setState(() {
-        _net1 = conn;
-        _text = t.toString();
-      });
+    add(skew == null ? _g : _a, 'ساعة الجهاز',
+        skew == null ? 'سليمة' : 'تختلف ${skew.inMinutes} دقيقة عن السيرفر');
+
+    final dev = await _R2.deviceId();
+    add(_n, 'الإصدار', '${_R2.verLabel()} (${_sideload ? 'APK' : 'المتجر'}) · ${defaultTargetPlatform.name}');
+    add(_n, 'الجهاز', dev.length >= 8 ? dev.substring(0, 8) : dev);
+    add(_n, 'آخر خطأ', _R2Store.get<String>('last_error') ?? 'ما في');
+
+    final rep = StringBuffer('تقرير تشخيص (بدون رسائل)\n');
+    for (final r in rows) {
+      rep.writeln('${r.$1 == _g ? 'OK' : r.$1 == _r ? 'FAIL' : r.$1 == _a ? 'WARN' : '-'} ${r.$2}: ${r.$3}');
     }
+    if (!mounted) return;
+    setState(() {
+      _rows
+        ..clear()
+        ..addAll(rows);
+      _report = rep.toString();
+      _running = false;
+    });
+  }
+
+  Future<void> _send() async {
+    if (_sending || _report.isEmpty) return;
+    setState(() => _sending = true);
+    try {
+      await _db.rpc('log_error', params: {
+        'p_context': 'diag_report',
+        'p_message': 'تقرير تشخيص من المستخدم',
+        'p_stack': _report,
+        'p_version': _R2.verLabel(),
+        'p_platform': defaultTargetPlatform.name,
+      });
+      if (mounted) _toast(context, 'انرسل التقرير للمطوّر. ما فيه أي رسالة من محادثتك.');
+    } catch (e) {
+      if (mounted) _toast(context, _friendlyError(e, fallback: 'تعذر إرسال التقرير.'));
+    }
+    if (mounted) setState(() => _sending = false);
   }
 
   @override
@@ -504,18 +590,82 @@ class _DiagState extends State<DiagnosticsScreen> {
         child: ListView(padding: const EdgeInsets.all(_Sp.lg), children: [
           Glass(
             radius: 24,
-            child: SelectableText(_text.isEmpty ? 'نفحص... $_net1' : _text,
-                style: const TextStyle(height: 1.8, fontSize: _Fs.body)),
+            child: _running && _rows.isEmpty
+                ? const Padding(
+                    padding: EdgeInsets.all(_Sp.lg),
+                    child: Center(child: CircularProgressIndicator()))
+                : Column(children: [
+                    for (final r in _rows)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 7),
+                        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          Container(
+                            width: 12,
+                            height: 12,
+                            margin: const EdgeInsetsDirectional.only(top: 5, end: 12),
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: r.$1,
+                              boxShadow: r.$1 == _n
+                                  ? null
+                                  : [BoxShadow(color: r.$1.withValues(alpha: 0.5), blurRadius: 7)],
+                            ),
+                          ),
+                          Expanded(
+                            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                              Text(r.$2, style: const TextStyle(fontWeight: FontWeight.w700)),
+                              Text(r.$3,
+                                  style: const TextStyle(
+                                      fontSize: _Fs.meta, height: 1.5, color: Color(0xCCFFFFFF))),
+                            ]),
+                          ),
+                        ]),
+                      ),
+                  ]),
           ),
           const SizedBox(height: _Sp.lg),
-          _Btn(
-              label: 'انسخ التقرير للدعم',
-              onTap: () async {
-                await Clipboard.setData(ClipboardData(text: _text));
-                if (context.mounted) _toast(context, 'تم النسخ');
-              }),
+          _Btn(label: 'أرسل التقرير للمطوّر', onTap: _send, busy: _sending || _running),
+          const SizedBox(height: _Sp.xs),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: _Sp.sm),
+            child: Text('التقرير فيه حالة التطبيق والاتصال والتشفير بس. ما فيه رسائل ولا أسماء ولا صور.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: _Fs.small, color: Color(0xB3FFFFFF))),
+          ),
           const SizedBox(height: _Sp.md),
-          TextButton(onPressed: _run, child: const Text('أعد الفحص')),
+          Row(children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: _report.isEmpty
+                    ? null
+                    : () async {
+                        await Clipboard.setData(ClipboardData(text: _report));
+                        if (context.mounted) _toast(context, 'تم النسخ');
+                      },
+                icon: const Icon(Icons.copy_rounded, size: 18),
+                label: const Text('انسخ'),
+              ),
+            ),
+            const SizedBox(width: _Sp.sm),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: _running ? null : _run,
+                icon: const Icon(Icons.refresh_rounded, size: 18),
+                label: const Text('أعد الفحص'),
+              ),
+            ),
+          ]),
+          const SizedBox(height: _Sp.sm),
+          Center(
+            child: TextButton.icon(
+              onPressed: () async {
+                final m = await _checkUpdateNow();
+                if (context.mounted) _toast(context, m);
+              },
+              icon: const Icon(Icons.system_update_rounded, size: 18),
+              label: const Text('تحقق من وجود تحديث'),
+            ),
+          ),
         ]),
       );
 }

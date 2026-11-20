@@ -199,11 +199,12 @@ class _TicState extends State<TicTacToeScreen> {
 /// عنصر بقائمة "المزيد"
 typedef _MenuItem = (IconData icon, String title, String sub, void Function() run);
 
-void showGamesMenu(BuildContext context, String chatId) {
+/// تبويبات الميزات (ألعاب، سوا، ذكرياتنا، خطط، سوالف): نفس القائمة تُعرض بقائمة 🎮 وبصفحة «المزيد»
+List<(String, List<_MenuItem>)> _gamesTabs(BuildContext context, String chatId) {
   void push(Widget Function() page) =>
       Navigator.of(context).push(MaterialPageRoute(builder: (_) => page()));
 
-  final tabs = <(String, List<_MenuItem>)>[
+  return <(String, List<_MenuItem>)>[
     ('🎮 العبوا', [
       (Icons.people_alt_rounded, 'مين فينا؟', 'أنا ولا هو؟ وشوفوا كم اتفقتوا', () => push(() => WhoOfUsScreen(chatId: chatId))),
       (Icons.quiz_rounded, 'كم تعرفني؟', 'أسئلة جديدة كل أسبوع', () => push(() => QuizScreen(chatId: chatId))),
@@ -257,6 +258,10 @@ void showGamesMenu(BuildContext context, String chatId) {
       ..._r2AiItems(context, chatId),
     ]),
   ];
+}
+
+void showGamesMenu(BuildContext context, String chatId) {
+  final tabs = _gamesTabs(context, chatId);
 
   showModalBottomSheet<void>(
     context: context,

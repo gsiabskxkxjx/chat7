@@ -55,7 +55,7 @@ extension _ChatUi on _ChatState {
                                 style: const TextStyle(
                                     fontSize: _Fs.titleL, fontWeight: FontWeight.w600)),
                           ),
-                          if (_streak >= 2) ...[
+                          if (_streak >= 2 && !_Prefs.simpleMode.value) ...[
                             const SizedBox(width: 6),
                             Container(
                               padding: const EdgeInsets.symmetric(
@@ -102,17 +102,19 @@ extension _ChatUi on _ChatState {
                 label: 'مكالمة فيديو',
                 onTap: () => _call(true),
                 icon: Icons.videocam_rounded),
-            const SizedBox(width: 6),
-            _GlassIcon(
-                label: 'مظهر التطبيق',
-                onTap: () => Navigator.of(context).push(MaterialPageRoute(
-                    builder: (_) => ThemeSettingsScreen(chatId: widget.chat.id))),
-                icon: Icons.palette_rounded),
-            const SizedBox(width: 6),
-            _GlassIcon(
-                label: 'الإعدادات',
-                onTap: _openProfile,
-                icon: Icons.settings_rounded),
+            if (!_Prefs.simpleMode.value) ...[
+              const SizedBox(width: 6),
+              _GlassIcon(
+                  label: 'مظهر التطبيق',
+                  onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                      builder: (_) => ThemeSettingsScreen(chatId: widget.chat.id))),
+                  icon: Icons.palette_rounded),
+              const SizedBox(width: 6),
+              _GlassIcon(
+                  label: 'الإعدادات',
+                  onTap: _openProfile,
+                  icon: Icons.settings_rounded),
+            ],
           ]),
         ),
       );
@@ -341,7 +343,7 @@ extension _ChatUi on _ChatState {
                 hintText: 'اكتب رسالة', border: InputBorder.none),
           ),
         ),
-        if (!typing)
+        if (!typing && !_Prefs.simpleMode.value)
           IconButton(
             tooltip: 'كاميرا',
             onPressed: () => unawaited(_attach(preset: 'photo_camera')),
@@ -349,11 +351,11 @@ extension _ChatUi on _ChatState {
           ),
         if (!typing)
           IconButton(
-            tooltip: 'أدوات المحادثة',
+            tooltip: 'المزيد',
             onPressed: _openR2Tools,
             icon: Icon(Icons.more_horiz_rounded, color: _t.accent),
           ),
-        if (!typing)
+        if (!typing && !_Prefs.simpleMode.value)
           GestureDetector(
             onLongPress: _sendNudge,
             child: IconButton(
@@ -915,8 +917,10 @@ extension _ChatEmpty on _ChatState {
                 unawaited(_send());
               }),
               chip('أفكر فيك ❤️', () => unawaited(_thinkOfYou())),
-              chip('سؤال اليوم 💬', () => unawaited(_openDaily())),
-              chip('العبوا لعبة 🎮', () => showGamesMenu(context, widget.chat.id)),
+              if (!_Prefs.simpleMode.value) ...[
+                chip('سؤال اليوم 💬', () => unawaited(_openDaily())),
+                chip('العبوا لعبة 🎮', () => showGamesMenu(context, widget.chat.id)),
+              ],
             ],
           ),
         ]),

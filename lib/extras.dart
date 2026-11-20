@@ -683,7 +683,8 @@ extension _ChatExtras on _ChatState {
       out.add(bar('🕰️', 'مثل هذا اليوم ${mem['label']}: «${mem['body']}»',
           () => setState(() => _memoryDismissed = true)));
     }
-    out.addAll(_r2Bars());
+    // الأهم أولاً: المثبّتات وحالة الشريك والموقع قبل المناسبات
+    out.insertAll(0, _r2Bars());
     return out;
   }
 }

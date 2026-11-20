@@ -814,7 +814,7 @@ class _E2EBar extends StatelessWidget {
   Widget build(BuildContext context) => ListenableBuilder(
         listenable: Listenable.merge([_E2E.changed, _E2E.noPeer, _E2E.epoch]),
         builder: (c, _) {
-          if (!_E2E.isReady) {
+          if (!_E2E.isReady && _E2E._initF == null) {
             return _r2Bar('🔐', 'التشفير ما اتفعّل على جهازك بعد. اضغط هنا لإكماله (رمز الاسترجاع أو مفاتيح جديدة) حتى تنرسل رسائلكم.',
                 onTap: () => unawaited(_E2E.retrySetup().then((_) => _E2E.prepare(chatId))));
           }

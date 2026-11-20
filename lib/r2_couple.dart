@@ -4,6 +4,46 @@ part of 'main.dart';
 // اسم دلع (312)، شنو أحتاج اليوم (313)، نبض العلاقة ومستوياتها (314/378)،
 // كبسولة زمنية ورسالة للمستقبل (311/317)، وضع المسافة (320)، حالة قصيرة بمؤقت (354)
 
+/// يجمع تنبيهات أعلى المحادثة: يظهر أهمها فقط، والباقي بزر «+N» (تبسيط الواجهة)
+class _BarStack extends StatefulWidget {
+  const _BarStack({required this.bars});
+  final List<Widget> bars;
+
+  @override
+  State<_BarStack> createState() => _BarStackState();
+}
+
+class _BarStackState extends State<_BarStack> {
+  bool _open = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final bars = widget.bars;
+    if (bars.length <= 1) return Column(mainAxisSize: MainAxisSize.min, children: bars);
+    final rest = bars.length - 1;
+    return AnimatedSize(
+      duration: const Duration(milliseconds: 200),
+      alignment: Alignment.topCenter,
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        bars.first,
+        if (_open) ...bars.skip(1),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 6, 12, 0),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(14),
+            onTap: () => setState(() => _open = !_open),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              child: Text(_open ? 'إخفاء التنبيهات ▲' : '+ $rest تنبيهات أخرى ▼',
+                  style: const TextStyle(fontSize: _Fs.small, color: Color(0xB3FFFFFF))),
+            ),
+          ),
+        ),
+      ]),
+    );
+  }
+}
+
 /// شريط معلومات موحّد بأعلى المحادثة
 Widget _r2Bar(String emoji, String text, {VoidCallback? onTap, VoidCallback? onClose}) => Padding(
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),

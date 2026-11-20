@@ -354,12 +354,6 @@ extension _ChatUi on _ChatState {
             icon: Icon(Icons.more_horiz_rounded, color: _t.accent),
           ),
         if (!typing)
-          IconButton(
-            tooltip: 'الألعاب والمزيد',
-            onPressed: () => showGamesMenu(context, widget.chat.id),
-            icon: Icon(Icons.sports_esports_rounded, color: _t.accent),
-          ),
-        if (!typing)
           GestureDetector(
             onLongPress: _sendNudge,
             child: IconButton(

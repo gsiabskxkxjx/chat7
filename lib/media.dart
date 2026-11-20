@@ -40,8 +40,18 @@ class _MediaFiles {
     return d;
   }
 
-  static Future<File?> get(String path) =>
-      _inflight[path] ??= _get(path).whenComplete(() => _inflight.remove(path));
+  static Future<File?> get(String path) {
+    final cur = _inflight[path];
+    if (cur != null) return cur;
+    final f = _get(path);
+    _inflight[path] = f;
+    f.then<void>((_) {
+      _inflight.remove(path);
+    }, onError: (Object _) {
+      _inflight.remove(path);
+    });
+    return f;
+  }
 
   static Future<File?> _get(String path) async {
     try {

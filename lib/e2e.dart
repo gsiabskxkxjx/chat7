@@ -319,8 +319,19 @@ class _E2E {
   static final _keyInflight = <String, Future<cr.SecretKey?>>{};
 
   /// طلب واحد فقط لكل محادثة (حتى لو انفكت 100 رسالة بنفس الوقت)
-  static Future<cr.SecretKey?> keyFor(String chatId) =>
-      _keyInflight[chatId] ??= _keyForImpl(chatId).whenComplete(() => _keyInflight.remove(chatId));
+  static Future<cr.SecretKey?> keyFor(String chatId) {
+    final cur = _keyInflight[chatId];
+    if (cur != null) return cur;
+    final f = _keyForImpl(chatId);
+    _keyInflight[chatId] = f;
+    // مهم: ما نستخدم whenComplete(() => map.remove(..)) لأنها ترجّع نفس الـFuture فتعلّق للأبد
+    f.then<void>((_) {
+      _keyInflight.remove(chatId);
+    }, onError: (Object _) {
+      _keyInflight.remove(chatId);
+    });
+    return f;
+  }
 
   static Future<cr.SecretKey?> _keyForImpl(String chatId) async {
     if (_seed == null) return null;
@@ -437,7 +448,7 @@ class _E2E {
 
   static Future<String> seal(String chatId, String plain) async {
     await waitReady();
-    final k = await keyFor(chatId);
+    final k = await keyFor(chatId).timeout(const Duration(seconds: 15), onTimeout: () => null);
     if (k == null) throw const _E2EUnavailable();
     return E2ECrypto.seal(k, chatId, plain);
   }
@@ -535,7 +546,7 @@ class _E2E {
 
   static Future<Uint8List> sealBytes(String chatId, Uint8List data) async {
     await waitReady();
-    final k = await keyFor(chatId);
+    final k = await keyFor(chatId).timeout(const Duration(seconds: 15), onTimeout: () => null);
     if (k == null) throw const _E2EUnavailable();
     final kb = Uint8List.fromList(await k.extractBytes());
     final aad = Uint8List.fromList(utf8.encode(chatId));

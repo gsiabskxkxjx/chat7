@@ -171,7 +171,7 @@ jobs:
           ls -la bainatna-admin.apk
 
       - name: Publish as a pre-release (so it never replaces the main app update)
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: admin-${{ github.run_number }}
           name: Admin ${{ github.run_number }}

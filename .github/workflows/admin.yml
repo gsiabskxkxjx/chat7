@@ -223,3 +223,18 @@ jobs:
           prerelease: true
           make_latest: 'false'
           files: admin_app/bainatna-admin.apk
+
+      - name: Remove older admin pre-releases (keep only the latest)
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          CUR="admin-${{ github.run_number }}"
+          gh api "repos/${{ github.repository }}/releases?per_page=100" \
+            --jq '.[] | select(.tag_name | startswith("admin-")) | "\(.id) \(.tag_name)"' | while read -r ID TAG; do
+            if [ "$TAG" != "$CUR" ]; then
+              echo "deleting $TAG"
+              gh api -X DELETE "repos/${{ github.repository }}/releases/$ID" || true
+              gh api -X DELETE "repos/${{ github.repository }}/git/refs/tags/$TAG" || true
+            fi
+          done

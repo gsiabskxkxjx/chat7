@@ -3,6 +3,9 @@ name: Build APK
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - 'admin_app/**'
+      - '.github/workflows/admin.yml'
   workflow_dispatch:
 
 permissions:
@@ -759,7 +762,7 @@ jobs:
 
       - name: Release notes from commits
         run: |
-          PREV=$(git describe --tags --abbrev=0 2>/dev/null || true)
+          PREV=$(git describe --tags --match 'build-*' --abbrev=0 2>/dev/null || true)
           {
             echo "## التغييرات"
             if [ -n "$PREV" ]; then

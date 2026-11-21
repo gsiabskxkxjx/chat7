@@ -1,0 +1,6 @@
+# config.dart is copied from ../lib/config.dart by the workflow
+lib/config.dart
+android/
+.dart_tool/
+build/
+.metadata

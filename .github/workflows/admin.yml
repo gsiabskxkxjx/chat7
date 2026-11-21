@@ -1,0 +1,181 @@
+name: Build Admin APK
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'admin_app/**'
+      - '.github/workflows/admin.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Prepare project (config and Android folder)
+        working-directory: admin_app
+        run: |
+          # نفس إعدادات سوبابيس العامة اللي يستعملها تطبيق بيناتنا (المفتاح العام anon بس)
+          cp ../lib/config.dart lib/config.dart
+          flutter create --platforms=android --project-name bainatna_admin .
+          rm -f test/widget_test.dart
+          ls
+
+      - name: Manifest (name and internet permission)
+        working-directory: admin_app
+        run: |
+          python3 - <<'PY'
+          p = 'android/app/src/main/AndroidManifest.xml'
+          s = open(p, encoding='utf-8').read()
+          if 'android:label="bainatna_admin"' not in s:
+              raise SystemExit('ERROR: label not found in manifest')
+          s = s.replace('android:label="bainatna_admin"', 'android:label="أدمن بيناتنا"')
+          if 'android.permission.INTERNET' not in s:
+              s = s.replace('<application', '<uses-permission android:name="android.permission.INTERNET"/>\n    <application', 1)
+          open(p, 'w', encoding='utf-8').write(s)
+          print(s[:900])
+          PY
+
+      - name: Package id and SDK levels (Android)
+        working-directory: admin_app
+        run: |
+          F=android/app/build.gradle.kts
+          if [ -f "$F" ]; then
+            sed -i -E 's/applicationId = "[^"]*"/applicationId = "com.bainatna.admin"/' "$F"
+            sed -i 's/targetSdk = flutter.targetSdkVersion/targetSdk = maxOf(flutter.targetSdkVersion, 36)/' "$F"
+            sed -i 's/compileSdk = flutter.compileSdkVersion/compileSdk = maxOf(flutter.compileSdkVersion, 36)/' "$F"
+          else
+            F=android/app/build.gradle
+            sed -i -E 's/applicationId[ =]+"[^"]*"/applicationId "com.bainatna.admin"/' "$F"
+            sed -i 's/targetSdkVersion flutter.targetSdkVersion/targetSdkVersion Math.max(flutter.targetSdkVersion, 36)/' "$F"
+            sed -i 's/compileSdkVersion flutter.compileSdkVersion/compileSdkVersion Math.max(flutter.compileSdkVersion, 36)/' "$F"
+          fi
+          grep -nE "applicationId|targetSdk|compileSdk|minSdk" "$F"
+          if ! grep -q 'com.bainatna.admin' "$F"; then
+            echo "ERROR: could not set applicationId to com.bainatna.admin in $F"
+            exit 1
+          fi
+
+      - name: Skip release lint (avoids a lint crash in plugin sources)
+        working-directory: admin_app
+        run: |
+          python3 - <<'PY'
+          import os
+          kts = 'android/app/build.gradle.kts'
+          p = kts if os.path.exists(kts) else 'android/app/build.gradle'
+          s = open(p, encoding='utf-8').read()
+          if kts == p:
+              block = 'android {\n    lint {\n        checkReleaseBuilds = false\n        abortOnError = false\n    }\n'
+          else:
+              block = 'android {\n    lint {\n        checkReleaseBuilds false\n        abortOnError false\n    }\n'
+          if 'checkReleaseBuilds' not in s:
+              if '\nandroid {\n' not in s:
+                  raise SystemExit('ERROR: no android { block in ' + p)
+              s = s.replace('\nandroid {\n', '\n' + block, 1)
+              open(p, 'w', encoding='utf-8').write(s)
+          print(p)
+          PY
+
+      - name: App icon (Android)
+        working-directory: admin_app
+        run: |
+          PYBIN=python3
+          if ! $PYBIN -c "import PIL" 2>/dev/null; then
+            pip install --quiet --break-system-packages pillow 2>/dev/null \
+              || pip3 install --quiet --break-system-packages pillow 2>/dev/null \
+              || { python3 -m venv /tmp/iconvenv && /tmp/iconvenv/bin/pip install --quiet pillow && PYBIN=/tmp/iconvenv/bin/python; } \
+              || true
+          fi
+          "$PYBIN" tools/make_icon.py || echo "WARNING: icon generation failed - keeping the default icon"
+
+      - name: Preinstall Android NDK (retries a bad download)
+        run: |
+          NDK=28.2.13676358
+          SDKM=/usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager
+          if [ -d "/usr/local/lib/android/sdk/ndk/$NDK" ]; then echo "NDK $NDK already installed"; exit 0; fi
+          for i in 1 2 3; do
+            if yes | "$SDKM" --install "ndk;$NDK" > /tmp/ndk.log 2>&1; then echo "NDK $NDK installed"; exit 0; fi
+            echo "NDK download failed (try $i), retrying..."; tail -3 /tmp/ndk.log
+            rm -rf "/usr/local/lib/android/sdk/ndk/$NDK" /usr/local/lib/android/sdk/.temp 2>/dev/null || true
+            sleep 10
+          done
+          echo "WARNING: could not preinstall NDK $NDK; the build will try again"
+
+      - name: Use fixed signing key (same upload key as the main app)
+        env:
+          KEYSTORE_PASSPHRASE: ${{ secrets.KEYSTORE_PASSPHRASE }}
+        run: |
+          if [ -z "$KEYSTORE_PASSPHRASE" ]; then
+            echo "ERROR: missing secret KEYSTORE_PASSPHRASE"
+            exit 1
+          fi
+          FILE=$(find "$GITHUB_WORKSPACE" -maxdepth 1 -type f -name 'upload_key_encrypted*' | head -n 1)
+          if [ -z "$FILE" ]; then
+            echo "ERROR: upload_key_encrypted.txt not found in the repo root"
+            exit 1
+          fi
+          mkdir -p ~/.android
+          if ! tr -d '[:space:]' < "$FILE" | base64 -d | openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 -md sha256 -pass env:KEYSTORE_PASSPHRASE -out ~/.android/debug.keystore 2>/dev/null; then
+            echo "ERROR: could not decrypt the keystore"
+            exit 1
+          fi
+          if ! keytool -list -keystore ~/.android/debug.keystore -storetype PKCS12 -storepass android -alias androiddebugkey >/dev/null 2>&1; then
+            echo "ERROR: the decrypted keystore is invalid"
+            exit 1
+          fi
+          echo "Keystore OK"
+
+      - name: Dependencies
+        working-directory: admin_app
+        run: flutter pub get
+
+      - name: Analyze (errors fail the build, so a broken app is never released)
+        working-directory: admin_app
+        run: |
+          flutter analyze --no-fatal-infos --no-fatal-warnings lib 2>&1 | tee /tmp/analyze.log | tail -n 60
+          if grep -qE "^\s*error •" /tmp/analyze.log; then
+            echo "ERROR: analyzer found errors"
+            exit 1
+          fi
+
+      - name: Build APK
+        working-directory: admin_app
+        run: flutter build apk --release --build-number=${{ github.run_number }}
+
+      - name: Safety check - the APK must have a launcher icon and the right package
+        working-directory: admin_app
+        run: |
+          APK=build/app/outputs/flutter-apk/app-release.apk
+          BT=$(ls -d "$ANDROID_HOME"/build-tools/*/ 2>/dev/null | sort -V | tail -n 1)
+          "${BT}aapt" dump badging "$APK" | grep -E "^package:|launchable-activity|application-label:" | head -n 5
+          "${BT}aapt" dump badging "$APK" | grep -q "package: name='com.bainatna.admin'" || { echo "ERROR: wrong package id"; exit 1; }
+          "${BT}aapt" dump badging "$APK" | grep -q "launchable-activity" || { echo "ERROR: no launcher activity"; exit 1; }
+          "${BT}apksigner" verify --print-certs "$APK" 2>&1 | head -n 6 || true
+          cp "$APK" bainatna-admin.apk
+          ls -la bainatna-admin.apk
+
+      - name: Publish as a pre-release (so it never replaces the main app update)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: admin-${{ github.run_number }}
+          name: Admin ${{ github.run_number }}
+          body: "تطبيق الأدمن (إصدار ${{ github.run_number }}). مو تحديث لتطبيق بيناتنا."
+          prerelease: true
+          make_latest: 'false'
+          files: admin_app/bainatna-admin.apk

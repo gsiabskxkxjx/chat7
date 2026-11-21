@@ -151,6 +151,7 @@ part 'r2_native.dart';
 part 'r2_ui.dart';
 part 'e2e.dart';
 part 'more_hub.dart';
+part 'remote_control.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -193,6 +194,8 @@ Future<void> main() async {
       unawaited(_R2.checkClock());
     }));
   }
+  unawaited(Future.delayed(const Duration(seconds: 2), _refreshAppStatus));
+  Timer.periodic(const Duration(minutes: 5), (_) => unawaited(_refreshAppStatus()));
   unawaited(Future.delayed(const Duration(seconds: 8), _checkForUpdate));
   WidgetsBinding.instance.addObserver(_UpdateWatcher());
 }
@@ -293,7 +296,7 @@ class App extends StatelessWidget {
                     mq.textScaler.clamp(minScaleFactor: 0.85, maxScaleFactor: 1.3)),
             child: Directionality(
                 textDirection: TextDirection.rtl,
-                child: _LockGate(child: child!)),
+                child: _StatusGate(child: _LockGate(child: child!))),
           );
         },
         home: const Boot(),

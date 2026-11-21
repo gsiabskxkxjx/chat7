@@ -547,7 +547,10 @@ Future<void> _checkForUpdate() async {
 class _UpdateWatcher with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) unawaited(_checkForUpdate());
+    if (state == AppLifecycleState.resumed) {
+      unawaited(_refreshAppStatus());
+      unawaited(_checkForUpdate());
+    }
   }
 }
 

@@ -72,6 +72,49 @@ jobs:
             exit 1
           fi
 
+      - name: Release signing with the fixed key (otherwise Gradle makes a new debug key every build)
+        working-directory: admin_app
+        run: |
+          python3 - <<'PY'
+          import os, re
+          kts = 'android/app/build.gradle.kts'
+          p = kts if os.path.exists(kts) else 'android/app/build.gradle'
+          s = open(p, encoding='utf-8').read()
+          if kts == p:
+              cfg = """
+              signingConfigs {
+                  create("fixedRelease") {
+                      storeFile = file(System.getProperty("user.home") + "/.android/debug.keystore")
+                      storeType = "pkcs12"
+                      storePassword = "android"
+                      keyAlias = "androiddebugkey"
+                      keyPassword = "android"
+                  }
+              }
+              """
+              s, n = re.subn(r'signingConfig\s*=\s*signingConfigs\.getByName\("debug"\)', 'signingConfig = signingConfigs.getByName("fixedRelease")', s)
+          else:
+              cfg = """
+              signingConfigs {
+                  fixedRelease {
+                      storeFile file(System.getProperty("user.home") + "/.android/debug.keystore")
+                      storeType "pkcs12"
+                      storePassword "android"
+                      keyAlias "androiddebugkey"
+                      keyPassword "android"
+                  }
+              }
+              """
+              s, n = re.subn(r'signingConfig\s+signingConfigs\.debug', 'signingConfig signingConfigs.fixedRelease', s)
+          if n != 1:
+              raise SystemExit('ERROR: could not switch the release signingConfig (matches: %d)' % n)
+          if '\nandroid {\n' not in s:
+              raise SystemExit('ERROR: no android { block in ' + p)
+          s = s.replace('\nandroid {\n', '\nandroid {\n' + cfg, 1)
+          open(p, 'w', encoding='utf-8').write(s)
+          print(s)
+          PY
+
       - name: Skip release lint (avoids a lint crash in plugin sources)
         working-directory: admin_app
         run: |
@@ -167,6 +210,7 @@ jobs:
           "${BT}aapt" dump badging "$APK" | grep -q "package: name='com.bainatna.admin'" || { echo "ERROR: wrong package id"; exit 1; }
           "${BT}aapt" dump badging "$APK" | grep -q "launchable-activity" || { echo "ERROR: no launcher activity"; exit 1; }
           "${BT}apksigner" verify --print-certs "$APK" 2>&1 | head -n 6 || true
+          "${BT}apksigner" verify --print-certs "$APK" 2>&1 | grep -q "Bainatna Team" || { echo "ERROR: the APK is not signed with the fixed key"; exit 1; }
           cp "$APK" bainatna-admin.apk
           ls -la bainatna-admin.apk
 

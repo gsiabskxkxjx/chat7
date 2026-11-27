@@ -279,7 +279,7 @@ jobs:
           if-no-files-found: error
 
       - name: Publish as a pre-release (never touches the Android releases)
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ios-${{ github.run_number }}
           name: iOS ${{ github.run_number }} (${{ steps.sign.outputs.signed == 'true' && 'signed' || 'unsigned' }})

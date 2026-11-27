@@ -6,6 +6,7 @@ on:
     paths-ignore:
       - 'admin_app/**'
       - '.github/workflows/admin.yml'
+      - '.github/workflows/ios.yml'
   workflow_dispatch:
 
 permissions:
